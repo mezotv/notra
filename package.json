@@ -12,7 +12,6 @@
     "check-types": "dotenv -- turbo run check-types",
     "test": "turbo run test",
     "knip": "dotenv -- turbo run knip --filter=web --filter=dashboard --filter=api",
-    "lint-staged": "lint-staged",
     "db:generate": "dotenv -- bunx drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "dotenv -- bunx drizzle-kit migrate --config packages/db/drizzle.config.ts",
     "db:push": "dotenv -- bunx drizzle-kit push --config packages/db/drizzle.config.ts",
@@ -38,7 +37,6 @@
     "drizzle-orm": "^0.45.2",
     "husky": "^9.1.7",
     "knip": "^6.12.2",
-    "lint-staged": "17.4.1",
     "openlogs": "^0.0.1",
     "oxfmt": "0.64.0",
     "oxlint": "1.79.0",
@@ -55,12 +53,6 @@
     "nf3": "0.3.17",
     "protobufjs@7": "7.6.5",
     "sharp": "^0.35.3"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,jsonc,css,scss,less,html,vue,svelte}": [
-      "oxlint --fix --threads=4 --no-error-on-unmatched-pattern",
-      "oxfmt --write"
-    ]
   },
   "engines": {
     "node": "24.11.1"

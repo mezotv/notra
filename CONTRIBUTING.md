@@ -69,10 +69,9 @@ Husky's generated hooks in that worktree's `.husky/_` directory; Git shares the
 hook-path setting between worktrees, but not that directory. If dependencies are
 already installed and only the hooks are missing, run `bunx --no-install husky`.
 
-The pre-commit hook runs `lint-staged` to format staged source files and include
-the fixes in the commit, followed by `knip`. Unstaged changes in partially staged
-files are hidden during formatting and restored afterward. Use `bun format` to
-format the entire repository manually.
+The pre-commit hook runs `bun format`, updates the index to include formatter
+fixes, and runs `knip`. Commit whole files: the index update also includes any
+remaining unstaged edits in files already staged for the commit.
 
 3. Set up environment variables:
 

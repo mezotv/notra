@@ -1,2 +1,8 @@
-bun run lint-staged
+set -e
+
+bun format
+
+# Include formatter fixes in the commit. This also stages remaining edits in partially staged files.
+git update-index --again
+
 bun knip
