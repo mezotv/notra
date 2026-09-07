@@ -609,6 +609,7 @@ export interface GeoCheckContext {
   organizationId: string;
   projectId: string;
   scanId: string;
+  runId: string;
   capturedAt: Date;
   companyName: string;
   aliases: string[];
