@@ -6,9 +6,12 @@ import {
 import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { FEATURES } from "@notra/ai/billing/features";
 import {
+  clearActiveChatStream,
   getChatSession,
   listDashboardAgentChatSessions,
+  loadChatHistory,
   replaceChatHistory,
+  setActiveChatStream,
 } from "@notra/ai/chat/history";
 import {
   DASHBOARD_AGENT_CHANNEL_SOURCE,
@@ -56,6 +59,7 @@ export const POST = withEvlog(async function POST(
 ) {
   const requestId = nanoid(10);
   const log = getLogger();
+  let releaseStream: (() => Promise<unknown>) | undefined;
 
   try {
     const { organizationId } = await params;
@@ -129,28 +133,63 @@ export const POST = withEvlog(async function POST(
       );
     }
 
-    const messages = stampUserMessageAuthors(
-      parseResult.data.messages,
-      auth.context.user.id
-    );
+    const userMessage = parseResult.data.messages.at(-1);
+    if (userMessage?.role !== "user") {
+      return NextResponse.json(
+        { error: "The latest message must be a user message" },
+        { status: 400 }
+      );
+    }
     const chatId = parseResult.data.chatId;
+    const streamAcquired = await setActiveChatStream(
+      organizationId,
+      chatId,
+      requestId
+    );
+    if (!streamAcquired) {
+      return NextResponse.json(
+        { error: "A response is already being generated for this chat" },
+        { status: 409 }
+      );
+    }
+    const cleanup = () =>
+      clearActiveChatStream(organizationId, chatId, requestId);
+    releaseStream = cleanup;
     const existingSession = await getChatSession(organizationId, chatId);
     if (
       existingSession &&
       existingSession.externalChannelId?.source !==
         DASHBOARD_AGENT_CHANNEL_SOURCE
     ) {
+      await cleanup();
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
 
+    const existingMessages = await loadChatHistory(organizationId, chatId);
+    if (existingMessages.some((message) => message.id === userMessage.id)) {
+      await cleanup();
+      return NextResponse.json(
+        { error: "This message has already been submitted" },
+        { status: 409 }
+      );
+    }
+    const messages = [
+      ...existingMessages,
+      ...stampUserMessageAuthors([userMessage], auth.context.user.id),
+    ];
     const historySaved = await replaceChatHistory(
       organizationId,
       chatId,
       messages,
-      DASHBOARD_AGENT_EXTERNAL_CHANNEL_ID
+      DASHBOARD_AGENT_EXTERNAL_CHANNEL_ID,
+      existingMessages.at(-1)?.id ?? null
     );
     if (!historySaved) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      await cleanup();
+      return NextResponse.json(
+        { error: "Chat history changed. Reload the chat and try again." },
+        { status: 409 }
+      );
     }
 
     const { stream } = await orchestrateStandaloneChat(
@@ -250,21 +289,27 @@ export const POST = withEvlog(async function POST(
       sendReasoning: true,
       headers: { "X-Chat-Id": chatId },
       onFinish: async ({ messages: responseMessages }) => {
-        const saved = await replaceChatHistory(
-          organizationId,
-          chatId,
-          responseMessages,
-          DASHBOARD_AGENT_EXTERNAL_CHANNEL_ID
-        );
-        if (!saved) {
-          console.warn("[Dashboard Agent Chat] Skipped saving response", {
-            requestId,
+        try {
+          const saved = await replaceChatHistory(
             organizationId,
             chatId,
-          });
+            responseMessages,
+            DASHBOARD_AGENT_EXTERNAL_CHANNEL_ID,
+            userMessage.id
+          );
+          if (!saved) {
+            console.warn("[Dashboard Agent Chat] Skipped saving response", {
+              requestId,
+              organizationId,
+              chatId,
+            });
+          }
+        } finally {
+          await cleanup();
         }
       },
       onError: (error) => {
+        cleanup().catch(() => undefined);
         console.error("[Dashboard Agent Chat] Stream error:", {
           requestId,
           error,
@@ -273,6 +318,7 @@ export const POST = withEvlog(async function POST(
       },
     });
   } catch (e) {
+    await releaseStream?.().catch(() => undefined);
     console.error("[Dashboard Agent Chat] Error:", {
       requestId,
       error: e instanceof Error ? e.message : String(e),

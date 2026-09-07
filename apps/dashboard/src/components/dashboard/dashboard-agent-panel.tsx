@@ -14,13 +14,7 @@ import {
 } from "@notra/ai/utils/chat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import ChatInput from "@/components/chat-input";
@@ -56,7 +50,7 @@ function DashboardAgentChat({
   const [chatInputValue, setChatInputValue] = useState("");
   const [chatError, setChatError] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState(() => crypto.randomUUID());
-  const [chatIdToHydrate, setChatIdToHydrate] = useState<string | null>(null);
+  const [isHydratingHistory, setIsHydratingHistory] = useState(false);
   const messagesRef = useRef<UIMessage[]>([]);
   const isAgentBusyRef = useRef(false);
 
@@ -80,40 +74,6 @@ function DashboardAgentChat({
     staleTime: 60_000,
   });
   const sessions = sessionsQuery.data ?? [];
-
-  const historyQuery = useQuery<UIMessage[] | null>({
-    queryKey: dashboardAgentChatHistoryQueryKey(organizationId, activeChatId),
-    queryFn: async () => {
-      if (!activeChatId) {
-        return null;
-      }
-      const response = await fetch(
-        dashboardAgentChatHistoryPath(organizationId, activeChatId)
-      );
-      if (response.status === 404) {
-        return [];
-      }
-      if (!response.ok) {
-        throw new Error("Failed to load agent chat history");
-      }
-      const payload = await response.json();
-      const parsed = uiMessageSchema.array().safeParse(payload?.messages);
-      if (!parsed.success) {
-        throw new Error("Invalid agent chat history response");
-      }
-      return parsed.data;
-    },
-    enabled: Boolean(activeChatId && chatIdToHydrate === activeChatId),
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-  });
-
-  useEffect(() => {
-    if (chatIdToHydrate !== activeChatId || !historyQuery.isError) {
-      return;
-    }
-    setChatIdToHydrate(null);
-  }, [activeChatId, chatIdToHydrate, historyQuery.isError]);
 
   const { messages, sendMessage, setMessages, status, stop } = useChat({
     transport: new DefaultChatTransport({
@@ -177,35 +137,43 @@ function DashboardAgentChat({
   const isAgentBusy = status === "streaming" || status === "submitted";
   useLayoutEffect(() => {
     messagesRef.current = messages;
-    isAgentBusyRef.current = isAgentBusy;
-  }, [isAgentBusy, messages]);
-
-  useLayoutEffect(() => {
-    if (chatIdToHydrate !== activeChatId) {
-      return;
-    }
-    if (status === "submitted" || status === "streaming") {
-      return;
-    }
-    const history = historyQuery.data;
-    if (!history) {
-      return;
-    }
-    setMessages(history);
-    setChatIdToHydrate(null);
-  }, [activeChatId, chatIdToHydrate, historyQuery.data, setMessages, status]);
+    isAgentBusyRef.current = isAgentBusy || isHydratingHistory;
+  }, [isAgentBusy, isHydratingHistory, messages]);
 
   const handleSelectChat = useCallback(
-    (chatId: string) => {
+    async (chatId: string) => {
       if (isAgentBusyRef.current || chatId === activeChatId) {
         return;
       }
-      setChatInputValue("");
-      setMessages([]);
-      setActiveChatId(chatId);
-      setChatIdToHydrate(chatId);
+      isAgentBusyRef.current = true;
+      setIsHydratingHistory(true);
+      try {
+        const history = await queryClient.fetchQuery({
+          queryKey: dashboardAgentChatHistoryQueryKey(organizationId, chatId),
+          queryFn: async () => {
+            const response = await fetch(
+              dashboardAgentChatHistoryPath(organizationId, chatId)
+            );
+            if (!response.ok) {
+              throw new Error("Failed to load agent chat history");
+            }
+            const payload = await response.json();
+            return uiMessageSchema.array().parse(payload?.messages);
+          },
+          staleTime: 0,
+        });
+        setChatInputValue("");
+        setChatError(null);
+        setMessages(history);
+        setActiveChatId(chatId);
+      } catch {
+        toast.error("Failed to load agent chat history. Try again.");
+      } finally {
+        setIsHydratingHistory(false);
+        isAgentBusyRef.current = false;
+      }
     },
-    [activeChatId, setMessages]
+    [activeChatId, organizationId, queryClient, setMessages]
   );
 
   const handleNewChat = useCallback(() => {
@@ -216,12 +184,11 @@ function DashboardAgentChat({
     setChatError(null);
     setMessages([]);
     setActiveChatId(crypto.randomUUID());
-    setChatIdToHydrate(null);
   }, [setMessages]);
 
   const handleSend = useCallback(
     async (instruction: string) => {
-      if (!activeChatId) {
+      if (!activeChatId || isAgentBusyRef.current) {
         return;
       }
       isAgentBusyRef.current = true;
@@ -242,10 +209,6 @@ function DashboardAgentChat({
     setChatInputValue(prompt);
   }, []);
 
-  const isHydratingHistory =
-    chatIdToHydrate === activeChatId &&
-    historyQuery.isFetching &&
-    !historyQuery.isError;
   const isChatDisabled = isHydratingHistory;
   const showExamplePrompts =
     messages.length === 0 && !isAgentBusy && !isHydratingHistory;
@@ -253,7 +216,7 @@ function DashboardAgentChat({
   return (
     <ContentChatActivityPanel
       activeChatId={activeChatId}
-      isHistoryLoading={sessionsQuery.isPending || historyQuery.isFetching}
+      isHistoryLoading={sessionsQuery.isPending || isHydratingHistory}
       messages={messages}
       onClose={onClose}
       onNewChat={handleNewChat}

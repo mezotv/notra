@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -25,13 +24,10 @@ export function DashboardAgentProvider({
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
+    if (next) {
       setHasOpened(true);
     }
-  }, [open]);
+  }, []);
 
   const value = useMemo(
     () => ({ open, hasOpened, setOpen }),
