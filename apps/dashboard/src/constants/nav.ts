@@ -34,11 +34,11 @@ import {
   GEO_PROMPTS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
 } from "@notra/geo-core/constants/geo";
+import type { PostStatus } from "@notra/schemas/dashboard/content";
 import { DURATION } from "@notra/ui/lib/motion";
 
 import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { IRIS_NAV_LINK } from "@/constants/iris";
-import type { PostStatus } from "@/schemas/content";
 import type {
   NavGroupKey,
   NavMainItem,
@@ -154,7 +154,7 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     label: "Competitors",
   },
   { link: GEO_WRITER_NAV_LINK, icon: PencilEdit01Icon, label: "Write" },
-  { link: GEO_SETTINGS_NAV_LINK, icon: Settings01Icon, label: "Settings" },
+  { link: GEO_SETTINGS_NAV_LINK, icon: Settings01Icon, label: "GEO Settings" },
   { link: SKILLS_NAV_LINK, icon: MagicWand01Icon, label: "Skills" },
   { link: API_KEYS_NAV_LINK, icon: Key01Icon, label: "API Keys" },
 ];

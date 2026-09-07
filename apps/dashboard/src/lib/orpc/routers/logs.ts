@@ -1,11 +1,11 @@
+import { webhookLogsQuerySchema } from "@notra/schemas/dashboard/api-params";
+import { listWebhookLogsInputSchema } from "@notra/schemas/dashboard/logs";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { listWebhookLogs } from "@/lib/webhooks/logging";
-import { webhookLogsQuerySchema } from "@/schemas/api-params";
-import { listWebhookLogsInputSchema } from "@/schemas/logs";
 import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 
 function paginateLogs(logs: Log[], page: number, pageSize: number) {

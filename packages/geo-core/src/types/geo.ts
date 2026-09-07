@@ -50,6 +50,11 @@ export interface GeoScopeInput {
   projectId?: string;
 }
 
+export interface GeoScanStartInput extends GeoScopeInput {
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
+}
+
 export interface GeoProjectUpdateInput {
   name?: string;
   brandSettingsId?: string;
@@ -70,6 +75,7 @@ export interface GeoSettings {
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   scanStartedAt: string | null;
@@ -97,6 +103,7 @@ export interface GeoSettingsRow {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   nextScanAt: Date | null;
@@ -155,6 +162,11 @@ export interface GeoEngineAnswer {
   usage?: LanguageModelUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
   zdrEnforced: boolean | null;
+  /**
+   * Search engines set this when the SERP ran but produced no answer to judge
+   * (for example Google did not show an AI Overview for the query).
+   */
+  absent?: boolean;
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
@@ -185,7 +197,8 @@ export type GeoScanSkipReason =
   | "claim_lost"
   | "superseded"
   | "already_running"
-  | "scoped_prompts_missing";
+  | "scoped_prompts_missing"
+  | "scoped_engines_missing";
 
 export interface GeoErrorFields {
   errorName: string;
@@ -266,6 +279,36 @@ export interface GeoPromptResultsResponse {
   results: GeoPromptResult[];
 }
 
+export interface GeoPromptResultDetailInput {
+  organizationId: string;
+  checkId: string;
+}
+
+/**
+ * List projection of a prompt result. Carries the mention state the tables and
+ * charts read; `checkId` addresses the full answer, which is loaded on demand.
+ */
+export type GeoPromptResultSummary = Pick<
+  GeoPromptResult,
+  | "promptId"
+  | "engine"
+  | "prompt"
+  | "mentioned"
+  | "position"
+  | "sentiment"
+  | "competitors"
+  | "lastCheckedAt"
+> & { checkId: string };
+
+export interface GeoPromptResultSummariesResponse {
+  configured: boolean;
+  results: GeoPromptResultSummary[];
+}
+
+export interface GeoPromptResultDetailResponse {
+  result: GeoPromptResult | null;
+}
+
 export interface GeoPromptHistoryInput extends GeoScopeInput {
   promptId: string;
 }
@@ -340,6 +383,7 @@ export interface GeoSettingsUpsertInput {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds?: string[];
+  removedAutoPromptIds?: string[];
   enabled: boolean;
   scanIntervalHours: number;
 }
@@ -526,7 +570,7 @@ export interface GeoScanProjectContext {
 
 export interface GeoScanProjectPlan {
   context: GeoScanProjectContext;
-  /** ISO stamp of the claim token the batches rotate as they renew it. */
+  /** ISO stamp of the claim token the workflow renews between batch waves. */
   claimedAt: string;
   tasks: GeoScanPlannedTask[];
   sequences: GeoScanPlannedSequence[];
@@ -544,8 +588,6 @@ export interface GeoScanBatchOutcome {
   mentions: number;
   dropped: number;
   usage: AgentTokenUsage;
-  /** Renewed claim token the next batch must use. */
-  claimedAt: string;
 }
 
 export interface GeoScanProjectTotals {
@@ -562,6 +604,8 @@ export interface GeoScanProgramOptions {
   /** Explicit project subset for a retry pass; overrides `projectId` scoping. */
   projectIds?: readonly string[];
   promptIds?: readonly string[];
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
 }
 
 export interface GeoProjectScanOutcome {
@@ -608,6 +652,7 @@ export interface GeoCheckContext {
   organizationId: string;
   projectId: string;
   scanId: string;
+  runId: string;
   capturedAt: Date;
   companyName: string;
   aliases: string[];
@@ -1013,7 +1058,7 @@ export interface GeoPromptSummary {
   total: number;
   bestPosition: number | null;
   presence: GeoPresenceStatus | null;
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
 }
 
 export type GeoTab = "visibility" | "prompts" | "journeys";
@@ -1118,10 +1163,17 @@ export type GeoModelProviderId =
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
- * Where a model is served. `cursor` runs through the Cursor SDK and `box`
- * through OpenCode in Upstash Box (OpenCode, Claude Code, and Codex).
+ * Where a model is served. `cursor` runs through the Cursor SDK, `box`
+ * through OpenCode, Claude Code, and Codex in Upstash Box, and `serpapi`
+ * through SerpApi's Google AI Overview endpoint — none of those go through
+ * the AI router.
  */
-export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
+export type GeoModelGateway =
+  | "vercel"
+  | "openrouter"
+  | "cursor"
+  | "box"
+  | "serpapi";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

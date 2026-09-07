@@ -689,10 +689,6 @@ export function buildMentionProviderRows(
     .sort(compareMentionProviderRows);
 }
 
-export function mentionMoreModelsLabel(count: number): string {
-  return count === 1 ? "1 more model" : `${count.toLocaleString()} more models`;
-}
-
 function sumFamilyWindow(
   days: readonly string[],
   byDay: ReadonlyMap<string, FamilyDayBucket>

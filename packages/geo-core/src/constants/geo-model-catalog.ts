@@ -346,9 +346,10 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
 /**
  * Models that do not run through the Notra AI router. They are appended to the
  * catalog instead of coming from the gateway feed. `zdr: "none"` because
- * neither Cursor nor Box exposes an enforceable ZDR route to GEO; under
- * enforced ZDR each engine therefore needs explicit approval before it is
- * scanned.
+ * neither Cursor, Box, nor SerpApi exposes an enforceable ZDR route to GEO;
+ * under enforced ZDR each engine therefore needs explicit approval before it
+ * is scanned. Google AI Overview is fetched through SerpApi and is also
+ * non-ZDR.
  */
 export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
   {
@@ -405,6 +406,15 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
     default: false,
     gateways: ["box"],
   },
+  {
+    id: "google/ai-overview",
+    provider: "google",
+    label: "AI Overview",
+    zdr: "none",
+    released: "2026-09-05",
+    default: false,
+    gateways: ["serpapi"],
+  },
 ];
 
 /**
@@ -426,6 +436,7 @@ export const GEO_STATIC_ENGINE_ENV: Readonly<
   "claude-code/claude-opus-5": GEO_NATIVE_BOX_ENGINE_ENV,
   "codex/gpt-6-astra": GEO_NATIVE_BOX_ENGINE_ENV,
   "codex/gpt-5.6-sol-rei": GEO_NATIVE_BOX_ENGINE_ENV,
+  "google/ai-overview": ["SERPAPI_API_KEY"],
 };
 
 /** Engines scanned when a project has not picked its own set. */

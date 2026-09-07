@@ -4,6 +4,8 @@ import { cn } from "@notra/ui/lib/utils";
 
 interface TitleCardProps extends Omit<React.ComponentProps<"div">, "title"> {
   heading: React.ReactNode;
+  as?: "div" | "section";
+  headingAs?: "p" | "h2";
   icon?: React.ReactNode;
   action?: React.ReactNode;
   footer?: React.ReactNode;
@@ -16,6 +18,8 @@ interface TitleCardProps extends Omit<React.ComponentProps<"div">, "title"> {
 
 function TitleCard({
   heading,
+  as: Root = "div",
+  headingAs: Heading = "p",
   icon,
   action,
   footer,
@@ -35,10 +39,10 @@ function TitleCard({
     : undefined;
 
   return (
-    <div
+    <Root
       aria-disabled={disabled || undefined}
       className={cn(
-        "group relative isolate flex flex-col overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs",
+        "group relative isolate flex flex-col overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80",
         disabled && "cursor-not-allowed",
         className
       )}
@@ -68,7 +72,9 @@ function TitleCard({
               {icon}
             </div>
           )}
-          <p className="min-w-0 flex-1 truncate font-medium text-lg">{heading}</p>
+          <Heading className="min-w-0 flex-1 truncate font-medium text-lg">
+            {heading}
+          </Heading>
         </div>
         {action && (
           <div className="flex shrink-0 items-center gap-2">{action}</div>
@@ -92,7 +98,7 @@ function TitleCard({
           {footer}
         </div>
       )}
-    </div>
+    </Root>
   );
 }
 

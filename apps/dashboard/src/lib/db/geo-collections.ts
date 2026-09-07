@@ -1,3 +1,4 @@
+import { isGeoAutoPromptId } from "@notra/geo-core/geo/prompts";
 import type {
   GeoCompetitor,
   GeoPromptSequence,
@@ -121,7 +122,7 @@ export const geoPromptsCollection = createCollectionFactory<GeoTrackedPrompt>({
       tags: item.tags,
     }),
   update: (scope, key, modified) =>
-    modified.source === "auto"
+    modified.source === "auto" || isGeoAutoPromptId(key)
       ? dashboardOrpc.geo.promptsToggleAuto.call({
           ...scope,
           promptId: key,

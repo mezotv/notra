@@ -25,6 +25,10 @@ export function subscriptionMiddleware() {
 
     const secretKey = c.env.AUTUMN_SECRET_KEY as string | undefined;
     if (!secretKey) {
+      if (process.env.NODE_ENV === "development") {
+        return next();
+      }
+
       console.error(
         "AUTUMN_SECRET_KEY is not configured — rejecting write request"
       );

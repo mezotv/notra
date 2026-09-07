@@ -41,8 +41,8 @@ const checkGeoEntitlement: GeoEntitlementChecker = async ({
  * `subscriptionMiddleware`, which leaves GET and DELETE open for data
  * portability; that middleware still applies unchanged on top of this one.
  *
- * Fails closed: a missing key or an Autumn outage is a 503, never an implicit
- * grant.
+ * Outside local development, fails closed: a missing key or an Autumn outage
+ * is a 503, never an implicit grant.
  */
 export function geoEntitlementMiddleware(
   options: GeoEntitlementMiddlewareOptions = {}
@@ -52,6 +52,10 @@ export function geoEntitlementMiddleware(
   return async (c: Context, next: Next) => {
     const secretKey = c.env.AUTUMN_SECRET_KEY as string | undefined;
     if (!secretKey) {
+      if (process.env.NODE_ENV === "development") {
+        return next();
+      }
+
       logError(
         "AUTUMN_SECRET_KEY is not configured — rejecting GEO request",
         new Error("Missing AUTUMN_SECRET_KEY")

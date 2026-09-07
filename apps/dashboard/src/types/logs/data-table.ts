@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import type { TableColumn } from "@/components/motion/table";
 
 export interface DataTableEmptyState {
   title: string;
@@ -8,10 +8,9 @@ export interface DataTableEmptyState {
 }
 
 export interface DataTableProps<TData> {
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Table columns have varying value types
-  columns: ColumnDef<TData, any>[];
-  contentKey: string;
+  columns: TableColumn<TData>[];
   data: TData[];
+  getRowId?: (row: TData, index: number) => string;
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;

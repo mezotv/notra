@@ -2,6 +2,21 @@
 
 import { ArrowDown01Icon, CpuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  commitsByTimeframeInputSchema,
+  type MemoryToolInput,
+  memoryIdentifierInputSchema,
+  memoryIdentifierOutputSchema,
+  memoryToolInputSchema,
+  pullRequestInputSchema,
+  pullRequestOutputSchema,
+  releaseInputSchema,
+  releaseOutputSchema,
+  type StringToolField,
+  stringToolFieldsSchema,
+  webSearchInputSchema,
+  webSearchOutputSchema,
+} from "@notra/schemas/dashboard/ai/chat-tool-block";
 import { Shimmer } from "@notra/ui/components/ai-elements/shimmer";
 import {
   Avatar,
@@ -21,21 +36,6 @@ import { type ReactNode, useState } from "react";
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
-import {
-  commitsByTimeframeInputSchema,
-  type MemoryToolInput,
-  memoryIdentifierInputSchema,
-  memoryIdentifierOutputSchema,
-  memoryToolInputSchema,
-  pullRequestInputSchema,
-  pullRequestOutputSchema,
-  releaseInputSchema,
-  releaseOutputSchema,
-  type StringToolField,
-  stringToolFieldsSchema,
-  webSearchInputSchema,
-  webSearchOutputSchema,
-} from "@/schemas/ai/chat-tool-block";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 
 import {

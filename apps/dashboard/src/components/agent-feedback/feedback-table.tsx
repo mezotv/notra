@@ -11,7 +11,6 @@ import {
   ContextMenuRadioItem,
   ContextMenuSeparator,
 } from "@notra/ui/components/ui/context-menu";
-import { useLayoutEffect, useRef, useState } from "react";
 
 import { AgentFeedbackAgent } from "@/components/agent-feedback/feedback-agent-icon";
 import {
@@ -20,6 +19,7 @@ import {
   AgentFeedbackStatusBadge,
 } from "@/components/agent-feedback/feedback-badges";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { useAvailableTableHeight } from "@/lib/hooks/use-available-table-height";
 import type {
   AgentFeedbackItem,
   AgentFeedbackTableProps,
@@ -103,32 +103,6 @@ const FEEDBACK_COLUMNS: TableColumn<AgentFeedbackItem>[] = [
 
 function feedbackTableHeight(rowCount: number): number {
   return tableHeightFor(rowCount, FEEDBACK_TABLE_ROW_HEIGHT);
-}
-
-function useAvailableTableHeight(fallback: number) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState(fallback);
-
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-
-    const update = () => {
-      const next = Math.floor(element.clientHeight);
-      if (next > 0) {
-        setHeight((current) => (current === next ? current : next));
-      }
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, height] as const;
 }
 
 export function AgentFeedbackTableSkeleton() {

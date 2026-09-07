@@ -94,6 +94,40 @@ export function isDefiniteGeoScanHandoffRejection(cause: unknown): boolean {
   return false;
 }
 
+/**
+ * Reorders planned checks so consecutive items rotate through engines instead
+ * of exhausting one engine's prompts before moving on. The planner emits tasks
+ * engine-major, so without this a wave of parallel batches would fire every
+ * prompt of the same two or three models at once and trip provider rate
+ * limits, while the rest of the catalog sat idle.
+ */
+export function interleaveGeoScanItemsByKey<T>(
+  items: readonly T[],
+  keyOf: (item: T) => string
+): T[] {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const key = keyOf(item);
+    const group = groups.get(key);
+    if (group) {
+      group.push(item);
+    } else {
+      groups.set(key, [item]);
+    }
+  }
+  const queues = [...groups.values()];
+  const interleaved: T[] = [];
+  for (let index = 0; interleaved.length < items.length; index += 1) {
+    for (const queue of queues) {
+      const item = queue[index];
+      if (item !== undefined) {
+        interleaved.push(item);
+      }
+    }
+  }
+  return interleaved;
+}
+
 export function chunkGeoScanItems<T>(items: readonly T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) {

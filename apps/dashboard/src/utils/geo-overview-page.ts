@@ -6,7 +6,7 @@ import type {
   GeoJourney,
   GeoLanguageSharePoint,
   GeoOverviewEngine,
-  GeoPromptResult,
+  GeoPromptResultSummary,
   GeoSettings,
   GeoTab,
   GeoTimeseriesPoint,
@@ -44,7 +44,7 @@ export function toGeoOverviewReadyPage(input: {
     | undefined;
   competitors: GeoCompetitor[] | undefined;
   languagePoints: GeoLanguageSharePoint[] | undefined;
-  promptResults: GeoPromptResult[] | undefined;
+  promptResults: GeoPromptResultSummary[] | undefined;
   promptCount: number | undefined;
   journeys: GeoJourney[] | undefined;
   isScanning: boolean;

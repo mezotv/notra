@@ -168,7 +168,13 @@ export interface RouterPolicyConfig {
 }
 
 export interface RouterLogFields {
-  [key: string]: string | number | boolean | undefined | null;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | undefined
+    | null
+    | Record<string, string | number | boolean | undefined | null>;
 }
 
 export interface RouterLogger {

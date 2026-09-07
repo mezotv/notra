@@ -47,6 +47,7 @@ export function toGeoSettings(
     enforceZdr: row.enforceZdr,
     nonZdrApprovedEngines: row.nonZdrApprovedEngines,
     pausedAutoPromptIds: row.pausedAutoPromptIds,
+    removedAutoPromptIds: row.removedAutoPromptIds,
     enabled: row.enabled,
     scanIntervalHours: row.scanIntervalHours,
     scanStartedAt,

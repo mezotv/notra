@@ -12,6 +12,7 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useState } from "react";
 
 import { Button } from "@/components/button";
@@ -43,24 +44,28 @@ export function GeoProjectDeleteSection({
   };
 
   return (
-    <section className="border-destructive/20 bg-destructive/5 space-y-4 rounded-xl border p-4 sm:p-5">
-      <div className="space-y-1">
-        <h2 className="text-destructive text-sm font-medium">Delete project</h2>
+    <TitleCard
+      as="section"
+      className="border-destructive/50 bg-destructive/5"
+      heading="Delete project"
+      headingAs="h2"
+    >
+      <div className="space-y-4">
         <p className="text-muted-foreground text-sm text-pretty">
           {isLastProject
             ? "This is your only project. Create another project before deleting it."
             : "Permanently delete this project and all of its tracking data."}
         </p>
+        <Button
+          disabled={isLastProject}
+          onClick={() => setOpen(true)}
+          type="button"
+          variant="destructive"
+        >
+          <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+          Delete project
+        </Button>
       </div>
-      <Button
-        disabled={isLastProject}
-        onClick={() => setOpen(true)}
-        type="button"
-        variant="destructive"
-      >
-        <HugeiconsIcon className="size-4" icon={Delete02Icon} />
-        Delete project
-      </Button>
 
       <ResponsiveAlertDialog
         onOpenChange={(nextOpen) => {
@@ -97,6 +102,6 @@ export function GeoProjectDeleteSection({
           </ResponsiveAlertDialogFooter>
         </ResponsiveAlertDialogContent>
       </ResponsiveAlertDialog>
-    </section>
+    </TitleCard>
   );
 }

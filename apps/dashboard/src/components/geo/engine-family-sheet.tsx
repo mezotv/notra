@@ -88,7 +88,10 @@ import {
   formatMentionRate,
   mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
-import { engineFamilyBrandRows } from "@/utils/geo-competitors";
+import {
+  engineFamilyBrandRows,
+  findOwnBrandDomain,
+} from "@/utils/geo-competitors";
 import { familyImproveInsight } from "@/utils/geo-family-improve";
 import { geoGapsEngineHref } from "@/utils/geo-paths";
 import {
@@ -534,7 +537,8 @@ function EngineFamilySheetSession({
     organization = getOrganization(organizationSlug);
   }
   const organizationId = organization?.id ?? "";
-  const { domain: ownDomain } = useGeoActiveProject(organizationId);
+  const { domain: projectDomain } = useGeoActiveProject(organizationId);
+  const ownDomain = projectDomain ?? findOwnBrandDomain(aliases ?? []);
   const canWrite = Boolean(organizationSlug) && Boolean(organizationId);
   const name = engineFamilyLabel(family.family);
   const selectedRow = selectedPromptId
