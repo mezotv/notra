@@ -40,9 +40,26 @@ const inlineBackoffSchedule: Schedule.Schedule<
 ).pipe(Schedule.jittered);
 
 const inlineRetrySchedule = Schedule.passthrough(inlineBackoffSchedule).pipe(
-  Schedule.take(SLACK_DELIVERY_INLINE_RETRY_ATTEMPTS),
+  Schedule.modifyDelay(({ input, duration }) =>
+    Effect.succeed(
+      Duration.max(
+        duration,
+        Duration.seconds(
+          input._tag === "SlackDeliveryRetryableError"
+            ? (input.retryAfterSeconds ?? 0)
+            : 0
+        )
+      )
+    )
+  ),
+  Schedule.upTo({ times: SLACK_DELIVERY_INLINE_RETRY_ATTEMPTS }),
   Schedule.while(({ input }) =>
-    Effect.succeed(input._tag === "SlackDeliveryRetryableError")
+    // Only short provider cooldowns fit the existing inline backoff budget.
+    Effect.succeed(
+      input._tag === "SlackDeliveryRetryableError" &&
+        (input.retryAfterSeconds ?? 0) <=
+          SLACK_DELIVERY_INLINE_RETRY_BASE_SECONDS
+    )
   )
 );
 
@@ -235,7 +252,13 @@ const claimOutboxRow = Effect.fn("iris.outbox.claim")(function* (input: {
         .where(
           and(
             eq(autonomyOutbox.id, input.outboxId),
-            deliverableStatusFilter(now)
+            deliverableStatusFilter(now),
+            eq(autonomyOutbox.attempts, input.attempts - 1),
+            lt(autonomyOutbox.attempts, SLACK_DELIVERY_MAX_ATTEMPTS),
+            or(
+              isNull(autonomyOutbox.nextAttemptAt),
+              lte(autonomyOutbox.nextAttemptAt, now)
+            )
           )
         )
         .returning({ id: autonomyOutbox.id }),

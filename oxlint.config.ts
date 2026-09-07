@@ -167,6 +167,22 @@ export default defineConfig({
   },
   overrides: [
     {
+      // Effect's TaggedError is a curried schema class factory, not an Error constructor.
+      files: [
+        "apps/agent/agent/lib/schemas/chat-mirror.ts",
+        "apps/agent/agent/lib/schemas/slack.ts",
+        "apps/dashboard/src/schemas/onboarding-agent.ts",
+        "packages/ai/src/integrations/mcp-auth-errors.ts",
+        "packages/ai/src/integrations/mcp-oauth-errors.ts",
+        "packages/ai/src/schemas/slack.ts",
+        "packages/tools/src/schemas/retry.ts",
+        "packages/tools/src/schemas/social.ts",
+      ],
+      rules: {
+        "unicorn/throw-new-error": "off",
+      },
+    },
+    {
       files: ["packages/geo/src/index.ts", "packages/geo/src/feedback.ts"],
       rules: {
         "oxc/no-barrel-file": "off",

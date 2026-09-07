@@ -2,7 +2,7 @@ import "zod/compile";
 import { Schema } from "effect";
 import { z } from "zod";
 
-export class OnboardingAgentTriggerError extends Schema.TaggedErrorClass<OnboardingAgentTriggerError>()(
+export class OnboardingAgentTriggerError extends Schema.TaggedError<OnboardingAgentTriggerError>()(
   "OnboardingAgentTriggerError",
   {
     cause: Schema.Defect(),
@@ -10,7 +10,7 @@ export class OnboardingAgentTriggerError extends Schema.TaggedErrorClass<Onboard
   }
 ) {}
 
-export class OnboardingAgentCompensationError extends Schema.TaggedErrorClass<OnboardingAgentCompensationError>()(
+export class OnboardingAgentCompensationError extends Schema.TaggedError<OnboardingAgentCompensationError>()(
   "OnboardingAgentCompensationError",
   {
     cause: Schema.Defect(),
