@@ -21,7 +21,7 @@
     "@notra/db": "workspace:*",
     "@notra/geo-core": "workspace:*",
     "@notra/utils": "workspace:*",
-    "effect": "4.0.0-beta.93",
+    "effect": "4.0.0-rc.112",
     "zod": "^4.5.0"
   },
   "devDependencies": {
