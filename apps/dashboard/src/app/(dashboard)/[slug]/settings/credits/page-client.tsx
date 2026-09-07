@@ -31,11 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import {
-  useAggregateEvents,
-  useAutumnClient,
-  useCustomer,
-} from "autumn-js/react";
+import { useAggregateEvents, useAutumnClient } from "autumn-js/react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
@@ -49,6 +45,7 @@ import { NotFoundContent } from "@/components/not-found-content";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import {
   CREDIT_RANGE_LABELS,
@@ -155,7 +152,7 @@ export default function CreditsPageClient() {
     });
   }, [success]);
 
-  const { data: customer, isLoading: customerLoading } = useCustomer({
+  const { data: customer, isLoading: customerLoading } = useBillingCustomer({
     expand: ["balances.feature"],
   });
   const { hasAiCredits, isLoading: aiCreditsLoading } =

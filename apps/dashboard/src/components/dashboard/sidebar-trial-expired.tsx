@@ -3,7 +3,6 @@
 import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
-import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -13,11 +12,12 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { PAYWALL_KINDS, PLAN_SURFACES } from "@/constants/analytics-events";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { toAnalyticsRoute } from "@/lib/analytics/route";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 
 export function SidebarTrialExpired() {
   const { activeOrganization } = useOrganizationsContext();
   const slug = activeOrganization?.slug ?? "";
-  const { data: customer, isLoading } = useCustomer({
+  const { data: customer, isLoading } = useBillingCustomer({
     expand: ["balances.feature", "subscriptions.plan"],
   });
   const pathname = usePathname();

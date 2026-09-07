@@ -43,6 +43,7 @@ import {
   syncOrganizationNameToWorkOS,
   updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";
+import { organizationSlugParamSchema } from "@/schemas/auth/organization";
 import {
   createOrganizationInputSchema,
   invitationActionInputSchema,
@@ -551,6 +552,43 @@ export async function setActiveOrganizationAction(
         path: "/",
         maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
       });
+
+      return organization;
+    })
+  );
+}
+
+/**
+ * Organization row for a `/[slug]` route, without the member join. Unlike
+ * `validateOrganizationAccess` this never redirects, so it is safe to call from
+ * a client query.
+ */
+export async function getOrganizationSummaryAction(
+  rawSlug: string
+): Promise<ActionResult<OrganizationRow>> {
+  return runOrganizationAction(
+    Effect.gen(function* () {
+      const session = yield* requireSession();
+      const slug = yield* validateActionInput(
+        organizationSlugParamSchema,
+        rawSlug
+      );
+
+      const organization = yield* tryDb(
+        () =>
+          db.query.organizations.findFirst({
+            where: eq(organizations.slug, slug),
+          }),
+        "Failed to load organization"
+      );
+
+      if (!organization) {
+        return yield* Effect.fail(
+          new OrganizationActionError({ message: "Organization not found" })
+        );
+      }
+
+      yield* requireMembership(session, organization.id);
 
       return organization;
     })

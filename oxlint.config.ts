@@ -172,5 +172,35 @@ export default defineConfig({
         "oxc/no-barrel-file": "off",
       },
     },
+    {
+      // Every Autumn customer read must go through the shared wrapper, or it
+      // requests a differently-shaped `expand` and gets its own cache entry.
+      files: ["apps/dashboard/src/**"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            paths: [
+              {
+                name: "autumn-js/react",
+                importNames: ["useCustomer"],
+                message:
+                  "Import useBillingCustomer from @/lib/hooks/use-billing-customer instead, so all callers share one customer query.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: [
+        "apps/dashboard/src/lib/hooks/use-billing-customer.ts",
+        "apps/dashboard/src/utils/billing-customer.ts",
+        "apps/dashboard/src/types/billing/plan.ts",
+      ],
+      rules: {
+        "no-restricted-imports": "off",
+      },
+    },
   ],
 });

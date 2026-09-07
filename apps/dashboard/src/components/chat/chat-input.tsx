@@ -53,7 +53,6 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
-import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -79,6 +78,7 @@ import {
   PASTE_TO_ATTACHMENT_THRESHOLD,
 } from "@/constants/upload";
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   dragEventHasFiles,
@@ -622,7 +622,11 @@ export function ChatInputAdvanced({
       document.removeEventListener("drop", onDrop);
     };
   }, [handleFilesSelected]);
-  const { check, data: customer, refetch: refetchCustomer } = useCustomer();
+  const {
+    check,
+    data: customer,
+    refetch: refetchCustomer,
+  } = useBillingCustomer();
 
   useAutumnRefreshListener(refetchCustomer);
 
