@@ -346,8 +346,9 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
 /**
  * Models that do not run through the Notra AI router. They are appended to the
  * catalog instead of coming from the gateway feed. `zdr: "none"` because
- * neither direct runner exposes an enforceable ZDR route to GEO; under enforced
- * ZDR each engine therefore needs explicit approval before it is scanned.
+ * neither Cursor nor Box exposes an enforceable ZDR route to GEO; under
+ * enforced ZDR each engine therefore needs explicit approval before it is
+ * scanned.
  */
 export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
   {
@@ -375,34 +376,34 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
     zdr: "none",
     released: "2026-09-01",
     default: false,
-    gateways: ["claude-code"],
+    gateways: ["box"],
   },
   {
     id: "claude-code/claude-opus-5",
     provider: "claude-code",
     label: "Opus 5",
-    zdr: "all",
+    zdr: "none",
     released: "2026-07-24",
     default: false,
-    gateways: ["claude-code"],
+    gateways: ["box"],
   },
   {
     id: "codex/gpt-6-astra",
     provider: "codex",
     label: "GPT-6 Astra",
-    zdr: "some",
+    zdr: "none",
     released: "2026-09-04",
     default: false,
-    gateways: ["codex"],
+    gateways: ["box"],
   },
   {
     id: "codex/gpt-5.6-sol-rei",
     provider: "codex",
     label: "GPT-5.6 Sol Rei",
-    zdr: "some",
+    zdr: "none",
     released: "2026-08-21",
     default: false,
-    gateways: ["codex"],
+    gateways: ["box"],
   },
 ];
 
@@ -410,11 +411,20 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
  * Environment variables that have to be set for a static engine to be
  * runnable. Static entries are hidden from the catalog while a key is missing.
  */
+const GEO_BOX_ENGINE_ENV = [
+  "UPSTASH_BOX_API_KEY",
+  "OPENROUTER_API_KEY",
+] as const;
+
 export const GEO_STATIC_ENGINE_ENV: Readonly<
   Record<string, readonly string[]>
 > = {
   "cursor/composer-2.5": ["CURSOR_API_KEY"],
-  "opencode/gpt-5.6-sol-medium": ["UPSTASH_BOX_API_KEY", "OPENROUTER_API_KEY"],
+  "opencode/gpt-5.6-sol-medium": GEO_BOX_ENGINE_ENV,
+  "claude-code/claude-fable-5.1": GEO_BOX_ENGINE_ENV,
+  "claude-code/claude-opus-5": GEO_BOX_ENGINE_ENV,
+  "codex/gpt-6-astra": GEO_BOX_ENGINE_ENV,
+  "codex/gpt-5.6-sol-rei": GEO_BOX_ENGINE_ENV,
 };
 
 /** Engines scanned when a project has not picked its own set. */

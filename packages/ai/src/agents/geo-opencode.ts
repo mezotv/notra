@@ -1,5 +1,6 @@
 import {
   GEO_OPENCODE_BOX_API_KEY_ENV,
+  GEO_OPENCODE_BOX_MODEL_ID,
   GEO_OPENCODE_MODEL_API_KEY_ENV,
   GEO_OPENCODE_REASONING_EFFORT,
   GEO_OPENCODE_RUN_TIMEOUT_MS,
@@ -174,7 +175,8 @@ async function runGeoOpenCodePrompt(
 export async function askGeoOpenCodeConversation(
   prompts: readonly string[],
   signal?: AbortSignal,
-  deadlineAtMs?: number
+  deadlineAtMs?: number,
+  model = GEO_OPENCODE_BOX_MODEL_ID
 ) {
   if (prompts.length === 0) {
     return [];
@@ -194,7 +196,8 @@ export async function askGeoOpenCodeConversation(
       boxApiKey,
       modelApiKey,
       createOperation.signal,
-      createTimeoutMs
+      createTimeoutMs,
+      model
     );
   } finally {
     createOperation.dispose();
@@ -247,12 +250,14 @@ export async function askGeoOpenCodeConversation(
 export async function askGeoOpenCode(
   prompt: string,
   signal?: AbortSignal,
-  deadlineAtMs?: number
+  deadlineAtMs?: number,
+  model = GEO_OPENCODE_BOX_MODEL_ID
 ) {
   const [result] = await askGeoOpenCodeConversation(
     [prompt],
     signal,
-    deadlineAtMs
+    deadlineAtMs,
+    model
   );
   if (!result) {
     throw new Error("OpenCode returned no result");

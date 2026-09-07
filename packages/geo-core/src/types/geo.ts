@@ -1119,16 +1119,9 @@ export type GeoModelZdr = "all" | "some" | "none";
 
 /**
  * Where a model is served. `cursor` runs through the Cursor SDK and `box`
- * through OpenCode in Upstash Box. `claude-code` and `codex` are coding-agent
- * engines that call the AI gateway with web search, not the raw chat models.
+ * through OpenCode in Upstash Box (OpenCode, Claude Code, and Codex).
  */
-export type GeoModelGateway =
-  | "vercel"
-  | "openrouter"
-  | "cursor"
-  | "box"
-  | "claude-code"
-  | "codex";
+export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

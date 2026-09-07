@@ -2,6 +2,7 @@ import {
   askGeoOpenCode,
   askGeoOpenCodeConversation,
 } from "@notra/ai/agents/geo-opencode";
+import { GEO_OPENCODE_BOX_MODEL_ID } from "@notra/ai/constants/geo-opencode";
 import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { FEATURES } from "@notra/ai/billing/features";
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
@@ -81,8 +82,8 @@ import type {
   GeoZdrMode,
 } from "../types/geo";
 import {
-  codingAgentGroundedEngine,
-  isCodingAgentGateway,
+  geoBoxModelForEngine,
+  isGeoBoxCodingAgent,
 } from "../utils/geo-coding-agents";
 import {
   resolveGeoEngineGateway,
@@ -270,7 +271,7 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   promptText: string,
   zdr: GeoZdrMode,
   gatewayPin:
-    | Exclude<GeoModelGateway, "cursor" | "box" | "claude-code" | "codex">
+    | Exclude<GeoModelGateway, "cursor" | "box">
     | undefined
 ) {
   const result = yield* Effect.tryPromise({
@@ -325,7 +326,8 @@ const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
       openCodePromise = askGeoOpenCode(
         `${GEO_OPENCODE_ANSWER_SYSTEM_PROMPT}\n\nUser question:\n${promptText}`,
         signal,
-        deadlineAtMs
+        deadlineAtMs,
+        geoBoxModelForEngine(engine) ?? GEO_OPENCODE_BOX_MODEL_ID
       );
       return openCodePromise;
     },
@@ -406,72 +408,6 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
   return answer;
 });
 
-const askCodingAgentEngineEffect = Effect.fn("geo.askCodingAgentEngine")(
-  function* (
-    organizationId: string,
-    engine: string,
-    promptText: string,
-    zdr: GeoZdrMode
-  ) {
-    const grounded = codingAgentGroundedEngine(engine);
-    if (!grounded) {
-      return yield* Effect.fail(
-        new GeoScanError({
-          message: `Engine ${engine} is not a coding-agent engine`,
-        })
-      );
-    }
-    const result = yield* Effect.tryPromise({
-      try: (signal) => {
-        const invocation = buildGroundedInvocation(grounded, {
-          organizationId,
-          zdr,
-        });
-        return generateText({
-          model: invocation.model,
-          tools: invocation.tools,
-          stopWhen: stepCountIs(GROUNDED_MAX_STEPS),
-          prompt: promptText,
-          system: GEO_OPENCODE_ANSWER_SYSTEM_PROMPT,
-          maxOutputTokens: GEO_GROUNDED_ANSWER_MAX_TOKENS,
-          abortSignal: signal,
-        });
-      },
-      catch: (cause) =>
-        new GeoScanError({
-          message: `Engine ${engine} failed to answer`,
-          cause,
-        }),
-    }).pipe(
-      Effect.timeoutOrElse({
-        duration: GEO_ANSWER_TIMEOUT_MS,
-        orElse: () =>
-          Effect.fail(
-            new GeoScanError({
-              message: `Engine ${engine} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
-              timedOut: true,
-            })
-          ),
-      })
-    );
-    const grounding = extractGrounding(result);
-    const resultSources = collectGroundedSources(result.sources);
-    const answer: GeoEngineAnswer = {
-      text: result.text,
-      grounding,
-      sources:
-        resultSources.length > 0
-          ? resultSources
-          : grounding.sources.map(({ title, url }) => ({ title, url })),
-      finishReason: result.finishReason,
-      usage: result.usage,
-      zdrEnforced:
-        getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null,
-    };
-    return answer;
-  }
-);
-
 const askEngine = Effect.fn("geo.askEngine")(function* (
   organizationId: string,
   engine: string,
@@ -484,14 +420,6 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   }
   if (gatewayPin === "box") {
     return yield* askOpenCodeEngineEffect(engine, promptText);
-  }
-  if (isCodingAgentGateway(gatewayPin)) {
-    return yield* askCodingAgentEngineEffect(
-      organizationId,
-      engine,
-      promptText,
-      zdr
-    );
   }
   return yield* askGatewayEngine(
     organizationId,
@@ -1223,8 +1151,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
     });
     const trackedCodingAgents = trackedEngines.filter(
       ({ engine }) =>
-        engine === GEO_OPENCODE_ENGINE_ID ||
-        codingAgentGroundedEngine(engine) !== null
+        engine === GEO_OPENCODE_ENGINE_ID || isGeoBoxCodingAgent(engine)
     );
     const sequences: GeoScanPlannedSequence[] = scanEnglish
       ? sequenceRows.flatMap((sequence) => [
@@ -1449,32 +1376,10 @@ export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
           steps: planned.steps,
         };
         if (!planned.groundedKey) {
-          if (planned.engine === GEO_OPENCODE_ENGINE_ID) {
-            return runGeoOpenCodeSequenceCheck(
-              checkContext,
-              sequence,
-              planned.zdr
-            ).pipe(
-              geoSkip(
-                "sequence failed",
-                sequenceFailureFields(
-                  checkContext,
-                  sequence,
-                  planned.engine,
-                  false
-                )
-              ),
-              Effect.map((result) => ({ sequence, result }))
-            );
-          }
-          const codingAgent = codingAgentGroundedEngine(planned.engine);
-          if (!codingAgent) {
-            return Effect.succeed({ sequence, result: null });
-          }
-          return runGeoSequenceCheck(
+          return runGeoOpenCodeSequenceCheck(
             checkContext,
             sequence,
-            codingAgent,
+            planned.engine,
             planned.zdr
           ).pipe(
             geoSkip(
@@ -1794,15 +1699,18 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
   function* (
     context: GeoCheckContext,
     sequence: GeoSequenceDefinition,
+    engine: string,
     zdr: GeoZdrMode
   ) {
     const rows: GeoCheckWrite[] = [];
     const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
     const deadlineAtMs = Date.now() + GEO_SEQUENCE_PAIR_TIMEOUT_MS;
+    const boxModel =
+      geoBoxModelForEngine(engine) ?? GEO_OPENCODE_BOX_MODEL_ID;
     const failureFields = sequenceFailureFields(
       context,
       sequence,
-      GEO_OPENCODE_ENGINE_ID,
+      engine,
       false
     );
     let conversationPromise: ReturnType<
@@ -1816,13 +1724,14 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
               `${GEO_OPENCODE_ANSWER_SYSTEM_PROMPT}\n\nUser question:\n${step}`
           ),
           signal,
-          deadlineAtMs
+          deadlineAtMs,
+          boxModel
         );
         return conversationPromise;
       },
       catch: (cause) =>
         new GeoScanError({
-          message: `Engine ${GEO_OPENCODE_ENGINE_ID} failed to answer the conversation`,
+          message: `Engine ${engine} failed to answer the conversation`,
           cause,
         }),
     }).pipe(
@@ -1842,7 +1751,7 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
         orElse: () =>
           Effect.fail(
             new GeoScanError({
-              message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+              message: `Sequence ${sequence.id} on ${engine} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
             })
           ),
       })
@@ -1876,7 +1785,7 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
         });
       }
       const answerText = yield* requireAnswerText(
-        GEO_OPENCODE_ENGINE_ID,
+        engine,
         sequencePromptId(sequence.id),
         DEFAULT_LANGUAGE,
         answer
@@ -1900,7 +1809,7 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
       if (judgeTimeoutMs <= 0) {
         return yield* Effect.fail(
           new GeoScanError({
-            message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+            message: `Sequence ${sequence.id} on ${engine} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
           })
         );
       }
@@ -1910,7 +1819,7 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
           orElse: () =>
             Effect.fail(
               new GeoScanError({
-                message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+                message: `Sequence ${sequence.id} on ${engine} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
               })
             ),
         })
@@ -1920,7 +1829,7 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
         organizationId: context.organizationId,
         projectId: context.projectId,
         scanId: context.scanId,
-        engine: GEO_OPENCODE_ENGINE_ID,
+        engine,
         promptId: sequencePromptId(sequence.id),
         sequenceId: sequence.id,
         turn: index + 1,
@@ -2023,12 +1932,12 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
     }
     groundedEngines.push({ grounded, zdr });
   }
-  for (const engineId of GEO_CODING_AGENT_ENGINE_IDS) {
+  const boxReplayEngines: { engine: string; zdr: GeoZdrMode }[] = [];
+  for (const engineId of [
+    GEO_OPENCODE_ENGINE_ID,
+    ...GEO_CODING_AGENT_ENGINE_IDS,
+  ]) {
     if (!settings.engines.includes(engineId)) {
-      continue;
-    }
-    const grounded = codingAgentGroundedEngine(engineId);
-    if (!grounded) {
       continue;
     }
     const zdr = resolveGeoZdrMode(catalog, engineId, zdrPolicy);
@@ -2043,30 +1952,17 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
       });
       continue;
     }
-    groundedEngines.push({ grounded, zdr });
-  }
-  let openCodeZdr: GeoZdrMode | null = null;
-  if (settings.engines.includes(GEO_OPENCODE_ENGINE_ID)) {
-    openCodeZdr = resolveGeoZdrMode(catalog, GEO_OPENCODE_ENGINE_ID, zdrPolicy);
-    if (openCodeZdr === null) {
-      yield* geoLogWarn({
-        event: "geo.scan.skipped",
-        reason: "zdr",
-        organizationId: scope.organizationId,
-        projectId,
-        sequenceId,
-        engine: GEO_OPENCODE_ENGINE_ID,
-      });
-    }
+    boxReplayEngines.push({ engine: engineId, zdr });
   }
   const replayEngines = [
     ...groundedEngines.map((pair) => ({
       kind: "grounded" as const,
       ...pair,
     })),
-    ...(openCodeZdr === null
-      ? []
-      : [{ kind: "opencode" as const, zdr: openCodeZdr }]),
+    ...boxReplayEngines.map((pair) => ({
+      kind: "box" as const,
+      ...pair,
+    })),
   ];
   if (replayEngines.length === 0) {
     return yield* Effect.fail(new GeoSequenceRunUnavailableError({}));
@@ -2141,6 +2037,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
               : runGeoOpenCodeSequenceCheck(
                   context,
                   sequenceRow,
+                  replayEngine.engine,
                   replayEngine.zdr
                 ).pipe(
                   geoSkip(
@@ -2148,7 +2045,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
                     sequenceFailureFields(
                       context,
                       sequenceRow,
-                      GEO_OPENCODE_ENGINE_ID,
+                      replayEngine.engine,
                       false
                     )
                   )
@@ -2188,7 +2085,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
         usage,
         fallbackModelId:
           groundedEngines[0]?.grounded.model ??
-          (openCodeZdr === null ? GEO_JUDGE_MODEL : GEO_OPENCODE_ENGINE_ID),
+          (boxReplayEngines[0]?.engine ?? GEO_JUDGE_MODEL),
         properties: {
           source: "geo_sequence_run",
           run_id: runId,
@@ -2245,7 +2142,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
     engines: replayEngines.map((replayEngine) =>
       replayEngine.kind === "grounded"
         ? replayEngine.grounded.key
-        : GEO_OPENCODE_ENGINE_ID
+        : replayEngine.engine
     ),
   };
   return response;
