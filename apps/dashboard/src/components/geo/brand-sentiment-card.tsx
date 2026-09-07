@@ -135,14 +135,24 @@ export function BrandSentimentCard({
                   </caption>
                   <thead>
                     <tr>
-                      <th className="py-2 pr-4" scope="col">
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
                         Engine
                       </th>
-                      <th scope="col">Classified</th>
-                      <th scope="col">Positive</th>
-                      <th scope="col">Neutral</th>
-                      <th scope="col">Negative</th>
-                      <th scope="col">Unknown</th>
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
+                        Classified
+                      </th>
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
+                        Positive
+                      </th>
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
+                        Neutral
+                      </th>
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
+                        Negative
+                      </th>
+                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
+                        Unknown
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
