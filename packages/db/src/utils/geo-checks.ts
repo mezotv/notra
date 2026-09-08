@@ -6,6 +6,7 @@ import {
   inArray,
   isNull,
   lt,
+  or,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -37,7 +38,85 @@ import type {
   GeoCheckWindowInput,
   GeoCheckWrite,
 } from "../types/geo-checks";
+import type {
+  GeoSentimentCursor,
+  GeoSentimentRow,
+} from "../types/geo-sentiment";
 import { parseGeoCheckGrounding } from "./geo-grounding";
+
+export async function queryGeoCheckSentiment(
+  scope: GeoCheckScope,
+  window: GeoCheckWindow | undefined
+): Promise<GeoSentimentRow[]> {
+  // captured_at is timestamp without time zone; writers persist UTC wall time.
+  const day = sql<string>`to_char(${geoMentionChecks.capturedAt}, 'YYYY-MM-DD')`;
+  const rows = await db
+    .select({
+      day,
+      engine: geoMentionChecks.engine,
+      totalChecks: sql<number>`count(*)::int`,
+      mentions: sql<number>`count(*) filter (where ${geoMentionChecks.mentioned})::int`,
+      positive: sql<number>`count(*) filter (where ${geoMentionChecks.mentioned} and ${geoMentionChecks.sentiment} = 'positive')::int`,
+      neutral: sql<number>`count(*) filter (where ${geoMentionChecks.mentioned} and ${geoMentionChecks.sentiment} = 'neutral')::int`,
+      negative: sql<number>`count(*) filter (where ${geoMentionChecks.mentioned} and ${geoMentionChecks.sentiment} = 'negative')::int`,
+      lastCheckedAt: sql<string>`to_char(max(${geoMentionChecks.capturedAt}), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+    })
+    .from(geoMentionChecks)
+    .where(
+      mentionFilters(scope, window, { sequences: "single", englishOnly: true })
+    )
+    .groupBy(day, geoMentionChecks.engine)
+    .orderBy(day, geoMentionChecks.engine);
+  return rows;
+}
+
+export async function queryGeoCheckSentimentEvidence(
+  scope: GeoCheckScope,
+  window: GeoCheckWindow | undefined,
+  limit: number,
+  cursor?: GeoSentimentCursor
+) {
+  return db
+    .select({
+      id: geoMentionChecks.id,
+      scanId: geoMentionChecks.scanId,
+      promptId: geoMentionChecks.promptId,
+      prompt: geoMentionChecks.prompt,
+      engine: geoMentionChecks.engine,
+      language: geoMentionChecks.language,
+      capturedAt: geoMentionChecks.capturedAt,
+      answer: geoMentionChecks.answer,
+      excerpt: geoMentionChecks.excerpt,
+    })
+    .from(geoMentionChecks)
+    .where(
+      and(
+        mentionFilters(scope, window, {
+          sequences: "single",
+          englishOnly: true,
+        }),
+        eq(geoMentionChecks.mentioned, true),
+        eq(geoMentionChecks.sentiment, "negative"),
+        cursor
+          ? eq(
+              geoMentionChecks.projectId,
+              cursor.projectId ?? scope.projectId ?? ""
+            )
+          : undefined,
+        cursor
+          ? or(
+              lt(geoMentionChecks.capturedAt, new Date(cursor.capturedAt)),
+              and(
+                eq(geoMentionChecks.capturedAt, new Date(cursor.capturedAt)),
+                lt(geoMentionChecks.id, cursor.id)
+              )
+            )
+          : undefined
+      )
+    )
+    .orderBy(desc(geoMentionChecks.capturedAt), desc(geoMentionChecks.id))
+    .limit(limit);
+}
 
 const CHECK_INSERT_CHUNK = 250;
 

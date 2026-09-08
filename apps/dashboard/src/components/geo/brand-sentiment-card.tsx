@@ -1,0 +1,117 @@
+"use client";
+
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@notra/ui/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useId } from "react";
+
+import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
+import { InstrumentModule } from "@/components/instrument/instrument-module";
+import {
+  SENTIMENT_CHART_CONFIG,
+  SENTIMENT_SCORE_FORMAT,
+  SENTIMENT_SCORE_HINT,
+} from "@/constants/geo-sentiment";
+import { useGeoSentiment } from "@/lib/hooks/use-geo-sentiment";
+import type { BrandSentimentCardProps } from "@/types/geo-sentiment";
+
+export function BrandSentimentCard({
+  organizationId,
+  isScanning,
+}: BrandSentimentCardProps) {
+  const query = useGeoSentiment(organizationId);
+  const descriptionId = useId();
+  return (
+    <InstrumentModule
+      eyebrow="Brand sentiment"
+      action={
+        <Tooltip>
+          <TooltipTrigger
+            aria-label="About the sentiment score"
+            aria-describedby={descriptionId}
+            className="text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <HugeiconsIcon
+              aria-hidden="true"
+              icon={InformationCircleIcon}
+              size={14}
+            />
+          </TooltipTrigger>
+          <TooltipContent>{SENTIMENT_SCORE_HINT}</TooltipContent>
+        </Tooltip>
+      }
+      variant="table"
+      className="h-full"
+      bodyClassName="flex flex-col gap-3"
+    >
+      <span id={descriptionId} className="sr-only">
+        {SENTIMENT_SCORE_HINT}
+      </span>
+      {query.isPending ? (
+        <p className="text-muted-foreground text-sm" role="status">
+          Loading sentiment…
+        </p>
+      ) : null}
+      {query.isError ? (
+        <div role="alert">
+          <p className="text-sm">Could not load sentiment.</p>
+          <Button variant="ghost" size="sm" onClick={() => query.refetch()}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
+      {query.isSuccess ? (
+        <>
+          <p className="text-3xl font-medium tabular-nums">
+            {query.data.summary.score === null
+              ? "—"
+              : SENTIMENT_SCORE_FORMAT.format(query.data.summary.score)}{" "}
+            <span className="text-muted-foreground text-sm font-normal">
+              / 100
+            </span>
+          </p>
+          {query.data.summary.score === null ? (
+            <p className="text-muted-foreground text-sm">
+              No rated mentions in this period.
+            </p>
+          ) : (
+            <EChartsAreaChart
+              animation={false}
+              className="h-28 w-full"
+              config={SENTIMENT_CHART_CONFIG}
+              curveType="linear"
+              data={query.data.points.map(({ day, score }) => ({ day, score }))}
+              xDataKey="day"
+            >
+              <EChartsAreaChart.XAxis dataKey="day" />
+              <EChartsAreaChart.Area
+                dataKey="score"
+                gapMissing
+                variant="gradient"
+              >
+                <EChartsAreaChart.Dot />
+              </EChartsAreaChart.Area>
+              <EChartsAreaChart.Tooltip
+                hideZeros={false}
+                labelKey="day"
+                valueFormatter={(value) =>
+                  `${SENTIMENT_SCORE_FORMAT.format(value)} / 100`
+                }
+              />
+            </EChartsAreaChart>
+          )}
+        </>
+      ) : null}
+      {isScanning ? (
+        <p className="text-muted-foreground text-xs" role="status">
+          Scan in progress
+        </p>
+      ) : null}
+    </InstrumentModule>
+  );
+}

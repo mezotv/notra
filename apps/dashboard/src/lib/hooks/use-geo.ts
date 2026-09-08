@@ -144,6 +144,12 @@ async function invalidatePromptQueries(
 async function invalidateGeoScanResultQueries(queryClient: QueryClient) {
   await Promise.all([
     queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.sentiment.key(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.sentimentEvidence.key(),
+    }),
+    queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.overview.key(),
     }),
     queryClient.invalidateQueries({

@@ -136,9 +136,42 @@ The Overview page (`/geo`) is titled **GEO** with the subtitle "How AI engines t
 
 - **Mentions**: a per-provider mention rate card with the delta against the first half of the range.
 - **Mention activity**: the daily mention trend across all providers, with a per-provider breakdown.
-- **Mention rate by engine**: a table with **Engine**, **Mentions**, **Mention rate**, **Avg position**, **Last checked**, and **Trend** columns. Rows group into provider families; a family sheet shows the Search versus Without search split.
+- **Brand sentiment**: a compact 0–100 score and daily trend beside the visibility metrics.
+- **Mention rate by engine**: a table with **Engine**, **Mentions**, **Mention rate**, **Avg position**, **Sentiment**, **Last checked**, and **Trend** columns. Rows group into provider families; a family sheet shows the Search versus Without search split.
 - **Share of voice**: your brand against tracked competitors, as a donut and a table, with the top five brands broken out and the rest grouped under Other.
 - **Performance by language**: **Language**, **Mention rate**, and **Trend** for each tracked language.
+
+#### Reading brand sentiment
+
+Brand sentiment uses saved **English, single-turn answers** for the active organization,
+project and date range. It describes the AI-assessed tone toward your brand, not the
+overall mood of an answer or customer satisfaction.
+
+The score is **(positive × 100 + neutral × 50) / classified mentions**.
+All positive mentions score 100, all neutral mentions score 50, and all negative mentions
+score 0. Three positive, two neutral and one negative mention produce a score of 66.7,
+displayed as **67 / 100**. It is a descriptive rating, not a percentage or model confidence.
+
+Only mentions with an exact positive, neutral or negative label enter the denominator.
+Unknown labels and answers that do not mention your brand are excluded. With no classified
+mentions, the score is unavailable, shown as **—**, rather than zero. The existing
+`positiveShare` response field remains positive / classified mentions, which is 50% in
+the example above. It is distinct from the score.
+
+Daily buckets use UTC. The engine table combines model counts by engine family before
+calculating its score, rather than averaging model scores. Days without classified
+mentions remain gaps. The date picker's final day is included; internally the window ends
+at the start of the following UTC day.
+
+Each saved answer has equal weight. Repeated manual scans count again, and partial results
+from unfinished scans may appear.
+Changes to the prompt mix, engine mix or judge can change the distribution without showing
+a real change in brand perception. This is not NPS, a confidence score or a causal trend.
+
+Answer details show a compact sentiment label. An emphasized excerpt appears only when
+it is an exact, contiguous substring of the saved answer. Paraphrased or combined excerpts
+are not emphasized. The original answer renderer is preserved. Viewing sentiment uses
+existing labels and does not run new AI calls or reclassify older answers.
 
 ### Prompts
 

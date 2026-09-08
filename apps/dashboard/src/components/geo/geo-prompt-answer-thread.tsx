@@ -13,6 +13,7 @@ import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useMemo } from "react";
 
+import { AnswerSentiment } from "@/components/geo/answer-sentiment";
 import { GeoAnswerActions } from "@/components/geo/geo-answer-actions";
 import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
@@ -209,6 +210,7 @@ export function GeoPromptAnswerThread({
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-8">
+          <AnswerSentiment result={result} />
           <ThreadMessages
             answer={answer}
             mentioned={result.mentioned}

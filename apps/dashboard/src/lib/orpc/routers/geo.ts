@@ -108,6 +108,10 @@ import {
   syncGscSuggestions,
 } from "@notra/geo-core/geo/search-console";
 import {
+  loadGeoSentiment,
+  loadGeoSentimentEvidence,
+} from "@notra/geo-core/geo/sentiment";
+import {
   createGeoSequence,
   deleteGeoSequence,
   listGeoSequences,
@@ -164,6 +168,7 @@ import {
   geoWriterPlanInputSchema,
   geoWriterUpdateInputSchema,
 } from "@notra/geo-core/schemas/geo";
+import { geoSentimentEvidenceInputSchema } from "@notra/geo-core/schemas/geo-sentiment";
 import { gscSelectSiteInputSchema } from "@notra/geo-core/schemas/google-search-console";
 import type {
   AgentReadinessResponse,
@@ -874,6 +879,14 @@ export const geoRouter = {
   overview: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoOverview(input, geoWindow(input)))),
+  sentiment: authorizedProcedure
+    .input(geoTimeseriesInputSchema)
+    .handler(geoHandler((input) => loadGeoSentiment(input, geoWindow(input)))),
+  sentimentEvidence: authorizedProcedure
+    .input(geoSentimentEvidenceInputSchema)
+    .handler(
+      geoHandler((input) => loadGeoSentimentEvidence(input, geoWindow(input)))
+    ),
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoTimeseries(input, geoWindow(input)))),
