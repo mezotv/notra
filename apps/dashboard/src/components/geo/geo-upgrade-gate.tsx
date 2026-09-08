@@ -21,10 +21,14 @@ import { pickSidebarMode } from "@/lib/hooks/use-sidebar-mode";
 import type { GeoUpgradeGateProps } from "@/types/components/geo";
 import { sidebarRouteFromPathname } from "@/utils/nav";
 
-export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
+export function GeoUpgradeGate({
+  slug,
+  children,
+  fallback,
+}: GeoUpgradeGateProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isLocked } = useHasGeoFeature();
+  const { isLocked, isLoading } = useHasGeoFeature();
   const route = toAnalyticsRoute(pathname, slug);
   const shownRef = useRef(false);
 
@@ -39,7 +43,10 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
     });
   }, [isLocked, route]);
 
-  // GEO procedures enforce entitlement; billing must not block page loading.
+  if (isLoading) {
+    return fallback;
+  }
+
   if (!isLocked) {
     return children;
   }
