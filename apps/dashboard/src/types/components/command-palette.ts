@@ -98,7 +98,7 @@ export interface CommandPaletteDialogProps {
   openFeedback: () => void;
   openSettings: (section?: SettingsSectionId) => void;
   query: string;
-  runAiSearch: () => void | Promise<void>;
+  runAiSearch: () => Promise<void>;
   setAiState: (
     state:
       | { status: "idle" }
@@ -123,7 +123,7 @@ export interface CommandPalettePanelProps {
   openFeedback: () => void;
   openSettings: (section?: SettingsSectionId) => void;
   query: string;
-  runAiSearch: () => void | Promise<void>;
+  runAiSearch: () => Promise<void>;
   slug: string;
   trimmedQuery: string;
 }

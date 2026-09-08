@@ -766,6 +766,7 @@ function CommandPaletteList({
   slug,
   trimmedQuery,
 }: Omit<CommandPalettePanelProps, "isNavigatingAi">) {
+  const hasQuery = trimmedQuery.length > 0;
   return (
     <CommandPrimitive.List
       className={cn(

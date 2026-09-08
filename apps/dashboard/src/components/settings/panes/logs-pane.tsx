@@ -138,18 +138,6 @@ export function LogsSettingsPane() {
   });
 
   const logs = data?.logs ?? [];
-  const contentKey = JSON.stringify(
-    logs.map((log) => [
-      log.id,
-      log.title,
-      log.integrationType,
-      log.status,
-      log.statusCode,
-      log.errorMessage,
-      log.createdAt,
-      log.referenceId,
-    ])
-  );
 
   const filtersActive =
     source !== "all" || status !== "all" || search.length > 0;
@@ -250,7 +238,6 @@ export function LogsSettingsPane() {
       ) : (
         <DataTable
           columns={columns}
-          contentKey={contentKey}
           data={logs}
           emptyState={
             filtersActive

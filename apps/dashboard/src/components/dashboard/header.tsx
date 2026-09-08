@@ -197,7 +197,7 @@ function headerBreadcrumbItems(
     !isNonOrgPath &&
     breadcrumbSegments[0] === "chat" &&
     breadcrumbSegments.length >= 2;
-  const chatDetailId = isChatDetail ? breadcrumbSegments[1] : null;
+  const chatDetailId = isChatDetail ? (breadcrumbSegments[1] ?? null) : null;
   const isCollectionDetail =
     !isNonOrgPath &&
     breadcrumbSegments[0] === "collection" &&
@@ -206,7 +206,9 @@ function headerBreadcrumbItems(
     !isNonOrgPath &&
     breadcrumbSegments[0] === "content" &&
     breadcrumbSegments.length >= 2;
-  const contentDetailId = isContentDetail ? breadcrumbSegments[1] : null;
+  const contentDetailId = isContentDetail
+    ? (breadcrumbSegments[1] ?? null)
+    : null;
   const isBrandIdentity =
     !isNonOrgPath &&
     breadcrumbSegments[0] === "brand" &&
