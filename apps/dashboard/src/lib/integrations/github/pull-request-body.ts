@@ -181,6 +181,42 @@ function clampWrappedManaged(wrapped: string, maxLength: number) {
   return `${wrapped.slice(0, maxPrefixLength).trimEnd()}${notice}${endMarker}`;
 }
 
+function fitUserTextAroundManaged(
+  prefix: string,
+  managed: string,
+  suffix: string
+) {
+  const maxLength = GITHUB_PULL_REQUEST_BODY_MAX_LENGTH;
+  const minimumManagedLength = wrapManagedSection("").length;
+
+  if (minimumManagedLength > maxLength) {
+    return clampWrappedManaged(managed, maxLength);
+  }
+
+  let keptPrefix = prefix;
+  let keptSuffix = suffix;
+  const overflow =
+    keptPrefix.length + minimumManagedLength + keptSuffix.length - maxLength;
+
+  if (overflow > 0) {
+    if (keptPrefix.length >= overflow) {
+      keptPrefix = keptPrefix.slice(0, keptPrefix.length - overflow);
+    } else {
+      const suffixOverflow = overflow - keptPrefix.length;
+      keptPrefix = "";
+      keptSuffix = keptSuffix.slice(
+        0,
+        Math.max(0, keptSuffix.length - suffixOverflow)
+      );
+    }
+  }
+
+  return `${keptPrefix}${clampWrappedManaged(
+    managed,
+    maxLength - keptPrefix.length - keptSuffix.length
+  )}${keptSuffix}`;
+}
+
 function clampPullRequestBody(body: string) {
   if (body.length <= GITHUB_PULL_REQUEST_BODY_MAX_LENGTH) {
     return body;
@@ -196,27 +232,14 @@ function clampPullRequestBody(body: string) {
       : -1;
 
   if (sectionStart >= 0 && sectionEnd >= sectionStart) {
-    const prefix = body.slice(0, sectionStart);
-    const managed = body.slice(
-      sectionStart,
-      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+    return fitUserTextAroundManaged(
+      body.slice(0, sectionStart),
+      body.slice(
+        sectionStart,
+        sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+      ),
+      body.slice(sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length)
     );
-    const suffix = body.slice(
-      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
-    );
-    const minimumManagedLength = wrapManagedSection("").length;
-
-    const maxWithSuffix =
-      GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - prefix.length - suffix.length;
-    if (maxWithSuffix >= minimumManagedLength) {
-      return `${prefix}${clampWrappedManaged(managed, maxWithSuffix)}${suffix}`;
-    }
-
-    const maxWithoutSuffix =
-      GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - prefix.length;
-    if (maxWithoutSuffix >= minimumManagedLength) {
-      return `${prefix}${clampWrappedManaged(managed, maxWithoutSuffix)}`;
-    }
   }
 
   return clampWrappedManaged(body, GITHUB_PULL_REQUEST_BODY_MAX_LENGTH);
@@ -250,20 +273,18 @@ export function mergeContentPullRequestBody(
     );
   }
 
+  const legacySummary = draftSummary(params.contentType);
   const legacyManagedContents = [buildManagedIntro(params)];
   if (params.contentUrl && params.badgeUrls) {
     legacyManagedContents.push(
       buildManagedIntro({ ...params, badgeUrls: undefined })
     );
   }
-
-  const legacySummary = draftSummary(params.contentType);
+  if (!legacyManagedContents.includes(legacySummary)) {
+    legacyManagedContents.push(legacySummary);
+  }
 
   for (const legacyManagedContent of legacyManagedContents) {
-    if (legacyManagedContent === legacySummary) {
-      continue;
-    }
-
     const legacySectionStart = existingBody.indexOf(legacyManagedContent);
     if (legacySectionStart < 0) {
       continue;
