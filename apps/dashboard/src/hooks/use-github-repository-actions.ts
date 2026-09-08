@@ -35,33 +35,17 @@ export function useGitHubRepositoryActions({
       }),
     ]);
   const toggle = useMutation({
-    mutationFn: async () => {
-      if (!isEnabled) {
-        await Promise.all(
-          integration.repositories.flatMap((repository) =>
-            repository.enabled
-              ? []
-              : [
-                  dashboardOrpc.integrations.repositories.update.call({
-                    organizationId,
-                    repositoryId: repository.id,
-                    enabled: true,
-                  }),
-                ]
-          )
-        );
-      }
-      return dashboardOrpc.integrations.update.call({
+    mutationFn: () =>
+      dashboardOrpc.integrations.update.call({
         organizationId,
         integrationId: integration.id,
         enabled: !isEnabled,
-      });
-    },
-    onSuccess: async () => {
-      await invalidate();
+      }),
+    onSuccess: () => {
       toast.success(isEnabled ? "Repository paused" : "Repository enabled");
     },
     onError: (error) => toast.error(error.message),
+    onSettled: invalidate,
   });
   const remove = useMutation({
     mutationFn: () =>

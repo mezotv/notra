@@ -1183,6 +1183,7 @@ export async function updateGitHubIntegration(
   integrationId: string,
   data: {
     enabled?: boolean;
+    repositoryEnabled?: boolean;
     displayName?: string;
     owner?: string;
     repo?: string;

@@ -546,6 +546,7 @@ export const integrationsRouter = {
         if (input.enabled !== undefined || input.displayName !== undefined) {
           await updateGitHubIntegration(input.integrationId, {
             enabled: input.enabled,
+            repositoryEnabled: input.enabled,
             displayName: input.displayName,
           });
         }
