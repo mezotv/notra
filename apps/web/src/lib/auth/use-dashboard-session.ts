@@ -24,13 +24,13 @@ export function useDashboardSession(): DashboardSessionState {
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, SESSION_PROBE_TIMEOUT_MS);
 
     fetch(SESSION_ENDPOINT, {
       credentials: "include",
-      signal: AbortSignal.any([
-        controller.signal,
-        AbortSignal.timeout(SESSION_PROBE_TIMEOUT_MS),
-      ]),
+      signal: controller.signal,
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
@@ -50,10 +50,14 @@ export function useDashboardSession(): DashboardSessionState {
           isAuthenticated: false,
           isResolved: true,
         });
+      })
+      .finally(() => {
+        window.clearTimeout(timeoutId);
       });
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, []);
