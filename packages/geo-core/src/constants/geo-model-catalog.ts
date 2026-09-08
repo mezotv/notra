@@ -404,6 +404,10 @@ export const GEO_MODEL_EXCLUDED_ID_PATTERN = /(-fast|-beta|-contributor)$/;
 export const GEO_MODEL_EXCLUDED_IDS: ReadonlySet<string> = new Set([
   "meta/muse-spark-1.1",
 ]);
+/** Stored engine ids that should keep scanning as their replacement. */
+export const GEO_MODEL_REPLACED_IDS: Readonly<Record<string, string>> = {
+  "meta/muse-spark-1.1": "meta/muse-spark-1.3",
+};
 /**
  * Coding, vision and edge-sized specialities. They are never used to answer
  * the prompts we scan, so they would only crowd out a provider's general

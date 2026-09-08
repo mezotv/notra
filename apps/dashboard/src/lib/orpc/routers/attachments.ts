@@ -12,8 +12,8 @@ import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   getOptionalR2PublicUrl,
-  getR2Config,
-  isR2Configured,
+  getR2StorageConfig,
+  isR2StorageConfigured,
 } from "@/lib/upload/r2";
 
 const IMAGE_MIME_TYPES = [
@@ -64,10 +64,10 @@ function buildFilterCondition(
 }
 
 async function deleteR2Keys(keys: string[]) {
-  if (keys.length === 0 || !isR2Configured()) {
+  if (keys.length === 0 || !isR2StorageConfigured()) {
     return;
   }
-  const { client, bucketName } = getR2Config();
+  const { client, bucketName } = getR2StorageConfig();
   const MAX = 1000;
   for (let i = 0; i < keys.length; i += MAX) {
     const chunk = keys.slice(i, i + MAX);
@@ -194,6 +194,7 @@ export const attachmentsRouter = {
         return { success: true, deleted: 0 };
       }
 
+      await deleteR2Keys(ownedKeys);
       await db
         .delete(chatAttachments)
         .where(
@@ -202,7 +203,6 @@ export const attachmentsRouter = {
             inArray(chatAttachments.key, ownedKeys)
           )
         );
-      await deleteR2Keys(ownedKeys);
 
       return { success: true, deleted: ownedKeys.length };
     }),

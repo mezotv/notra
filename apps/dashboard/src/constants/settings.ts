@@ -252,3 +252,12 @@ export const SETTINGS_SECTION_DESCRIPTIONS: Record<SettingsSectionId, string> =
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionId = "account";
 export const DEFAULT_GEO_SETTINGS_SECTION: SettingsSectionId = "geo-brand";
+
+export const LOGS_SETTINGS_SEARCH_KEYS = [
+  "q",
+  "source",
+  "status",
+  "page",
+] as const;
+
+export const BILLING_SETTINGS_SEARCH_KEYS = ["tab"] as const;

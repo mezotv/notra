@@ -60,3 +60,8 @@ export interface SettingsHeaderContextValue {
   titleAccessory: ReactNode;
   setTitleAccessory: (node: ReactNode) => void;
 }
+
+export type SettingsUrlSearchParams = Record<
+  string,
+  string | string[] | undefined
+>;

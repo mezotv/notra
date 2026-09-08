@@ -2,7 +2,10 @@ import {
   DEFAULT_GEO_SETTINGS_SECTION,
   SETTINGS_QUERY_KEY,
 } from "@/constants/settings";
-import type { SettingsSectionId } from "@/types/settings/modal";
+import type {
+  SettingsSectionId,
+  SettingsUrlSearchParams,
+} from "@/types/settings/modal";
 
 export function resolveSettingsSection(
   section: SettingsSectionId
@@ -42,4 +45,30 @@ export function geoSettingsPath(
   extra?: Record<string, string | undefined>
 ): string {
   return `/${slug}/geo${settingsQuery(DEFAULT_GEO_SETTINGS_SECTION, extra)}`;
+}
+
+function firstSearchParamValue(
+  value: string | string[] | undefined
+): string | undefined {
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (typeof first === "string" && first.length > 0) {
+      return first;
+    }
+  }
+  return undefined;
+}
+
+export function settingsQueryFromSearchParams(
+  query: SettingsUrlSearchParams,
+  keys: readonly string[]
+): Record<string, string | undefined> {
+  const extra: Record<string, string | undefined> = {};
+  for (const key of keys) {
+    extra[key] = firstSearchParamValue(query[key]);
+  }
+  return extra;
 }
