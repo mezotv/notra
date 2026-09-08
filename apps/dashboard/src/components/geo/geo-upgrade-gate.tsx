@@ -24,7 +24,7 @@ import { sidebarRouteFromPathname } from "@/utils/nav";
 export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isLocked, isLoading } = useHasGeoFeature();
+  const { isLocked } = useHasGeoFeature();
   const route = toAnalyticsRoute(pathname, slug);
   const shownRef = useRef(false);
 
@@ -39,10 +39,7 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
     });
   }, [isLocked, route]);
 
-  if (isLoading) {
-    return null;
-  }
-
+  // GEO procedures enforce entitlement; billing must not block page loading.
   if (!isLocked) {
     return children;
   }
