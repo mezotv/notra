@@ -178,7 +178,8 @@ export function ScanPreflightDialog({
         </ResponsiveDialogHeader>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="bg-muted text-muted-foreground inline-flex items-center rounded-lg px-2 py-1 text-xs tabular-nums">
-            {promptCount.toLocaleString()} {GEO_SCAN_PREFLIGHT_PROMPTS_LABEL}
+            {promptCount?.toLocaleString() ?? "—"}{" "}
+            {GEO_SCAN_PREFLIGHT_PROMPTS_LABEL}
           </span>
           {languages.map((language) => (
             <span

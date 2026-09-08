@@ -1129,7 +1129,7 @@ export interface ScanPreflightDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (engines?: string[]) => void;
   isPending: boolean;
-  promptCount: number;
+  promptCount: number | undefined;
   engines: readonly string[];
   languages: readonly string[];
   lastScanAt: string | null;

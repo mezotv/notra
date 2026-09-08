@@ -21,9 +21,9 @@ import type {
 
 export function countEnabledGeoPrompts(
   prompts: readonly GeoTrackedPrompt[] | undefined
-): number {
+): number | undefined {
   if (!prompts) {
-    return 0;
+    return undefined;
   }
 
   return prompts.filter((prompt) => prompt.enabled).length;
