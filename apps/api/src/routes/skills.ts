@@ -23,10 +23,10 @@ import {
   listSkills,
   patchSkill,
 } from "../programs/skills";
+import { getOrganizationId } from "../utils/auth";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 import {
-  getScopedOrganizationId,
   runSkillProgram,
   serializeSkill,
   serializeSkillSummary,
@@ -151,7 +151,7 @@ const deleteSkillRoute = createRoute({
 });
 
 skillsRoutes.openapi(listSkillsRoute, async (c) => {
-  const organizationId = getScopedOrganizationId(c);
+  const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
   }
@@ -167,7 +167,7 @@ skillsRoutes.openapi(listSkillsRoute, async (c) => {
 });
 
 skillsRoutes.openapi(getSkillRoute, async (c) => {
-  const organizationId = getScopedOrganizationId(c);
+  const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
   }
@@ -184,7 +184,7 @@ skillsRoutes.openapi(getSkillRoute, async (c) => {
 });
 
 skillsRoutes.openapi(createSkillRoute, async (c) => {
-  const organizationId = getScopedOrganizationId(c);
+  const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
   }
@@ -203,7 +203,7 @@ skillsRoutes.openapi(createSkillRoute, async (c) => {
 });
 
 skillsRoutes.openapi(patchSkillRoute, async (c) => {
-  const organizationId = getScopedOrganizationId(c);
+  const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
   }
@@ -229,7 +229,7 @@ skillsRoutes.openapi(patchSkillRoute, async (c) => {
 });
 
 skillsRoutes.openapi(deleteSkillRoute, async (c) => {
-  const organizationId = getScopedOrganizationId(c);
+  const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
   }

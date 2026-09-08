@@ -8,8 +8,9 @@ contracts live in `packages/schemas`; GEO domain programs already live in
 `packages/geo-core`. Effect is pinned to **4.0.0-rc.112**: use `Effect.catch`
 and `Effect.result`, not v3's `Effect.catchAll` or `Effect.either`.
 
-This change expands Effect at three boundaries. It is not a wholesale rewrite
-of every endpoint, and it makes no latency or throughput claim.
+This change expands Effect in billing and Skills CRUD and hardens GEO scan
+finalization. Internal dashboard requests use the shared Effect service.
+It is not a wholesale rewrite of every endpoint and makes no performance claim.
 
 The [Kit Langton Effect skill](https://skills.sh/kitlangton/skills/effect) is
 installed project-locally as `.agents/skills/using-effect`, including its branch
@@ -19,7 +20,7 @@ references. Its metadata records the imported upstream revision.
 | --- | --- |
 | Authentication, OAuth scopes, discovery, legacy redirects | Keep the current transport and permission registry. Do not move authorization after domain work. |
 | Subscription and GEO entitlement | New `apps/api/src/programs/{subscription,geo-entitlement}.ts` programs with typed billing failures and injectable billing calls. Middleware owns HTTP, analytics, and configuration policy. |
-| Internal dashboard requests | Use the central `InternalDashboardService` from `origin/main`, including its shared response, adapter, and timeout errors. The duplicate transport introduced by this branch was removed during integration. |
+| Internal dashboard requests | Use `InternalDashboardService` in `apps/api/src/lib/internal-dashboard.ts`, including its shared response, adapter, and timeout errors. |
 | Skills CRUD | All five operations use `apps/api/src/programs/skills.ts`. Programs own database operations and domain refusals; routes retain OpenAPI, validation, serialization, and status mapping. |
 | GEO projects, prompts, scans, sequences, briefs, settings, visibility, traffic, competitors, readiness | Retain existing geo-core programs and `runGeoEffect` / `runRemoteGeoEffect` transport mapping. The shared internal request adapter now executes through Effect. |
 | Posts, brand identities, integrations, chats, agent chats, feedback, schedules, event triggers | Remain mixed Promise-based routes. Call sites using the internal dashboard adapter benefit without changing their contracts. Further extraction should be per domain, with HTTP characterization tests first. |
@@ -70,15 +71,16 @@ references. Its metadata records the imported upstream revision.
 Run from the repository root with Bun 1.4.0:
 
 ```sh
+bun run test --filter=api
 bun run test --filter=@notra/geo-core
 bun run check-types --filter=api
 bun run build --filter=api
 bun run check
 ```
 
-The tests added during this Effect adoption were removed at the user's request.
-Pre-existing GEO tests remain. These are not live provider or production
-end-to-end tests.
+The existing API service and GEO suites are not live provider or production
+end-to-end tests. The additional tests written during this Effect adoption
+are not included in the repository.
 
 ## Daily GEO scan reliability
 

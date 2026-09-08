@@ -1,3 +1,4 @@
+import type { createDb } from "@notra/db/drizzle";
 import type {
   createSkillRequestSchema,
   patchSkillRequestSchema,
@@ -10,7 +11,6 @@ import type {
   SystemSkillDeleteError,
   SystemSkillRenameError,
 } from "../errors/skills";
-import type { GeoRequestContext } from "./geo-context";
 
 export type SkillDomainError =
   | SkillDuplicateError
@@ -18,10 +18,8 @@ export type SkillDomainError =
   | SystemSkillDeleteError
   | SystemSkillRenameError;
 
-type SkillsDatabase = GeoRequestContext["db"];
-
 export interface SkillProgramInput {
-  db: SkillsDatabase;
+  db: ReturnType<typeof createDb>;
   organizationId: string;
 }
 

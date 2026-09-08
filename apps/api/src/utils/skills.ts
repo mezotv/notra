@@ -1,5 +1,4 @@
 import { Effect } from "effect";
-import type { Context } from "hono";
 
 import type { SkillDatabaseError } from "../errors/skills";
 import type {
@@ -9,7 +8,6 @@ import type {
   SkillTimestamps,
   SkillUpdatedAt,
 } from "../types/skills";
-import { getOrganizationId } from "./auth";
 
 /** Leave unexpected database errors to Hono's central error handler. */
 export function runSkillProgram<A, E extends SkillDomainError>(
@@ -24,14 +22,6 @@ export function runSkillProgram<A, E extends SkillDomainError>(
       )
     )
   );
-}
-
-export function getScopedOrganizationId(c: Context) {
-  const organizationId = getOrganizationId(c);
-  if (!organizationId) {
-    return null;
-  }
-  return organizationId;
 }
 
 export function serializeSkill<T extends SkillTimestamps>(
