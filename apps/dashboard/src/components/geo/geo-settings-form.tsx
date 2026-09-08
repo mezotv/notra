@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  GEO_CONVERSION_PATHS_DESCRIPTION,
-  GEO_CONVERSION_PATHS_LABEL,
-  GEO_CONVERSION_PATHS_PLACEHOLDER,
-  GEO_MAX_ALIASES,
-  GEO_MAX_CONVERSION_PATHS,
-  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
-  GEO_SETTINGS_AUTO_SAVE_MS,
+	GEO_CONVERSION_PATHS_DESCRIPTION,
+	GEO_CONVERSION_PATHS_LABEL,
+	GEO_CONVERSION_PATHS_PLACEHOLDER,
+	GEO_MAX_ALIASES,
+	GEO_MAX_CONVERSION_PATHS,
+	GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+	GEO_SETTINGS_AUTO_SAVE_MS,
 } from "@notra/geo-core/constants/geo";
 import type { GeoSettingsUpsertInput } from "@notra/geo-core/types/geo";
 import { normalizeConversionPaths } from "@notra/geo-core/utils/geo-conversion-paths";
@@ -22,329 +22,458 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import {
-  GeoScanFrequencySelect,
-  GeoScanSchedule,
+	GeoScanFrequencySelect,
+	GeoScanSchedule,
 } from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
-import type { GeoSettingsFormProps } from "@/types/geo";
+import type {
+	GeoBrandSectionProps,
+	GeoLanguagesSectionProps,
+	GeoModelsSectionProps,
+	GeoSettingsAutosaveInput,
+	GeoSettingsFormProps,
+} from "@/types/geo";
 
 export function GeoSettingsForm({
-  organizationId,
-  settings,
-  catalog,
-  hideHeader = false,
-  section,
+	organizationId,
+	settings,
+	catalog,
+	hideHeader = false,
+	section,
 }: GeoSettingsFormProps) {
-  const id = useId();
-  const [companyName, setCompanyName] = useState(
-    () => settings?.companyName ?? ""
-  );
-  const [aliases, setAliases] = useState(() => settings?.aliases ?? []);
-  const [conversionPaths, setConversionPaths] = useState(() =>
-    normalizeConversionPaths(settings?.conversionPaths ?? [])
-  );
-  const [competitors] = useState(() => settings?.competitors ?? []);
-  const [languages, setLanguages] = useState(() =>
-    trackedGeoLanguages(settings?.languages ?? [])
-  );
-  const [engines, setEngines] = useState<string[]>(() =>
-    resolveTrackedEngines(catalog, settings?.engines)
-  );
-  const [enforceZdr, setEnforceZdr] = useState(
-    () => settings?.enforceZdr ?? true
-  );
-  const [nonZdrApproved, setNonZdrApproved] = useState<string[]>(
-    () => settings?.nonZdrApprovedEngines ?? []
-  );
-  const [enabled, setEnabled] = useState(() => settings?.enabled ?? true);
-  const [scanIntervalHours, setScanIntervalHours] = useState(
-    () => settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS
-  );
-  const { hasZdr: canEnforceZdr, isLoading: planLoading } =
-    useHasZdrEntitlement();
-  const upsert = useGeoSettingsUpsert(organizationId, { silentSuccess: true });
-  const [savedAt, setSavedAt] = useState<Date | null>(() =>
-    settings?.updatedAt ? new Date(settings.updatedAt) : null
-  );
-  const lastSaved = useRef<string | undefined>(undefined);
-  const nameMissing = companyName.trim().length === 0;
+	const id = useId();
+	const [companyName, setCompanyName] = useState(
+		() => settings?.companyName ?? "",
+	);
+	const [aliases, setAliases] = useState(() => settings?.aliases ?? []);
+	const [conversionPaths, setConversionPaths] = useState(() =>
+		normalizeConversionPaths(settings?.conversionPaths ?? []),
+	);
+	const [competitors] = useState(() => settings?.competitors ?? []);
+	const [languages, setLanguages] = useState(() =>
+		trackedGeoLanguages(settings?.languages ?? []),
+	);
+	const [engines, setEngines] = useState<string[]>(() =>
+		resolveTrackedEngines(catalog, settings?.engines),
+	);
+	const [enforceZdr, setEnforceZdr] = useState(
+		() => settings?.enforceZdr ?? true,
+	);
+	const [nonZdrApproved, setNonZdrApproved] = useState<string[]>(
+		() => settings?.nonZdrApprovedEngines ?? [],
+	);
+	const [enabled, setEnabled] = useState(() => settings?.enabled ?? true);
+	const [scanIntervalHours, setScanIntervalHours] = useState(
+		() => settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+	);
+	const { hasZdr: canEnforceZdr, isLoading: planLoading } =
+		useHasZdrEntitlement();
+	const nameMissing = companyName.trim().length === 0;
+	const { isSaving, savedAt } = useGeoSettingsAutosave({
+		aliases,
+		canEnforceZdr,
+		catalog,
+		companyName,
+		competitors,
+		conversionPaths,
+		enabled,
+		engines,
+		enforceZdr,
+		languages,
+		nonZdrApproved,
+		organizationId,
+		planLoading,
+		scanIntervalHours,
+		settings,
+	});
 
-  const debouncer = useAsyncDebouncer(
-    async (input: GeoSettingsUpsertInput) => {
-      await upsert.mutateAsync(input);
-      lastSaved.current = JSON.stringify(input);
-      setSavedAt(new Date());
-    },
-    {
-      wait: GEO_SETTINGS_AUTO_SAVE_MS,
-      throwOnError: false,
-    },
-    (state) => ({
-      isExecuting: state.isExecuting,
-      isPending: state.isPending,
-    })
-  );
-  const debouncerRef = useRef(debouncer);
+	const saveStatus = geoSaveStatus(nameMissing, isSaving, savedAt);
 
-  useEffect(() => {
-    debouncerRef.current = debouncer;
-  }, [debouncer]);
+	const showBrand = section === undefined || section === "brand";
+	const showLanguages = section === undefined || section === "languages";
+	const showModels = section === undefined || section === "models";
 
-  useEffect(() => {
-    if (planLoading) {
-      return;
-    }
+	const saveStatusText = saveStatus ? (
+		<p
+			aria-live="polite"
+			className="text-muted-foreground text-xs tabular-nums"
+		>
+			{saveStatus}
+		</p>
+	) : null;
 
-    const input: GeoSettingsUpsertInput = toGeoSettingsPayload({
-      organizationId,
-      companyName,
-      aliases,
-      competitors,
-      conversionPaths,
-      languages,
-      engines,
-      enforceZdr,
-      nonZdrApprovedEngines: nonZdrApproved,
-      enabled,
-      scanIntervalHours,
-      canEnforceZdr,
-    });
-    const serialized = JSON.stringify(input);
-    const runner = debouncerRef.current;
+	return (
+		<div className="w-full space-y-6">
+			{hideHeader && saveStatusText ? (
+				<div className="text-right">{saveStatusText}</div>
+			) : null}
+			{hideHeader ? null : (
+				<header className="flex items-start justify-between gap-3">
+					<div className="space-y-1">
+						<h1 className="text-3xl font-bold tracking-tight">GEO Settings</h1>
+						<p className="text-muted-foreground">
+							How your brand is identified and where prompts are scanned.
+						</p>
+					</div>
+					{saveStatusText ? <div className="pt-2">{saveStatusText}</div> : null}
+				</header>
+			)}
+			<div className="space-y-6">
+				{showBrand ? (
+					<GeoBrandSection
+						aliases={aliases}
+						companyName={companyName}
+						conversionPaths={conversionPaths}
+						id={id}
+						nameMissing={nameMissing}
+						onAliasesChange={setAliases}
+						onCompanyNameChange={setCompanyName}
+						onConversionPathsChange={(values) =>
+							setConversionPaths(normalizeConversionPaths(values))
+						}
+						savedAt={savedAt}
+					/>
+				) : null}
+				{showLanguages ? (
+					<GeoLanguagesSection
+						languages={languages}
+						onLanguagesChange={setLanguages}
+					/>
+				) : null}
+				{showModels ? (
+					<GeoModelsSection
+						canEnforceZdr={canEnforceZdr}
+						catalog={catalog}
+						enabled={enabled}
+						engines={engines}
+						enforceZdr={enforceZdr}
+						id={id}
+						nonZdrApproved={nonZdrApproved}
+						onEnabledChange={setEnabled}
+						onEnginesChange={setEngines}
+						onEnforceZdrChange={setEnforceZdr}
+						onNonZdrApprovedChange={setNonZdrApproved}
+						onScanIntervalHoursChange={setScanIntervalHours}
+						planLoading={planLoading}
+						scanIntervalHours={scanIntervalHours}
+					/>
+				) : null}
+			</div>
+		</div>
+	);
+}
 
-    if (lastSaved.current === undefined) {
-      lastSaved.current = JSON.stringify(
-        toGeoSettingsPayload({
-          organizationId,
-          companyName: settings?.companyName ?? "",
-          aliases: settings?.aliases ?? [],
-          competitors: settings?.competitors ?? [],
-          conversionPaths: normalizeConversionPaths(
-            settings?.conversionPaths ?? []
-          ),
-          languages: trackedGeoLanguages(settings?.languages ?? []),
-          engines: resolveTrackedEngines(catalog, settings?.engines),
-          enforceZdr: settings?.enforceZdr ?? true,
-          nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
-          enabled: settings?.enabled ?? true,
-          scanIntervalHours:
-            settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS,
-          canEnforceZdr,
-        })
-      );
-    }
+function geoSaveStatus(
+	nameMissing: boolean,
+	isSaving: boolean,
+	savedAt: Date | null,
+): string | null {
+	if (nameMissing && savedAt) {
+		return "Add a company name to save";
+	}
+	if (isSaving) {
+		return "Saving...";
+	}
+	if (savedAt) {
+		return "Saved";
+	}
+	return null;
+}
 
-    if (input.companyName.length === 0) {
-      runner.cancel();
-      return;
-    }
+function useGeoSettingsAutosave({
+	aliases,
+	canEnforceZdr,
+	catalog,
+	companyName,
+	competitors,
+	conversionPaths,
+	enabled,
+	engines,
+	enforceZdr,
+	languages,
+	nonZdrApproved,
+	organizationId,
+	planLoading,
+	scanIntervalHours,
+	settings,
+}: GeoSettingsAutosaveInput) {
+	const upsert = useGeoSettingsUpsert(organizationId, { silentSuccess: true });
+	const [savedAt, setSavedAt] = useState<Date | null>(() =>
+		settings?.updatedAt ? new Date(settings.updatedAt) : null,
+	);
+	const lastSaved = useRef<string | undefined>(undefined);
+	const debouncer = useAsyncDebouncer(
+		async (input: GeoSettingsUpsertInput) => {
+			await upsert.mutateAsync(input);
+			lastSaved.current = JSON.stringify(input);
+			setSavedAt(new Date());
+		},
+		{
+			wait: GEO_SETTINGS_AUTO_SAVE_MS,
+			throwOnError: false,
+		},
+		(state) => ({
+			isExecuting: state.isExecuting,
+			isPending: state.isPending,
+		}),
+	);
+	const debouncerRef = useRef(debouncer);
 
-    if (serialized === lastSaved.current) {
-      runner.cancel();
-      return;
-    }
+	useEffect(() => {
+		debouncerRef.current = debouncer;
+	}, [debouncer]);
 
-    runner.maybeExecute(input).catch(() => undefined);
-  }, [
-    aliases,
-    catalog,
-    companyName,
-    competitors,
-    conversionPaths,
-    enabled,
-    engines,
-    enforceZdr,
-    canEnforceZdr,
-    languages,
-    nonZdrApproved,
-    organizationId,
-    planLoading,
-    scanIntervalHours,
-    settings,
-  ]);
+	useEffect(() => {
+		if (planLoading) {
+			return;
+		}
 
-  useEffect(() => {
-    return () => {
-      debouncerRef.current.flush().catch(() => undefined);
-    };
-  }, []);
+		const input: GeoSettingsUpsertInput = toGeoSettingsPayload({
+			organizationId,
+			companyName,
+			aliases,
+			competitors,
+			conversionPaths,
+			languages,
+			engines,
+			enforceZdr,
+			nonZdrApprovedEngines: nonZdrApproved,
+			enabled,
+			scanIntervalHours,
+			canEnforceZdr,
+		});
+		const serialized = JSON.stringify(input);
+		const runner = debouncerRef.current;
 
-  const isSaving = debouncer.state.isPending || debouncer.state.isExecuting;
-  let saveStatus: string | null = null;
-  if (nameMissing && savedAt) {
-    saveStatus = "Add a company name to save";
-  } else if (isSaving) {
-    saveStatus = "Saving...";
-  } else if (savedAt) {
-    saveStatus = "Saved";
-  }
+		if (lastSaved.current === undefined) {
+			lastSaved.current = JSON.stringify(
+				toGeoSettingsPayload({
+					organizationId,
+					companyName: settings?.companyName ?? "",
+					aliases: settings?.aliases ?? [],
+					competitors: settings?.competitors ?? [],
+					conversionPaths: normalizeConversionPaths(
+						settings?.conversionPaths ?? [],
+					),
+					languages: trackedGeoLanguages(settings?.languages ?? []),
+					engines: resolveTrackedEngines(catalog, settings?.engines),
+					enforceZdr: settings?.enforceZdr ?? true,
+					nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
+					enabled: settings?.enabled ?? true,
+					scanIntervalHours:
+						settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+					canEnforceZdr,
+				}),
+			);
+		}
 
-  const showBrand = section === undefined || section === "brand";
-  const showLanguages = section === undefined || section === "languages";
-  const showModels = section === undefined || section === "models";
+		if (input.companyName.length === 0) {
+			runner.cancel();
+			return;
+		}
 
-  const saveStatusText = saveStatus ? (
-    <p
-      aria-live="polite"
-      className="text-muted-foreground text-xs tabular-nums"
-    >
-      {saveStatus}
-    </p>
-  ) : null;
+		if (serialized === lastSaved.current) {
+			runner.cancel();
+			return;
+		}
 
-  return (
-    <div className="w-full space-y-6">
-      {hideHeader && saveStatusText ? (
-        <div className="text-right">{saveStatusText}</div>
-      ) : null}
-      {hideHeader ? null : (
-        <header className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">GEO Settings</h1>
-            <p className="text-muted-foreground">
-              How your brand is identified and where prompts are scanned.
-            </p>
-          </div>
-          {saveStatusText ? <div className="pt-2">{saveStatusText}</div> : null}
-        </header>
-      )}
-      <div className="space-y-6">
-        {showBrand ? (
-          <>
-            <TitleCard as="section" heading="Brand" headingAs="h2">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`${id}-name`}>Company name</Label>
-                  <p className="text-muted-foreground text-xs">
-                    The primary name we match in answers.
-                  </p>
-                  <Input
-                    aria-invalid={nameMissing && savedAt !== null}
-                    id={`${id}-name`}
-                    onChange={(event) => setCompanyName(event.target.value)}
-                    placeholder="Notra"
-                    value={companyName}
-                  />
-                </div>
-                <GeoTagList
-                  description="Other spellings, product names, or the bare domain."
-                  id={`${id}-aliases`}
-                  label="Aliases"
-                  max={GEO_MAX_ALIASES}
-                  onChange={setAliases}
-                  placeholder="usenotra"
-                  values={aliases}
-                />
-              </div>
-            </TitleCard>
-            <SettingsSection
-              description={GEO_CONVERSION_PATHS_DESCRIPTION}
-              title={GEO_CONVERSION_PATHS_LABEL}
-            >
-              <GeoTagList
-                id={`${id}-conversion-paths`}
-                label={GEO_CONVERSION_PATHS_LABEL}
-                labeled={false}
-                max={GEO_MAX_CONVERSION_PATHS}
-                onChange={(values) =>
-                  setConversionPaths(normalizeConversionPaths(values))
-                }
-                placeholder={GEO_CONVERSION_PATHS_PLACEHOLDER}
-                values={conversionPaths}
-              />
-            </SettingsSection>
-          </>
-        ) : null}
-        {showLanguages ? (
-          <SettingsSection
-            description="Languages your prompts are scanned in. English is on by default."
-            title="Languages"
-          >
-            <GeoLanguagePicker
-              labeled={false}
-              onChange={setLanguages}
-              selected={languages}
-            />
-          </SettingsSection>
-        ) : null}
-        {showModels ? (
-          <TitleCard
-            action={
-              <GeoScanFrequencySelect
-                id={id}
-                intervalHours={scanIntervalHours}
-                onIntervalChange={setScanIntervalHours}
-              />
-            }
-            as="section"
-            heading="Models"
-            headingAs="h2"
-          >
-            <div className="space-y-4">
-              <p className="text-muted-foreground text-sm text-pretty">
-                Each enabled provider runs on every prompt, on the frequency you
-                set here.
-              </p>
-              <GeoEnginePicker
-                canEnforceZdr={canEnforceZdr}
-                catalog={catalog}
-                enforceZdr={enforceZdr}
-                labeled={false}
-                nonZdrApproved={nonZdrApproved}
-                onChange={setEngines}
-                onEnforceZdrChange={setEnforceZdr}
-                onNonZdrApprovedChange={setNonZdrApproved}
-                planLoading={planLoading}
-                scheduleRow={
-                  <GeoScanSchedule
-                    enabled={enabled}
-                    id={id}
-                    intervalHours={scanIntervalHours}
-                    onEnabledChange={setEnabled}
-                  />
-                }
-                selected={engines}
-              />
-            </div>
-          </TitleCard>
-        ) : null}
-      </div>
-    </div>
-  );
+		runner.maybeExecute(input).catch(() => undefined);
+	}, [
+		aliases,
+		catalog,
+		companyName,
+		competitors,
+		conversionPaths,
+		enabled,
+		engines,
+		enforceZdr,
+		canEnforceZdr,
+		languages,
+		nonZdrApproved,
+		organizationId,
+		planLoading,
+		scanIntervalHours,
+		settings,
+	]);
+
+	useEffect(() => {
+		return () => {
+			debouncerRef.current.flush().catch(() => undefined);
+		};
+	}, []);
+
+	return {
+		isSaving: debouncer.state.isPending || debouncer.state.isExecuting,
+		savedAt,
+	};
 }
 
 function toGeoSettingsPayload({
-  canEnforceZdr,
-  ...input
+	canEnforceZdr,
+	...input
 }: GeoSettingsUpsertInput & {
-  canEnforceZdr: boolean;
+	canEnforceZdr: boolean;
 }): GeoSettingsUpsertInput {
-  return {
-    ...input,
-    companyName: input.companyName.trim(),
-    enforceZdr: canEnforceZdr && input.enforceZdr,
-  };
+	return {
+		...input,
+		companyName: input.companyName.trim(),
+		enforceZdr: canEnforceZdr && input.enforceZdr,
+	};
 }
 
 function SettingsSection({
-  title,
-  description,
-  children,
+	title,
+	description,
+	children,
 }: {
-  title: string;
-  description: ReactNode;
-  children: ReactNode;
+	title: string;
+	description: ReactNode;
+	children: ReactNode;
 }) {
-  return (
-    <TitleCard as="section" heading={title} headingAs="h2">
-      <div className="space-y-4">
-        <p className="text-muted-foreground text-sm text-pretty">
-          {description}
-        </p>
-        {children}
-      </div>
-    </TitleCard>
-  );
+	return (
+		<TitleCard as="section" heading={title} headingAs="h2">
+			<div className="space-y-4">
+				<p className="text-muted-foreground text-sm text-pretty">
+					{description}
+				</p>
+				{children}
+			</div>
+		</TitleCard>
+	);
+}
+
+function GeoBrandSection({
+	aliases,
+	companyName,
+	conversionPaths,
+	id,
+	nameMissing,
+	onAliasesChange,
+	onCompanyNameChange,
+	onConversionPathsChange,
+	savedAt,
+}: GeoBrandSectionProps) {
+	return (
+		<>
+			<TitleCard as="section" heading="Brand" headingAs="h2">
+				<div className="space-y-4">
+					<div className="space-y-2">
+						<Label htmlFor={`${id}-name`}>Company name</Label>
+						<p className="text-muted-foreground text-xs">
+							The primary name we match in answers.
+						</p>
+						<Input
+							aria-invalid={nameMissing && savedAt !== null}
+							id={`${id}-name`}
+							onChange={(event) => onCompanyNameChange(event.target.value)}
+							placeholder="Notra"
+							value={companyName}
+						/>
+					</div>
+					<GeoTagList
+						description="Other spellings, product names, or the bare domain."
+						id={`${id}-aliases`}
+						label="Aliases"
+						max={GEO_MAX_ALIASES}
+						onChange={onAliasesChange}
+						placeholder="usenotra"
+						values={aliases}
+					/>
+				</div>
+			</TitleCard>
+			<SettingsSection
+				description={GEO_CONVERSION_PATHS_DESCRIPTION}
+				title={GEO_CONVERSION_PATHS_LABEL}
+			>
+				<GeoTagList
+					id={`${id}-conversion-paths`}
+					label={GEO_CONVERSION_PATHS_LABEL}
+					labeled={false}
+					max={GEO_MAX_CONVERSION_PATHS}
+					onChange={onConversionPathsChange}
+					placeholder={GEO_CONVERSION_PATHS_PLACEHOLDER}
+					values={conversionPaths}
+				/>
+			</SettingsSection>
+		</>
+	);
+}
+
+function GeoLanguagesSection({
+	languages,
+	onLanguagesChange,
+}: GeoLanguagesSectionProps) {
+	return (
+		<SettingsSection
+			description="Languages your prompts are scanned in. English is on by default."
+			title="Languages"
+		>
+			<GeoLanguagePicker
+				labeled={false}
+				onChange={onLanguagesChange}
+				selected={languages}
+			/>
+		</SettingsSection>
+	);
+}
+
+function GeoModelsSection({
+	canEnforceZdr,
+	catalog,
+	enabled,
+	engines,
+	enforceZdr,
+	id,
+	nonZdrApproved,
+	onEnabledChange,
+	onEnginesChange,
+	onEnforceZdrChange,
+	onNonZdrApprovedChange,
+	onScanIntervalHoursChange,
+	planLoading,
+	scanIntervalHours,
+}: GeoModelsSectionProps) {
+	return (
+		<TitleCard
+			action={
+				<GeoScanFrequencySelect
+					id={id}
+					intervalHours={scanIntervalHours}
+					onIntervalChange={onScanIntervalHoursChange}
+				/>
+			}
+			as="section"
+			heading="Models"
+			headingAs="h2"
+		>
+			<div className="space-y-4">
+				<p className="text-muted-foreground text-sm text-pretty">
+					Each enabled provider runs on every prompt, on the frequency you set
+					here.
+				</p>
+				<GeoEnginePicker
+					canEnforceZdr={canEnforceZdr}
+					catalog={catalog}
+					enforceZdr={enforceZdr}
+					labeled={false}
+					nonZdrApproved={nonZdrApproved}
+					onChange={onEnginesChange}
+					onEnforceZdrChange={onEnforceZdrChange}
+					onNonZdrApprovedChange={onNonZdrApprovedChange}
+					planLoading={planLoading}
+					scheduleRow={
+						<GeoScanSchedule
+							enabled={enabled}
+							id={id}
+							intervalHours={scanIntervalHours}
+							onEnabledChange={onEnabledChange}
+						/>
+					}
+					selected={engines}
+				/>
+			</div>
+		</TitleCard>
+	);
 }
