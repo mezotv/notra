@@ -1,0 +1,162 @@
+---
+title: "How to create a Grok Bot plugin"
+description: "A Grok Bot plugin is a Cursor plugin. Here's what you need to build one, what Neon gets right and how to submit through Cursor's marketplace."
+date: "2026-09-08T04:00:00.000Z"
+updatedAt: "2026-09-08T04:00:00.000Z"
+author: "dominik"
+---
+
+If you want to build a Grok Bot plugin, you are building a Cursor plugin. Literally. You package the integration in a repository and submit it through [Cursor's marketplace](https://cursor.com/marketplace/publish).
+
+That's useful if you are building a developer product. The same plugin gives people a way to use your product in Cursor and connect it to Grok Bot. If you already maintain a Cursor plugin, start there.
+
+## What is Grok Bot? [#what-is-grok-bot]
+
+[Grok Bot](https://x.ai/news/introducing-grok-bot) gives you agents that have their own computer and can work across apps. You hand a bot a task and it can keep working on it, coming back when it needs your approval. That could be research for a marketing campaign or work on a codebase.
+
+Plugins connect those agents to services. A user adds a plugin, authorizes their account and can ask the bot to work with that service in chat. Cursor documents that flow in its [Grok Bot plugin guide](https://cursor.com/help/grok-bot/connect-plugins).
+
+> Image placeholder: Grok Bot's Plugins directory with Neon Postgres visible. Show where a user adds the plugin.
+
+## Why you should build one [#why-you-should-build-one]
+
+For a developer product, a plugin is another way for someone to start using what you built. A person working with an agent can connect your product while they are already trying to get something done.
+
+I think that's a good distribution opportunity. We wrote about [engineers as a distribution channel](/blog/engineers-are-great-for-marketing) because useful engineering work gives people a reason to pay attention. An integration has a similar effect: someone can try your product as part of their own work.
+
+But the task has to be worth doing. Pick something your users already ask for. If you run a database service, that might be creating a development branch. If you build a content tool, it might be saving a draft for review. A plugin that handles one of those well gives you something concrete to show in a launch post.
+
+## Neon is a good example [#neon-is-a-good-example]
+
+[Neon's Grok Bot plugin](https://neon.com/docs/ai/ai-grok-bot-plugin) connects a Neon account so a bot can create projects, work with branches and run SQL. A user can search for Neon Postgres in the plugins directory or ask the bot to connect Neon, then authorize in the browser.
+
+Creating an isolated branch to test a migration is a particularly good use case. The user has a specific job and Neon fits directly into it. The plugin makes that operation available from the conversation where the work is happening.
+
+That's the part I would copy: make the first useful action obvious. Your documentation should give someone a task they can try immediately after connecting.
+
+> Image placeholder: Neon connected in Grok Bot, followed by a request to create a branch for testing a migration. Use a test account and hide credentials.
+
+## What it takes [#what-it-takes]
+
+Start with a small plugin repository. For the Cursor plugin format used here, the manifest lives at `.cursor-plugin/plugin.json`. Skills describe how to do a task. An optional MCP configuration connects the agent to tools that can perform operations against your service.
+
+The work depends on what you already have. If your product has a working MCP server, you can reuse it. If you only have an API, you still need to build and host the MCP server for a remote connector like the example below. Adding a URL to a JSON file does not turn an API into an MCP server.
+
+You can also ship a plugin containing only skills. That is useful for documented workflows, though instructions alone do not grant access to a user's account.
+
+## Create the plugin [#create-the-plugin]
+
+If you are asking an agent to build this, give it the official docs before it starts. The [Cursor plugins overview](https://cursor.com/docs/plugins) covers installation and local testing. The [plugin reference](https://cursor.com/docs/reference/plugins) covers the manifest and submission requirements. Add the [MCP docs](https://cursor.com/docs/mcp) if your plugin connects to a service.
+
+You can start with this prompt and add your product's API documentation:
+
+```text
+Build a Cursor plugin for our product that we can submit for use in Grok Bot.
+Read these docs first:
+https://cursor.com/docs/plugins
+https://cursor.com/docs/reference/plugins
+https://cursor.com/docs/mcp
+
+Use the Cursor plugin format with .cursor-plugin/plugin.json.
+Start with one useful workflow based on our product docs.
+Reuse our MCP server if we have one. If we don't, explain what needs to be
+implemented before the connector will work. Don't invent an endpoint or tools.
+Include a skill and a README with setup instructions and a test task.
+Prepare the repository for review. Submission goes through
+https://cursor.com/marketplace/publish.
+```
+
+[Cursor's template](https://github.com/cursor/plugin-template) is a starting point. It includes multiple plugins, so simplify it if you only need one. A small repository could look like this:
+
+```text
+acme-plugin/
+├── .cursor-plugin/
+│   └── plugin.json
+├── skills/
+│   └── draft-release-note/
+│       └── SKILL.md
+├── mcp.json
+└── README.md
+```
+
+Acme is a fictional content product for this walkthrough. Put this in `.cursor-plugin/plugin.json`:
+
+```json
+{
+  "name": "acme-content",
+  "version": "0.1.0",
+  "description": "Prepare release notes and save drafts in Acme.",
+  "author": {
+    "name": "Acme"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}
+```
+
+Use your own name and description. Cursor also supports the portable Agent Plugins format with a root `plugin.json`; this walkthrough uses the Cursor format. The [plugin reference](https://cursor.com/docs/reference/plugins) documents both.
+
+### Write the skill [#write-the-skill]
+
+The skill should explain when to use it and what a completed task looks like. Here's an example for `skills/draft-release-note/SKILL.md`:
+
+```markdown
+---
+name: draft-release-note
+description: Prepare a release note from supplied product changes and save it as an Acme draft. Use when the user asks to draft a release announcement.
+---
+
+# Draft a release note
+
+Read the changes the user supplied. Ask for source material if it is missing.
+
+Explain what changed and who it affects. Do not invent features or results.
+
+Show the draft to the user. When asked to save it, use the Acme connector's
+draft creation tool. Ask which workspace to use if the destination is unclear.
+
+Return the saved draft's link. Saving a draft does not authorize publication.
+If the connector is unavailable, return the text and explain that it was not saved.
+```
+
+Replace the generic tool reference with the actual tool name your server exposes. Be specific about behavior that matters to your product. For a content tool, the distinction between saving and publishing matters a lot.
+
+### Connect your tools [#connect-your-tools]
+
+For a Cursor plugin using a remote MCP server, `mcp.json` can look like this:
+
+```json
+{
+  "mcpServers": {
+    "acme": {
+      "url": "https://mcp.example.com/mcp"
+    }
+  }
+}
+```
+
+That is a placeholder URL. Replace it with your working MCP endpoint. If you are making a skill-only plugin, remove this file and the `mcpServers` field from the manifest.
+
+For a service with private accounts, the server also needs an authentication flow supported by the client. Follow [Cursor's MCP documentation](https://cursor.com/docs/mcp) for the connection setup. Keep credentials out of the repository and enforce account permissions on the server. A sentence in a skill is not access control.
+
+Write a README that explains setup and includes a first task to try. Describe what the tools can change so users know what they are connecting.
+
+## Test the whole task [#test-the-whole-task]
+
+You can [test a plugin locally in Cursor](https://cursor.com/docs/plugins#test-plugins-locally) by putting the plugin folder under `~/.cursor/plugins/local/`, then reloading Cursor. Open Customize and check that the expected components appear. Team policy can block local imports and an installed marketplace plugin with the same name takes precedence over the local copy.
+
+Then try the task in a fresh conversation. For the example above, supply a short list of changes and ask for a release note. Check whether the bot sticks to those changes. Connect a test account, save the draft and open the returned link to verify the result.
+
+Try it with the connector disconnected too. It should explain what failed instead of claiming the draft was saved. Also check what happens when the user has access to more than one workspace.
+
+Those are Cursor development checks. Once your listing is available in Grok Bot, repeat the connection and task there. A local Cursor test does not establish that the Grok Bot experience works.
+
+## Submit through Cursor's marketplace [#submit-through-cursors-marketplace]
+
+Push the plugin to a public Git repository and submit its link at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish). The Cursor team reviews plugins before listing them. This is the submission route for the Grok Bot plugin too.
+
+Before submitting, check that the manifest paths resolve and the README explains any configuration. If you include a logo, commit it to the repository and reference it with a relative path. Cursor's [submission checklist](https://cursor.com/docs/reference/plugins#submission-checklist) covers the requirements.
+
+> Image placeholder: Cursor's marketplace submission page with the plugin repository ready to submit. Keep this visibly marked as a submission screenshot, not an approved listing.
+
+After approval, check the actual install experience in Grok Bot. Search for your plugin, connect a test account and run the example from your README. Then use that working flow in your announcement so people can see exactly what they can do with it.
