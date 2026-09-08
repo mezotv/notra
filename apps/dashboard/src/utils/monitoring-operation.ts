@@ -1,5 +1,6 @@
 import { Cause, Effect } from "effect";
 
+import { MonitoringOperationError } from "@/schemas/monitoring-error";
 import type { MonitoringOperationInput } from "@/types/workflow-monitoring";
 import { logWorkflowTelemetry } from "@/utils/workflow-telemetry";
 
@@ -12,6 +13,13 @@ export const readMonitoringOperation = Effect.fn("monitoring.readOperation")(
           )
         : Effect.fail(new Cause.TimeoutError("Monitoring budget exhausted"));
     return yield* operation.pipe(
+      Effect.mapError(
+        (error) =>
+          new MonitoringOperationError({
+            operation: input.operation,
+            errorName: error instanceof Error ? error.name : "UnknownError",
+          })
+      ),
       Effect.tapError((error) =>
         Effect.sync(() => {
           logWorkflowTelemetry({
@@ -21,7 +29,7 @@ export const readMonitoringOperation = Effect.fn("monitoring.readOperation")(
             runId: input.runId,
             jobStatus: input.jobStatus,
             outcome: "error",
-            errorName: error instanceof Error ? error.name : "UnknownError",
+            errorName: error.errorName,
           });
         })
       )

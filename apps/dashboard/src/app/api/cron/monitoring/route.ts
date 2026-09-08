@@ -1,11 +1,7 @@
 import { flushLogs } from "@notra/ai/evlog";
-import { Clock, Effect } from "effect";
-import { getWorld } from "workflow/runtime";
+import { Effect, Result } from "effect";
 
-import { WORKFLOW_MONITORING } from "@/constants/workflow-monitoring";
-import { checkBackendHealth } from "@/lib/analytics/backend-health";
-import { collectWorkflowMonitoring } from "@/lib/analytics/workflow-monitoring";
-import { readMonitoringOperation } from "@/utils/monitoring-operation";
+import { runMonitoringSweep } from "@/lib/analytics/monitoring-sweep";
 import { scheduleRequestErrorTelemetry } from "@/utils/request-error-telemetry";
 import { logWorkflowTelemetry } from "@/utils/workflow-telemetry";
 
@@ -22,32 +18,23 @@ export async function GET(request: Request) {
   const sweepId = crypto.randomUUID();
   try {
     const result = await Effect.runPromise(
-      Effect.gen(function* () {
-        const startedAt = yield* Clock.currentTimeMillis;
-        yield* checkBackendHealth();
-        const remainingMs =
-          WORKFLOW_MONITORING.sweepBudgetMs -
-          ((yield* Clock.currentTimeMillis) - startedAt);
-        const world = yield* readMonitoringOperation(
-          {
-            operation: "workflow.world",
-            sweepId,
-            timeoutMs: Math.max(
-              0,
-              Math.min(WORKFLOW_MONITORING.operationTimeoutMs, remainingMs)
-            ),
-          },
-          async () => getWorld()
-        );
-        return yield* collectWorkflowMonitoring(
-          world,
-          WORKFLOW_MONITORING.sweepBudgetMs -
-            ((yield* Clock.currentTimeMillis) - startedAt),
-          sweepId
-        );
-      })
+      runMonitoringSweep(sweepId).pipe(Effect.result)
     );
-    return Response.json(result);
+    if (Result.isFailure(result)) {
+      logWorkflowTelemetry({
+        event: "monitoring.sweep.completed",
+        sweepId,
+        outcome: "error",
+        errors: 1,
+        operation: result.failure.operation,
+        errorName: result.failure.errorName,
+      });
+      return Response.json(
+        { error: "Monitoring sweep failed" },
+        { status: 500 }
+      );
+    }
+    return Response.json(result.success);
   } catch (error) {
     logWorkflowTelemetry({
       event: "monitoring.sweep.completed",
