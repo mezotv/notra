@@ -1128,7 +1128,7 @@ export const GEO_CHAT_SKIN_SURFACE: Record<GeoChatSkin, string> = {
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
   perplexity: "bg-white dark:bg-[#111]",
-  opencode: "bg-[#fdfdfd]",
+  opencode: "bg-[var(--opencode-tui-background,#fdfdfd)]",
 };
 
 export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {

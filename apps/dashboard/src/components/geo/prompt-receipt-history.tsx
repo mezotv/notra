@@ -1,7 +1,5 @@
 "use client";
 
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_PROMPT_HISTORY_ANSWER_LABELS,
   GEO_PROMPT_HISTORY_CHANGE_LABELS,
@@ -16,11 +14,11 @@ import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { TablePagination } from "@notra/ui/components/shared/table-pagination";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
-import { Table, type TableColumn } from "@/components/motion/table";
+import { Table } from "@/components/motion/table";
 import { TABLE_MAX_HEIGHT, TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
 import type {
@@ -184,136 +182,123 @@ export function PromptReceiptHistory({
     ? []
     : entries.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
   const paginated = totalItems > HISTORY_PAGE_SIZE;
-
-  const columns: TableColumn<PromptHistoryEntry>[] = [
-    {
-      key: "capturedAt",
-      header: GEO_PROMPT_HISTORY_COLUMN_LABELS.date,
-      width: "9rem",
-      cell: ({ check }) => (
-        <time
-          className="inline-flex h-5 items-center tabular-nums"
-          dateTime={check.capturedAt}
-          title={check.scanId}
-        >
-          {formatAiTrafficTimestamp(check.capturedAt)}
-        </time>
-      ),
-    },
-    {
-      key: "outcome",
-      header: GEO_PROMPT_HISTORY_COLUMN_LABELS.outcome,
-      width: "9rem",
-      cell: ({ check }) => (
-        <span className="inline-flex h-5 items-center gap-2">
-          <PromptOutcomeIcon mentioned={check.mentioned} />
-          <span
-            className={
-              check.mentioned ? "text-foreground" : "text-muted-foreground"
-            }
-          >
-            {promptOutcomeLabel(check.mentioned)}
-          </span>
-        </span>
-      ),
-    },
-    {
-      key: "position",
-      header: GEO_PROMPT_HISTORY_COLUMN_LABELS.position,
-      width: "6rem",
-      cell: ({ check }) => (
-        <span
-          className={cn(
-            "inline-flex h-5 items-center tabular-nums",
-            check.position === null
-              ? "text-muted-foreground/60"
-              : "text-foreground"
-          )}
-        >
-          {positionLabel(check.position)}
-        </span>
-      ),
-    },
-    {
-      key: "changes",
-      header: GEO_PROMPT_HISTORY_COLUMN_LABELS.changes,
-      width: "12rem",
-      cell: (entry) => <ChangesCell entry={entry} />,
-    },
-    {
-      key: "newCompetitors",
-      header: GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors,
-      width: "1fr",
-      minWidth: "12rem",
-      cell: (entry) => (
-        <NewCompetitorsCell
-          competitors={competitors}
-          names={entry.newCompetitors}
-        />
-      ),
-    },
-  ];
-  if (onSelect) {
-    columns.push({
-      key: "actions",
-      header: (
-        <span className="sr-only">
-          {GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
-        </span>
-      ),
-      width: "4rem",
-      cell: ({ check }) => (
-        <button
-          aria-label={`${GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer} · ${formatAiTrafficTimestamp(check.capturedAt)}`}
-          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center rounded-sm opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
-          onClick={() => onSelect(check)}
-          title={GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
-          type="button"
-        >
-          <HugeiconsIcon
-            className="size-4"
-            icon={ArrowRight01Icon}
-            strokeWidth={2}
-          />
-        </button>
-      ),
-    });
+  let footer: ReactNode;
+  if (!isLoading && paginated) {
+    footer = (
+      <TablePagination
+        page={page}
+        pageCount={pageCount}
+        pageRowCount={pageRowCount(page, HISTORY_PAGE_SIZE, totalItems)}
+        pageSize={HISTORY_PAGE_SIZE}
+        setPage={setPage}
+        totalItems={totalItems}
+      />
+    );
+  } else if (!isLoading && entries.length === 1) {
+    footer = (
+      <p className="text-muted-foreground px-4 py-3 text-xs">
+        {GEO_PROMPT_RECEIPT_LABELS.singleScan}
+      </p>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <Table
-        columns={columns}
-        data={visible}
-        emptyState={GEO_PROMPT_RECEIPT_LABELS.noHistory}
-        footer={
-          !isLoading && paginated ? (
-            <TablePagination
-              page={page}
-              pageCount={pageCount}
-              pageRowCount={pageRowCount(page, HISTORY_PAGE_SIZE, totalItems)}
-              pageSize={HISTORY_PAGE_SIZE}
-              setPage={setPage}
-              totalItems={totalItems}
-            />
-          ) : null
-        }
-        getRowId={(entry) => entry.check.id}
-        height={
-          isLoading || entries.length === 0
-            ? tableHeightFor(isLoading ? GEO_PROMPT_HISTORY_SKELETON_ROWS : 0)
-            : TABLE_MAX_HEIGHT
-        }
-        loading={isLoading}
-        onRowClick={onSelect ? (entry) => onSelect(entry.check) : undefined}
-        rowHeight={TABLE_ROW_HEIGHT}
-        rowSizing="content"
-      />
-      {entries.length === 1 ? (
-        <p className="text-muted-foreground text-xs">
-          {GEO_PROMPT_RECEIPT_LABELS.singleScan}
-        </p>
-      ) : null}
-    </div>
+    <Table
+      columns={[
+        {
+          key: "scan",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.date,
+          width: "144px",
+          cell: ({ check }) => {
+            const timestamp = formatAiTrafficTimestamp(check.capturedAt);
+            const date = (
+              <time
+                className="tabular-nums"
+                dateTime={check.capturedAt}
+                title={check.scanId}
+              >
+                {timestamp}
+              </time>
+            );
+
+            return onSelect ? (
+              <button
+                aria-label={`${GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer} · ${timestamp}`}
+                className="focus-visible:ring-ring min-h-8 cursor-pointer rounded-sm text-left underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelect(check);
+                }}
+                title={GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
+                type="button"
+              >
+                {date}
+              </button>
+            ) : (
+              date
+            );
+          },
+        },
+        {
+          key: "outcome",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.outcome,
+          width: "144px",
+          cell: ({ check }) => (
+            <span className="inline-flex items-center gap-2">
+              <PromptOutcomeIcon mentioned={check.mentioned} />
+              <span
+                className={
+                  check.mentioned ? "text-foreground" : "text-muted-foreground"
+                }
+              >
+                {promptOutcomeLabel(check.mentioned)}
+              </span>
+            </span>
+          ),
+        },
+        {
+          key: "position",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.position,
+          width: "80px",
+          cell: ({ check }) => <PositionChip position={check.position} />,
+        },
+        {
+          key: "changes",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.changes,
+          width: "192px",
+          cell: (entry) => (
+            <div className="whitespace-normal">
+              <ChangesCell entry={entry} />
+            </div>
+          ),
+        },
+        {
+          key: "newCompetitors",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors,
+          minWidth: "192px",
+          cell: (entry) => (
+            <div className="whitespace-normal">
+              <NewCompetitorsCell
+                competitors={competitors}
+                names={entry.newCompetitors}
+              />
+            </div>
+          ),
+        },
+      ]}
+      data={visible}
+      emptyState={GEO_PROMPT_RECEIPT_LABELS.noHistory}
+      footer={footer}
+      getRowId={(entry) => entry.check.id}
+      height={
+        isLoading || entries.length === 0
+          ? tableHeightFor(isLoading ? GEO_PROMPT_HISTORY_SKELETON_ROWS : 0)
+          : TABLE_MAX_HEIGHT
+      }
+      loading={isLoading}
+      rowHeight={TABLE_ROW_HEIGHT}
+      rowSizing="content"
+      skeletonRows={GEO_PROMPT_HISTORY_SKELETON_ROWS}
+    />
   );
 }
