@@ -1,6 +1,6 @@
 ---
 title: "How to create a Grok Bot plugin"
-description: "A Grok Bot plugin is a Cursor plugin. Here's what you need to build one, what Neon gets right and how to submit through Cursor's marketplace."
+description: "A Grok Bot plugin is a Cursor plugin. Here's what you need to build one, what Context.dev gets right and how to submit through Cursor's marketplace."
 date: "2026-09-08T04:00:00.000Z"
 updatedAt: "2026-09-08T04:00:00.000Z"
 author: "dominik"
@@ -16,7 +16,7 @@ That's useful if you are building a developer product. The same plugin gives peo
 
 Plugins connect those agents to services. A user adds a plugin, authorizes their account and can ask the bot to work with that service in chat. Cursor documents that flow in its [Grok Bot plugin guide](https://cursor.com/help/grok-bot/connect-plugins).
 
-> Image placeholder: Grok Bot's Plugins directory with Neon Postgres visible. Show where a user adds the plugin.
+> Image placeholder: Grok Bot's Plugins directory. Show where a user searches for and adds a plugin.
 
 ## Why you should build one [#why-you-should-build-one]
 
@@ -26,15 +26,23 @@ I think that's a good distribution opportunity. We wrote about [engineers as a d
 
 But the task has to be worth doing. Pick something your users already ask for. If you run a database service, that might be creating a development branch. If you build a content tool, it might be saving a draft for review. A plugin that handles one of those well gives you something concrete to show in a launch post.
 
-## Neon is a good example [#neon-is-a-good-example]
+## Context.dev is a good example [#context-dev-is-a-good-example]
 
-[Neon's Grok Bot plugin](https://neon.com/docs/ai/ai-grok-bot-plugin) connects a Neon account so a bot can create projects, work with branches and run SQL. A user can search for Neon Postgres in the plugins directory or ask the bot to connect Neon, then authorize in the browser.
+[Context.dev is listed in Cursor's marketplace](https://cursor.com/marketplace/context.dev) and its [plugin source is public](https://github.com/context-dot-dev/cursor-plugin). You can read how the integration is packaged, then compare it with what users see when they install it.
 
-Creating an isolated branch to test a migration is a particularly good use case. The user has a specific job and Neon fits directly into it. The plugin makes that operation available from the conversation where the work is happening.
+The plugin gives agents tools for live web research, including search and scraping. Its README explains how users connect their Context.dev account through OAuth and gives them tasks to try after installation.
 
-That's the part I would copy: make the first useful action obvious. Your documentation should give someone a task they can try immediately after connecting.
+I would start by reading these files:
 
-> Image placeholder: Neon connected in Grok Bot, followed by a request to create a branch for testing a migration. Use a test account and hide credentials.
+- [`.cursor-plugin/plugin.json`](https://github.com/context-dot-dev/cursor-plugin/blob/main/.cursor-plugin/plugin.json) declares the plugin and points to its components.
+- [`mcp.json`](https://github.com/context-dot-dev/cursor-plugin/blob/main/mcp.json) connects it to the hosted MCP server.
+- [`skills/context-search/SKILL.md`](https://github.com/context-dot-dev/cursor-plugin/blob/main/skills/context-search/SKILL.md) explains when to search and when to scrape a known URL instead.
+
+That last distinction is useful. If someone already gave the agent a page to read, searching the web again adds work. The skill gives the agent enough product knowledge to choose the right tool.
+
+That's the part I would copy: make the first useful action obvious, then explain how to do it well. For a web research product, that could be finding a company's recent announcements and returning the source links.
+
+> Image placeholder: Context.dev's Cursor marketplace listing with its skills and MCP connection visible. Pair it with the plugin's GitHub folder structure.
 
 ## What it takes [#what-it-takes]
 
@@ -58,6 +66,7 @@ https://cursor.com/docs/reference/plugins
 https://cursor.com/docs/mcp
 
 Use the Cursor plugin format with .cursor-plugin/plugin.json.
+Read https://github.com/context-dot-dev/cursor-plugin as a packaging example.
 Start with one useful workflow based on our product docs.
 Reuse our MCP server if we have one. If we don't, explain what needs to be
 implemented before the connector will work. Don't invent an endpoint or tools.
