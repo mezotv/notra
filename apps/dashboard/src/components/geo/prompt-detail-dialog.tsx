@@ -6,7 +6,7 @@ import { GEO_PROMPT_HISTORY_ANSWER_LABELS } from "@notra/geo-core/constants/geo"
 import type {
   GeoPromptHistoryCheck,
   GeoPromptReceiptView,
-  GeoPromptResult,
+  GeoPromptResultSummary,
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
@@ -24,19 +24,32 @@ import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
+import { PromptDetailStatus } from "@/components/geo/prompt-detail-status";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import { PromptReceiptAnalysis } from "@/components/geo/prompt-receipt-analysis";
 import { PromptReceiptViewSwitch } from "@/components/geo/prompt-receipt-view-switch";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { trackEvent } from "@/lib/analytics/posthog-client";
-import { useGeoCompetitors, useGeoPromptHistory } from "@/lib/hooks/use-geo";
+import {
+  useGeoCompetitors,
+  useGeoPromptHistory,
+  useGeoPromptResultDetail,
+} from "@/lib/hooks/use-geo";
 import type {
   PromptAnswerPageProps,
   PromptDetailDialogProps,
 } from "@/types/geo";
+import type {
+  PromptAnswerBodyProps,
+  PromptAnswerHeaderProps,
+} from "@/types/geo-prompt-detail";
 import { sharedEngineAnswerMode } from "@/utils/geo-charts";
-import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
+import { geoPromptDetailState } from "@/utils/geo-prompt-detail";
+import {
+  adjacentPromptEngine,
+  promptEngineArrowDelta,
+} from "@/utils/geo-prompt-engines";
 import {
   promptHistoryForEngine,
   promptResultFromHistoryCheck,
@@ -60,7 +73,7 @@ function threadVariants(reduceMotion: boolean) {
 }
 
 function latestPromptCheckAt(
-  results: readonly GeoPromptResult[]
+  results: readonly GeoPromptResultSummary[]
 ): string | null {
   let latest: string | null = null;
   for (const result of results) {
@@ -97,8 +110,102 @@ function HistoryAnswerBanner({
   );
 }
 
+function PromptAnswerHeader({
+  prompt,
+  results,
+  active,
+  view,
+  onSelectEngine,
+  onSelectView,
+}: PromptAnswerHeaderProps) {
+  const answerMode = sharedEngineAnswerMode(
+    results.map((result) => result.engine)
+  );
+  const latestCheck = latestPromptCheckAt(results);
+
+  return (
+    <ResponsiveDialogHeader className="shrink-0 gap-4 overflow-visible border-b px-6 pt-5 pb-4">
+      <div className="flex flex-col gap-1 pr-8">
+        <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
+          {prompt}
+        </ResponsiveDialogTitle>
+        <ResponsiveDialogDescription className="sr-only">
+          {answerMode
+            ? `Latest ${answerMode} answer from each engine`
+            : "Latest answer from each engine"}
+        </ResponsiveDialogDescription>
+        {latestCheck ? (
+          <p className="text-muted-foreground text-sm">
+            {formatAiTrafficTimestamp(latestCheck)}
+          </p>
+        ) : null}
+      </div>
+      {results.length > 0 && active ? (
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+          <PromptEngineSwitcher
+            active={active}
+            onChange={onSelectEngine}
+            results={results}
+          />
+          <PromptReceiptViewSwitch onChange={onSelectView} view={view} />
+        </div>
+      ) : null}
+    </ResponsiveDialogHeader>
+  );
+}
+
+function PromptAnswerBody({
+  detailState,
+  view,
+  prompt,
+  scanPromptId,
+  selectedCheck,
+  history,
+  isHistoryLoading,
+  competitors,
+  onRetry,
+  onSelectCheck,
+  onBackToLatest,
+}: PromptAnswerBodyProps) {
+  if (selectedCheck) {
+    return (
+      <>
+        <HistoryAnswerBanner check={selectedCheck} onBack={onBackToLatest} />
+        <GeoPromptAnswerThread
+          prompt={prompt}
+          result={promptResultFromHistoryCheck(
+            selectedCheck,
+            scanPromptId,
+            prompt
+          )}
+        />
+      </>
+    );
+  }
+
+  if (detailState.status !== "ready") {
+    return <PromptDetailStatus onRetry={onRetry} status={detailState.status} />;
+  }
+
+  if (view === "analysis") {
+    return (
+      <PromptReceiptAnalysis
+        competitors={competitors}
+        history={history}
+        isHistoryLoading={isHistoryLoading}
+        onSelectCheck={onSelectCheck}
+        prompt={prompt}
+        result={detailState.result}
+      />
+    );
+  }
+
+  return <GeoPromptAnswerThread prompt={prompt} result={detailState.result} />;
+}
+
 function PromptAnswerPage({
   row,
+  open,
   organizationId,
   isScanning = false,
   surface,
@@ -117,15 +224,24 @@ function PromptAnswerPage({
     useState<GeoPromptHistoryCheck | null>(null);
   const [direction, setDirection] = useState(1);
   const reduceMotion = useReducedMotion();
-  const answerMode = sharedEngineAnswerMode(engines);
-  const latestCheck = latestPromptCheckAt(results);
   const active =
     results.find((result) => result.engine === engine) ?? results[0] ?? null;
+  const checkId = open ? (active?.checkId ?? null) : null;
+  const detail = useGeoPromptResultDetail(organizationId, checkId);
+  const detailState = geoPromptDetailState(
+    active?.checkId ?? null,
+    detail.data,
+    detail.isError
+  );
   const openedRef = useRef(false);
   const activeEngine = active?.engine ?? null;
   const resultCount = results.length;
 
   useEffect(() => {
+    if (!open) {
+      openedRef.current = false;
+      return;
+    }
     if (openedRef.current) {
       return;
     }
@@ -136,21 +252,16 @@ function PromptAnswerPage({
       engine_count: resultCount,
       prompt_id: row.id,
     });
-  }, [activeEngine, resultCount, row.id, surface]);
+  }, [activeEngine, open, resultCount, row.id, surface]);
   const scanPromptId = results[0]?.promptId ?? row.id;
   const history = useGeoPromptHistory(organizationId, scanPromptId, {
-    enabled: results.length > 0,
+    enabled: open && results.length > 0,
   });
   const competitors = useGeoCompetitors(organizationId);
   const engineHistory = active
     ? promptHistoryForEngine(history.data?.checks ?? [], active.engine)
     : [];
   const threadTransition = reduceMotion ? INSTANT : tween("slow", "emphasized");
-
-  const rawResult =
-    active && selectedCheck
-      ? promptResultFromHistoryCheck(selectedCheck, scanPromptId, row.prompt)
-      : active;
 
   function selectEngine(next: string, nextDirection: number) {
     if (next === engine) {
@@ -174,28 +285,12 @@ function PromptAnswerPage({
   }
 
   function handleArrowNavigation(event: KeyboardEvent<HTMLElement>) {
-    if (
-      results.length < 2 ||
-      (event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
-
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        target.closest("input, textarea, select, [contenteditable='true']"))
-    ) {
+    const delta = promptEngineArrowDelta(event, results.length);
+    if (delta === null) {
       return;
     }
 
     event.preventDefault();
-    const delta = event.key === "ArrowLeft" ? -1 : 1;
     selectEngine(
       adjacentPromptEngine(engines, active?.engine ?? engine, delta),
       delta
@@ -208,33 +303,14 @@ function PromptAnswerPage({
       drawerClassName="h-[94svh] max-h-[94svh]"
       onKeyDown={handleArrowNavigation}
     >
-      <ResponsiveDialogHeader className="shrink-0 gap-4 overflow-visible border-b px-6 pt-5 pb-4">
-        <div className="flex flex-col gap-1 pr-8">
-          <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
-            {row.prompt}
-          </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="sr-only">
-            {answerMode
-              ? `Latest ${answerMode} answer from each engine`
-              : "Latest answer from each engine"}
-          </ResponsiveDialogDescription>
-          {latestCheck ? (
-            <p className="text-muted-foreground text-sm">
-              {formatAiTrafficTimestamp(latestCheck)}
-            </p>
-          ) : null}
-        </div>
-        {results.length > 0 && active ? (
-          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-            <PromptEngineSwitcher
-              active={active}
-              onChange={selectEngine}
-              results={results}
-            />
-            <PromptReceiptViewSwitch onChange={selectView} view={view} />
-          </div>
-        ) : null}
-      </ResponsiveDialogHeader>
+      <PromptAnswerHeader
+        active={active}
+        onSelectEngine={selectEngine}
+        onSelectView={selectView}
+        prompt={row.prompt}
+        results={results}
+        view={view}
+      />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <AnimatePresence custom={direction} initial={false}>
           {active ? (
@@ -248,29 +324,21 @@ function PromptAnswerPage({
               transition={threadTransition}
               variants={threadVariants(Boolean(reduceMotion))}
             >
-              {view === "analysis" ? (
-                <PromptReceiptAnalysis
-                  competitors={competitors.data?.competitors}
-                  history={engineHistory}
-                  isHistoryLoading={history.isPending}
-                  onSelectCheck={openHistoryAnswer}
-                  prompt={row.prompt}
-                  result={active}
-                />
-              ) : (
-                <>
-                  {selectedCheck ? (
-                    <HistoryAnswerBanner
-                      check={selectedCheck}
-                      onBack={() => setSelectedCheck(null)}
-                    />
-                  ) : null}
-                  <GeoPromptAnswerThread
-                    prompt={row.prompt}
-                    result={rawResult ?? active}
-                  />
-                </>
-              )}
+              <PromptAnswerBody
+                competitors={competitors.data?.competitors}
+                detailState={detailState}
+                history={engineHistory}
+                isHistoryLoading={history.isPending}
+                onBackToLatest={() => setSelectedCheck(null)}
+                onRetry={() => {
+                  void detail.refetch();
+                }}
+                onSelectCheck={openHistoryAnswer}
+                prompt={row.prompt}
+                scanPromptId={scanPromptId}
+                selectedCheck={selectedCheck}
+                view={view}
+              />
             </motion.div>
           ) : (
             <div className="flex h-full min-h-0 items-center justify-center px-6">
@@ -309,6 +377,7 @@ export function PromptDetailDialog({
         initialEngine={initialEngine}
         isScanning={isScanning}
         key={row.id}
+        open={open}
         organizationId={resolvedOrganizationId}
         row={row}
         surface={surface}

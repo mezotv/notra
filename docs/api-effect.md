@@ -19,7 +19,7 @@ references. Its metadata records the imported upstream revision.
 | --- | --- |
 | Authentication, OAuth scopes, discovery, legacy redirects | Keep the current transport and permission registry. Do not move authorization after domain work. |
 | Subscription and GEO entitlement | New `apps/api/src/programs/{subscription,geo-entitlement}.ts` programs with typed billing failures and injectable billing calls. Middleware owns HTTP, analytics, and configuration policy. |
-| Internal dashboard requests | `callDashboardInternalEffect` exposes response, transport, decoding, and timeout failures. Existing Promise callers retain their original errors, including `instanceof` checks. |
+| Internal dashboard requests | Use the central `InternalDashboardService` from `origin/main`, including its shared response, adapter, and timeout errors. The duplicate transport introduced by this branch was removed during integration. |
 | Skills CRUD | All five operations use `apps/api/src/programs/skills.ts`. Programs own database operations and domain refusals; routes retain OpenAPI, validation, serialization, and status mapping. |
 | GEO projects, prompts, scans, sequences, briefs, settings, visibility, traffic, competitors, readiness | Retain existing geo-core programs and `runGeoEffect` / `runRemoteGeoEffect` transport mapping. The shared internal request adapter now executes through Effect. |
 | Posts, brand identities, integrations, chats, agent chats, feedback, schedules, event triggers | Remain mixed Promise-based routes. Call sites using the internal dashboard adapter benefit without changing their contracts. Further extraction should be per domain, with HTTP characterization tests first. |
@@ -49,19 +49,19 @@ references. Its metadata records the imported upstream revision.
 
 ## Skill alignment and deliberate integration choices
 
-- The internal transport is a required `Context.Service`, acquired with
-  `Layer.effect`. Its secret is read through `Config.redacted`, not directly
+- The internal transport is a required `Context.Service`, provided by
+  `internalDashboardLive`. Its secret is read through `Config.redacted`, not directly
   from the process inside the request program. Test configuration can be
   provided through `ConfigProvider` without changing the process environment.
-- Internal requests and OIDC lookup have named `Effect.fn` boundaries. Timeout
+- Internal requests have a named `Effect.fn` boundary. Timeout
   policy uses `Effect.timeoutOrElse`; interrupting it aborts the native fetch
   and body read.
 - Skill update timestamps use clock-backed `DateTime.now`.
 - Shared Zod/OpenAPI contracts and typed Drizzle queries stay authoritative.
   They are established project conventions, not parallel Effect schemas or
   a reason to replace the HTTP/database stack.
-- Native fetch remains confined to the platform adapter to preserve the
-  Promise API's native errors and response-body evidence. No unstable HTTP
+- Native fetch remains confined to the platform adapter. The upstream service
+  maps transport and decoding failures to shared adapter errors. No unstable HTTP
   client migration or implicit retry is introduced.
 - Bun remains the test runner for the existing suites.
 

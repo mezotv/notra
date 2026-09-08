@@ -39,7 +39,6 @@ import {
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCustomer } from "autumn-js/react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
@@ -51,6 +50,7 @@ import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { cn, errorMessageOr } from "@/lib/utils";
 import type { OrganizationOptionsListProps } from "@/types/dashboard";
 import { planDisplayName } from "@/utils/billing-plans";
@@ -291,7 +291,7 @@ export function OrgSelector() {
   }
   const { activeOrganization, organizations, isLoading } =
     useOrganizationsContext();
-  const { data: customer } = useCustomer({
+  const { data: customer } = useBillingCustomer({
     expand: ["subscriptions.plan"],
   });
 

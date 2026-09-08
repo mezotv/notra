@@ -31,7 +31,6 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { TRANSITION } from "@notra/ui/lib/motion";
-import { useCustomer } from "autumn-js/react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -50,6 +49,7 @@ import {
   ZDR_ADDON_ANCHOR,
   ZDR_CHECKOUT_SUCCESS_PARAM,
 } from "@/constants/billing";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { cn } from "@/lib/utils";
 import type { GeoEnginePickerProps } from "@/types/geo";
 import {
@@ -164,7 +164,7 @@ export function GeoEnginePicker({
   const id = useId();
   const reduceMotion = useReducedMotion();
   const { activeOrganization } = useOrganizationsContext();
-  const { attach, data: customer, refetch } = useCustomer();
+  const { attach, data: customer, refetch } = useBillingCustomer();
   const [addonLoading, setAddonLoading] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const checkoutReturnHandled = useRef(false);

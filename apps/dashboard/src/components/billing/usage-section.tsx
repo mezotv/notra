@@ -18,7 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useAggregateEvents, useCustomer } from "autumn-js/react";
+import { useAggregateEvents } from "autumn-js/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -26,6 +26,7 @@ import {
   IntegrationCardDither,
   useIntegrationCardDither,
 } from "@/components/integrations/integration-card-dither";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
@@ -90,7 +91,7 @@ function isLogRetentionFeature(feature: FeatureData) {
 
 export function UsageSection() {
   const [range, setRange] = useState<RangeOption>("30d");
-  const { data: customer, isLoading: customerLoading } = useCustomer({
+  const { data: customer, isLoading: customerLoading } = useBillingCustomer({
     expand: ["balances.feature"],
   });
 

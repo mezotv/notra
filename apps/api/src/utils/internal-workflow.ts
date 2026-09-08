@@ -1,21 +1,22 @@
 import {
-  internalWorkflowErrorResponseSchema,
-  internalWorkflowStartResponseSchema,
-} from "@notra/schemas/api/internal-workflow";
+  InternalDashboardAdapterError,
+  InternalDashboardError,
+  InternalDashboardTimeoutError,
+} from "@notra/schemas/api/internal-dashboard";
+import { internalWorkflowStartResponseSchema } from "@notra/schemas/api/internal-workflow";
 import { Effect } from "effect";
 import type { ZodType } from "zod";
 
 import {
-  InternalDashboardDecodingFailure,
-  InternalDashboardResponseFailure,
-  InternalDashboardTimeoutFailure,
-  InternalDashboardTransportFailure,
-} from "../errors/internal-workflow";
-import { InternalWorkflowTransport } from "../lib/internal-workflow";
-import type {
-  InternalDashboardFailure,
-  InternalWorkflowEnv,
-} from "../types/internal-workflow";
+  InternalDashboardService,
+  internalDashboardLive,
+} from "../lib/internal-dashboard";
+import { runServiceEffect } from "./run-service-effect";
+export { InternalDashboardError, InternalDashboardTimeoutError };
+
+interface InternalWorkflowEnv {
+  WORKFLOW_BASE_URL?: string;
+}
 
 function trimTrailingSlash(value: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
@@ -27,42 +28,6 @@ export function getInternalWorkflowUrl(env: InternalWorkflowEnv, path: string) {
   }
 
   return `${trimTrailingSlash(env.WORKFLOW_BASE_URL)}${path}`;
-}
-
-/**
- * A non-2xx answer from an internal dashboard route.
- *
- * Carries the dashboard's `code` when it sent one, so a caller can turn a
- * domain refusal (an unmet feature flag, say) into its own status instead of
- * flattening every failure into a 500.
- */
-export class InternalDashboardError extends Error {
-  readonly status: number;
-  readonly code: string | null;
-  /** Raw response body, so a caller can read a structured payload out of it. */
-  readonly body: string;
-
-  constructor(status: number, code: string | null, body: string) {
-    super(
-      `Internal dashboard request failed with status ${status}${body ? `: ${body}` : ""}`
-    );
-    this.name = "InternalDashboardError";
-    this.status = status;
-    this.code = code;
-    this.body = body;
-  }
-}
-
-function readErrorCode(body: string): string | null {
-  try {
-    const parsed = internalWorkflowErrorResponseSchema.safeParse(
-      JSON.parse(body)
-    );
-    return parsed.success ? (parsed.data.code ?? null) : null;
-  } catch {
-    // Not JSON — the dashboard answered with plain text.
-  }
-  return null;
 }
 
 /**
@@ -92,109 +57,6 @@ function readErrorCode(body: string): string | null {
  */
 export const SYNCHRONOUS_INTERNAL_CALL_TIMEOUT_MS = 240_000;
 
-/** Signals a synchronous internal call that outlived its timeout. */
-export class InternalDashboardTimeoutError extends Error {
-  readonly timeoutMs: number;
-
-  constructor(timeoutMs: number) {
-    super(`Internal dashboard call timed out after ${timeoutMs}ms`);
-    this.name = "InternalDashboardTimeoutError";
-    this.timeoutMs = timeoutMs;
-  }
-}
-
-function isAbortFailure(cause: unknown): boolean {
-  return (
-    cause instanceof Error &&
-    (cause.name === "TimeoutError" || cause.name === "AbortError")
-  );
-}
-
-/**
- * Lazy, composable Effect form of the internal dashboard request.
- *
- * Its error channel describes the failed stage while retaining the exact
- * original value in `cause`. It deliberately performs one POST only.
- */
-const callDashboardInternalEffect = Effect.fn("InternalWorkflow.request")(
-  function* <A>(
-    url: string,
-    payload: unknown,
-    responseSchema: ZodType<A>,
-    timeoutMs?: number
-  ): Effect.fn.Return<A, InternalDashboardFailure, InternalWorkflowTransport> {
-    const transport = yield* InternalWorkflowTransport;
-    const token = yield* transport.getToken();
-    const request = Effect.tryPromise({
-      try: async (cancellationSignal) => {
-        const headers: Record<string, string> = {
-          "content-type": "application/json",
-        };
-        if (token) {
-          headers.authorization = `Bearer ${token}`;
-        }
-
-        const response = await transport.fetch(url, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(payload),
-          signal: cancellationSignal,
-        });
-
-        if (!response.ok) {
-          const detail = await response.text();
-          throw new InternalDashboardError(
-            response.status,
-            readErrorCode(detail),
-            detail
-          );
-        }
-
-        try {
-          const data: unknown = await response.json();
-          return data;
-        } catch (cause) {
-          if (timeoutMs !== undefined && isAbortFailure(cause)) {
-            throw cause;
-          }
-          throw new InternalDashboardDecodingFailure({ cause });
-        }
-      },
-      catch: (cause): InternalDashboardFailure => {
-        if (cause instanceof InternalDashboardDecodingFailure) {
-          return cause;
-        }
-        if (cause instanceof InternalDashboardError) {
-          return new InternalDashboardResponseFailure({ cause });
-        }
-        if (timeoutMs !== undefined && isAbortFailure(cause)) {
-          return new InternalDashboardTimeoutFailure({
-            cause: new InternalDashboardTimeoutError(timeoutMs),
-          });
-        }
-        return new InternalDashboardTransportFailure({ cause });
-      },
-    });
-    const data = yield* timeoutMs === undefined
-      ? request
-      : request.pipe(
-          Effect.timeoutOrElse({
-            duration: timeoutMs,
-            orElse: () =>
-              Effect.fail(
-                new InternalDashboardTimeoutFailure({
-                  cause: new InternalDashboardTimeoutError(timeoutMs),
-                })
-              ),
-          })
-        );
-    return yield* Effect.try({
-      try: () => responseSchema.parse(data),
-      catch: (cause) => new InternalDashboardDecodingFailure({ cause }),
-    });
-  }
-);
-
 /**
  * POSTs to an internal dashboard route and decodes its successful JSON body.
  *
@@ -212,17 +74,12 @@ export async function callDashboardInternal<A>(
   responseSchema: ZodType<A>,
   timeoutMs?: number
 ): Promise<A> {
-  const result = await Effect.runPromise(
-    Effect.result(
-      callDashboardInternalEffect(url, payload, responseSchema, timeoutMs).pipe(
-        Effect.provide(InternalWorkflowTransport.layer)
-      )
-    )
+  return runServiceEffect(
+    Effect.gen(function* () {
+      const service = yield* InternalDashboardService;
+      return yield* service.call(url, payload, responseSchema, timeoutMs);
+    }).pipe(Effect.provide(internalDashboardLive))
   );
-  if (result._tag === "Failure") {
-    throw result.failure.cause;
-  }
-  return result.success;
 }
 
 export async function startDashboardWorkflow(
@@ -236,3 +93,24 @@ export async function startDashboardWorkflow(
   );
   return data.runId;
 }
+
+export const startDashboardWorkflowEffect = Effect.fn(
+  "InternalDashboard.startWorkflow"
+)(function* (url: string | null, payload: unknown) {
+  if (!url) {
+    return yield* Effect.fail(
+      new InternalDashboardAdapterError({
+        kind: "configuration",
+        message:
+          "WORKFLOW_BASE_URL is not configured — cannot reach the dashboard.",
+      })
+    );
+  }
+  const service = yield* InternalDashboardService;
+  const data = yield* service.call(
+    url,
+    payload,
+    internalWorkflowStartResponseSchema
+  );
+  return data.runId;
+});

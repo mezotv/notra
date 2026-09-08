@@ -75,7 +75,6 @@ import {
   loadGeoLanguageShare,
   loadGeoOverview,
   loadGeoPromptHistory,
-  loadGeoPromptResults,
   loadGeoSettings,
   loadGeoTimeseries,
   loadGeoTrafficJourneys,
@@ -96,6 +95,10 @@ import {
   requireGeoProject,
 } from "@notra/geo-core/geo/projects";
 import { promptKey } from "@notra/geo-core/geo/prompt-key";
+import {
+  loadGeoPromptResultDetail,
+  loadGeoPromptResultSummaries,
+} from "@notra/geo-core/geo/prompt-results";
 import {
   clearGeoSampleData,
   seedGeoSampleData,
@@ -138,6 +141,7 @@ import {
   geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
   geoPromptHistoryInputSchema,
+  geoPromptResultDetailInputSchema,
   geoPromptRescanInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
@@ -888,11 +892,16 @@ export const geoRouter = {
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoTimeseries(input, geoWindow(input)))),
-  promptResults: authorizedProcedure
+  promptResultSummaries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(
-      geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
+      geoHandler((input) =>
+        loadGeoPromptResultSummaries(input, geoWindow(input))
+      )
     ),
+  promptResultDetail: authorizedProcedure
+    .input(geoPromptResultDetailInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptResultDetail(input))),
   changes: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoChanges(input))),

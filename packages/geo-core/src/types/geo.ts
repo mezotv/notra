@@ -279,6 +279,36 @@ export interface GeoPromptResultsResponse {
   results: GeoPromptResult[];
 }
 
+export interface GeoPromptResultDetailInput {
+  organizationId: string;
+  checkId: string;
+}
+
+/**
+ * List projection of a prompt result. Carries the mention state the tables and
+ * charts read; `checkId` addresses the full answer, which is loaded on demand.
+ */
+export type GeoPromptResultSummary = Pick<
+  GeoPromptResult,
+  | "promptId"
+  | "engine"
+  | "prompt"
+  | "mentioned"
+  | "position"
+  | "sentiment"
+  | "competitors"
+  | "lastCheckedAt"
+> & { checkId: string };
+
+export interface GeoPromptResultSummariesResponse {
+  configured: boolean;
+  results: GeoPromptResultSummary[];
+}
+
+export interface GeoPromptResultDetailResponse {
+  result: GeoPromptResult | null;
+}
+
 export interface GeoPromptHistoryInput extends GeoScopeInput {
   promptId: string;
 }
@@ -1028,7 +1058,7 @@ export interface GeoPromptSummary {
   total: number;
   bestPosition: number | null;
   presence: GeoPresenceStatus | null;
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
 }
 
 export type GeoTab = "visibility" | "prompts" | "journeys";

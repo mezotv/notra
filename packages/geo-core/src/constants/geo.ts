@@ -15,7 +15,7 @@ import type {
   GeoJourneyPathKind,
   GeoPromptIntent,
   GeoPromptIntentRule,
-  GeoPromptResult,
+  GeoPromptResultSummary,
   GeoRangePreset,
   GeoSearchGapAction,
   GeoTab,
@@ -1083,7 +1083,7 @@ export const GEO_RATE_SPARKLINE_PADDING = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareTimeseriesPoint[] =
   [];
-export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
+export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResultSummary[] = [];
 export const GEO_EMPTY_COMPETITORS: readonly GeoCompetitor[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
