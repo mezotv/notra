@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   parseAsInteger,
   parseAsString,
@@ -33,7 +33,9 @@ import { useState } from "react";
 import { columns } from "@/app/(dashboard)/[slug]/settings/logs/columns";
 import { DataTable } from "@/app/(dashboard)/[slug]/settings/logs/data-table";
 import { LogsPageSkeleton } from "@/app/(dashboard)/[slug]/settings/logs/skeleton";
+import { Button } from "@/components/button";
 import { LogDetailsSheet } from "@/components/logs/log-details-sheet";
+import type { SortState } from "@/components/motion/table/types";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SettingsPane } from "@/components/settings/settings-pane";
 import {
@@ -41,11 +43,15 @@ import {
   SOURCE_VALUES,
   STATUS_LABELS,
   STATUS_VALUES,
+  LOGS_PAGE_SIZE,
+  LOGS_OVERVIEW_STALE_TIME_MS,
 } from "@/constants/logs";
 import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import type { LogSelection } from "@/types/logs/details-sheet";
 import type { LogsRetentionHintProps } from "@/types/settings/modal";
-import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
+import type { Log } from "@/types/webhooks/webhooks";
+import { getLogPage } from "@/utils/log-pagination";
 import { getSourceLabel, getStatusLabel } from "@/utils/logs";
 
 const SEARCH_DEBOUNCE_MS = 150;
@@ -84,7 +90,15 @@ export function LogsSettingsPane() {
   );
   const [searchInput, setSearchInput] = useState(search);
   const [prevSearch, setPrevSearch] = useState(search);
-  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
+  const [selection, setSelection] = useState<LogSelection | null>(null);
+  const selectedLog =
+    selection && selection.organizationId === organizationId
+      ? selection.log
+      : null;
+  const [sort, setSort] = useState<SortState | null>({
+    key: "createdAt",
+    direction: "desc",
+  });
 
   if (search !== prevSearch) {
     setPrevSearch(search);
@@ -120,24 +134,24 @@ export function LogsSettingsPane() {
     }
   };
 
-  const { data, isPending } = useQuery<LogsResponse>({
-    ...dashboardOrpc.logs.webhooks.list.queryOptions({
+  const logsQuery = useQuery({
+    ...dashboardOrpc.logs.webhooks.overview.queryOptions({
       input: {
         organizationId: organizationId ?? "",
-        integrationType: "github",
-        integrationId: "all",
-        page,
-        pageSize: 10,
-        source,
-        status,
-        search,
       },
     }),
     enabled: !!organizationId,
-    placeholderData: keepPreviousData,
+    staleTime: LOGS_OVERVIEW_STALE_TIME_MS,
   });
 
-  const logs = data?.logs ?? [];
+  const result = getLogPage(logsQuery.data?.logs ?? [], {
+    page,
+    pageSize: LOGS_PAGE_SIZE,
+    source,
+    status,
+    search,
+    sort,
+  });
 
   const filtersActive =
     source !== "all" || status !== "all" || search.length > 0;
@@ -231,14 +245,41 @@ export function LogsSettingsPane() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          disabled={logsQuery.isFetching}
+          onClick={() => logsQuery.refetch()}
+        >
+          {logsQuery.isFetching && logsQuery.data ? "Refreshing…" : "Refresh"}
+        </Button>
       </div>
 
-      {organizationId && isPending ? (
-        <LogsPageSkeleton />
-      ) : (
+      {logsQuery.isError ? (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 text-sm"
+        >
+          <p>Unable to load logs. Try refreshing.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => logsQuery.refetch()}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : null}
+      {organizationId && logsQuery.isPending ? <LogsPageSkeleton /> : null}
+      {logsQuery.data ? (
         <DataTable
           columns={columns}
-          data={logs}
+          data={result.logs}
+          getRowId={(log) => log.id}
+          sort={sort}
+          onSortChange={(next) => {
+            setSort(next);
+            resetPage();
+          }}
           emptyState={
             filtersActive
               ? {
@@ -254,16 +295,24 @@ export function LogsSettingsPane() {
                 }
           }
           onPageChange={setPage}
-          onRowClick={setSelectedLog}
-          page={page}
-          totalPages={data?.pagination.totalPages ?? 1}
+          onRowClick={(log: Log) => {
+            if (organizationId) {
+              setSelection({ organizationId, log });
+            }
+          }}
+          page={result.page}
+          totalPages={result.totalPages}
+          totalCount={result.totalCount}
         />
-      )}
+      ) : null}
       <LogDetailsSheet
+        key={organizationId}
+        organizationId={organizationId ?? ""}
+        organizationSlug={activeOrganization?.slug ?? ""}
         log={selectedLog}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedLog(null);
+            setSelection(null);
           }
         }}
         open={selectedLog !== null}
