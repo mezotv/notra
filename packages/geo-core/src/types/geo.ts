@@ -11,12 +11,9 @@ import type {
   GeoCheckWrite,
 } from "@notra/db/types/geo-checks";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import type {
-  FinishReason,
-  LanguageModel,
-  LanguageModelUsage,
-  ToolSet,
-} from "ai";
+import type { FinishReason, LanguageModel, ToolSet } from "ai";
+
+import type { GeoModelTokenUsage } from "./token-usage";
 
 export interface GeoProject {
   id: string;
@@ -159,7 +156,7 @@ export interface GeoEngineAnswer {
   grounding: GeoCheckGrounding;
   sources: GeoCheckSourceItem[];
   finishReason: FinishReason | null;
-  usage?: LanguageModelUsage;
+  usage?: GeoModelTokenUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
   zdrEnforced: boolean | null;
   /**
@@ -170,7 +167,7 @@ export interface GeoEngineAnswer {
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
-  usage: LanguageModelUsage;
+  usage: GeoModelTokenUsage;
 }
 
 export interface GeoCheckOutcome {
@@ -206,7 +203,7 @@ export interface GeoErrorFields {
   causeName?: string;
   causeMessage?: string;
   finishReason?: FinishReason | null;
-  usage?: LanguageModelUsage;
+  usage?: GeoModelTokenUsage;
 }
 
 export interface GeoSkipFields extends Record<string, unknown> {
@@ -1100,6 +1097,8 @@ export type EngineIconKey =
   | "tencent"
   | "xiaomi"
   | "cursor"
+  | "claude-code"
+  | "codex"
   | "apple"
   | "duckduckgo"
   | "cloudflare"
@@ -1131,7 +1130,9 @@ export type GeoChatSkin =
   | "chatgpt"
   | "gemini"
   | "perplexity"
-  | "opencode";
+  | "opencode"
+  | "claude-code"
+  | "codex";
 
 export interface EngineIconRule {
   key: EngineIconKey;
@@ -1151,15 +1152,18 @@ export type GeoModelProviderId =
   | "deepseek"
   | "mistral"
   | "cursor"
-  | "opencode";
+  | "opencode"
+  | "claude-code"
+  | "codex";
 
 /** Zero-data-retention coverage as reported by the Vercel AI Gateway feed. */
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
  * Where a model is served. `cursor` runs through the Cursor SDK, `box`
- * through OpenCode in Upstash Box, and `serpapi` through SerpApi's Google
- * AI Overview endpoint — none of those go through the AI router.
+ * through OpenCode, Claude Code, and Codex in Upstash Box, and `serpapi`
+ * through SerpApi's Google AI Overview endpoint — none of those go through
+ * the AI router.
  */
 export type GeoModelGateway =
   | "vercel"
