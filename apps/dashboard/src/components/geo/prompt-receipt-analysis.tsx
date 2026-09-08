@@ -214,19 +214,17 @@ export function PromptReceiptAnalysis({
   onSelectCheck,
 }: PromptReceiptAnalysisProps) {
   const entries = promptHistoryChanges(history);
+  const competitorNames = [...new Set(result.competitors)];
 
   return (
     <div className="bg-muted/20 min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div className="flex w-full flex-col gap-4 p-4">
         <OutcomeStrip result={result} />
         <ReceiptSection
-          count={result.competitors.length}
+          count={competitorNames.length}
           title={GEO_PROMPT_RECEIPT_LABELS.competitors}
         >
-          <CompetitorsCell
-            competitors={competitors}
-            names={result.competitors}
-          />
+          <CompetitorsCell competitors={competitors} names={competitorNames} />
         </ReceiptSection>
         {result.searchQueries.length > 0 ? (
           <ReceiptSection title={GEO_PROMPT_RECEIPT_LABELS.searches}>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  GEO_PROMPT_HISTORY_ANSWER_LABELS,
   GEO_PROMPT_HISTORY_CHANGE_LABELS,
   GEO_PROMPT_HISTORY_COLUMN_LABELS,
   GEO_PROMPT_HISTORY_EMPTY_COMPETITORS,
@@ -216,15 +217,35 @@ export function PromptReceiptHistory({
           key: "scan",
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.date,
           width: "144px",
-          cell: ({ check }) => (
-            <time
-              className="tabular-nums"
-              dateTime={check.capturedAt}
-              title={check.scanId}
-            >
-              {formatAiTrafficTimestamp(check.capturedAt)}
-            </time>
-          ),
+          cell: ({ check }) => {
+            const timestamp = formatAiTrafficTimestamp(check.capturedAt);
+            const date = (
+              <time
+                className="tabular-nums"
+                dateTime={check.capturedAt}
+                title={check.scanId}
+              >
+                {timestamp}
+              </time>
+            );
+
+            return onSelect ? (
+              <button
+                aria-label={`${GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer} · ${timestamp}`}
+                className="focus-visible:ring-ring min-h-8 cursor-pointer rounded-sm text-left underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelect(check);
+                }}
+                title={GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
+                type="button"
+              >
+                {date}
+              </button>
+            ) : (
+              date
+            );
+          },
         },
         {
           key: "outcome",
