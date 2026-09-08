@@ -106,3 +106,81 @@ advances the next tick before hand-off; a rejected hand-off waits until the next
 configured interval. Billing finalization failures are still logged and suppressed.
 Changing those policies requires durable reconciliation and proven billing
 idempotency, not broad retries around a paid scan.
+
+## GEO readiness, Search Console, suggestions, and model calls
+
+Agent Readiness loading, scan claims, workflow handoff, completion, and failure
+stamping now compose Effects in `packages/geo-core/src/geo/agent-readiness.ts`.
+Database operations use `geoDb`; missing targets, claim conflicts, remote
+failures, and rejected handoffs have typed errors. If failure stamping also
+fails, `AgentReadinessStampError` retains both the original failure and the
+database failure. Completion and failure writes keep the report, organization,
+project, target URL, and running-status predicates, so an old worker cannot
+overwrite a replacement scan.
+
+`AgentReadinessNetwork` supplies report reads, SSE scans, and the feedback.md
+check. The native fetch adapters forward Effect cancellation and retain their
+existing timeouts. An incomplete SSE stream is cancelled before its reader lock
+is released. The feedback.md check still uses the shared public-URL fetch
+validation and its existing best-effort result policy.
+
+Search Console sync and site selection compose Effects in
+`geo/search-console.ts`. `GeoSearchConsoleService` owns the Google query adapter;
+`GeoModelService.suggest` owns paid generation. Generation finishes before the
+SQL transaction. The transaction checks the integration version, replaces only
+pending suggestions, and updates sync metadata atomically. Reauthentication and
+skipped outcomes remain distinct, and `lastError` contains curated copy. A failed
+error stamp retains both failures in `GeoSearchConsoleStampError`.
+
+The shared `@notra/ai` Google query function does not accept an AbortSignal. It
+still owns token refresh and reauthentication persistence. Effect interruption
+cannot cancel that function's in-flight request or database work. Drizzle
+transactions also run to commit or rollback once submitted. Neither boundary
+gains an automatic retry.
+
+Suggestion listing, acceptance, bulk acceptance, and dismissal live in
+`geo/suggestions.ts`. Acceptance resolves the selected project through
+`requireGeoProject(input)`, acquires the existing project advisory lock, and
+reads pending suggestions with a row lock. The SQL transaction reuses normalized
+duplicate prompts and changes suggestion status atomically. Dismissal uses a
+conditional pending-status update. The dashboard retains authorization,
+PostHog events, and public response shapes; internal event metadata does not
+appear in responses. Both host error mappers recognize missing suggestions.
+
+`GeoModelService` provides typed gateway answers, grounded conversations,
+judging, translation, and Search Console generation. `geo/model-live.ts` uses
+the existing AI SDK, gateway routing, schemas, grounding extraction, and token
+limits. Both host layers supply the model, Google, and readiness adapters.
+Workflow SDK steps execute Effects through their host layer; durable scheduling
+remains in Workflow SDK.
+
+The live model adapter forwards AbortSignal and retains the answer, judge, and
+translation timeouts. SDK-level retries are explicitly disabled with
+`maxRetries: 0`. The existing scan batch policy still allows one retry for a
+typed answer or judge timeout. Ordinary provider failures do not retry, and
+Search Console generation has no retry. Direct Cursor, OpenCode, and AI Overview
+adapters retain their existing implementations.
+
+The GEO suite includes 30 additional cases registered from
+`tests/geo-boundaries.ts` by `tests/scan-lifecycle.test.ts`. Tests use production
+Drizzle tables and constraints in PGlite, fake Effect services for provider
+results, and an injected fetch adapter for readiness transport tests. They cover
+typed failures, cancellation cleanup, replacement protection, failed handoff
+stamping, integration-version changes during generation, SQL rollback,
+selected-project acceptance, duplicate reuse, competing status transitions,
+and real scan-batch persistence with fake answers and judges. PGlite serializes
+transactions on one connection; these tests do not measure contention across
+production PostgreSQL connections. No paid SDK or gateway module mock is used.
+
+```sh
+cd packages/geo-core
+bun run test
+bun run check-types
+```
+
+From the repository root, verify the callers with:
+
+```sh
+bun run check-types --filter=@notra/geo-core --filter=dashboard --filter=api
+bun test apps/dashboard/tests/geo-scan-workflow.test.ts apps/dashboard/tests/geo-scan-cron.test.ts
+```

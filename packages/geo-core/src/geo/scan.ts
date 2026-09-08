@@ -6,7 +6,6 @@ import { describeContentBillingDenial } from "@notra/ai/billing/content-billing"
 import { FEATURES } from "@notra/ai/billing/features";
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
 import { geoLog } from "@notra/ai/evlog";
-import { gateway, getRouteMetadata } from "@notra/ai/gateway";
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import {
   EMPTY_GEO_CHECK_GROUNDING,
@@ -14,27 +13,19 @@ import {
 } from "@notra/db/constants/geo-checks";
 import { db } from "@notra/db/drizzle";
 import { geoPromptSequences, geoPrompts, geoSettings } from "@notra/db/schema";
-import type {
-  GeoCheckSourceItem,
-  GeoCheckWrite,
-} from "@notra/db/types/geo-checks";
+import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
 import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
-import { generateText, type ModelMessage, Output, stepCountIs } from "ai";
+import type { ModelMessage } from "ai";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
   GEO_AI_OVERVIEW_ENGINE_ID,
   GEO_AI_OVERVIEW_TIMEOUT_MS,
-  GEO_ANSWER_MAX_TOKENS,
-  GEO_ANSWER_SYSTEM_PROMPT,
   GEO_ANSWER_TIMEOUT_MS,
   GEO_CURSOR_TIMEOUT_MS,
-  GEO_DIRECT_GROUNDED_PROVIDERS,
   GEO_EXCERPT_MAX_LENGTH,
-  GEO_GROUNDED_ANSWER_MAX_TOKENS,
   GEO_GROUNDED_MAX_PROMPTS,
-  GEO_JUDGE_MAX_TOKENS,
   GEO_JUDGE_MODEL,
   GEO_LANGUAGE_GROUNDED_MAX_PROMPTS,
   GEO_LANGUAGE_MAX_PROMPTS,
@@ -43,24 +34,17 @@ import {
   GEO_MAX_SEQUENCES,
   GEO_OPENCODE_ANSWER_SYSTEM_PROMPT,
   GEO_OPENCODE_ENGINE_ID,
-  GEO_PROVIDER_TIMEOUT_MS,
   GEO_SCAN_CONCURRENCY,
   GEO_SEQUENCE_PAIR_TIMEOUT_MS,
   GEO_SEQUENCE_MAX_TURNS,
-  GEO_TRANSLATION_MAX_TOKENS,
 } from "../constants/geo";
 import { GEO_AI_OVERVIEW_ABSENT_ANSWER } from "../constants/geo-ai-overview";
-import { GeoContentBillingService } from "../deps";
-import {
-  geoJudgeResultSchema,
-  geoTranslationResultSchema,
-} from "../schemas/geo";
+import { GeoContentBillingService, GeoModelService } from "../deps";
 import type {
   GeoCheckContext,
   GeoCheckOutcome,
   GeoCheckTask,
   GeoEngineAnswer,
-  GeoGroundedAnswer,
   GeoGroundedEngine,
   GeoModelGateway,
   GeoPromptDefinition,
@@ -106,10 +90,8 @@ import {
 import { fetchGoogleAiOverview } from "./ai-overview";
 import { askCursorEngine } from "./cursor";
 import { geoSkip } from "./effect";
-import { buildGroundedInvocation } from "./engines";
 import {
   GeoEmptyAnswerError,
-  GeoJudgeError,
   GeoScanError,
   GeoSequenceEmptyError,
   GeoSequenceNotFoundError,
@@ -143,7 +125,6 @@ import {
 import { resolveScanZdrPolicy } from "./zdr-policy";
 
 const MAX_JUDGE_COMPETITORS = 10;
-const GROUNDED_MAX_STEPS = 4;
 
 function sequencePromptId(sequenceId: string): string {
   return `sequence-${sequenceId}`;
@@ -248,45 +229,14 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   zdr: GeoZdrMode,
   gatewayPin: Exclude<GeoModelGateway, "cursor" | "box" | "serpapi"> | undefined
 ) {
-  const result = yield* Effect.tryPromise({
-    try: (signal) =>
-      generateText({
-        model: gateway(engine, {
-          organizationId,
-          zdr,
-          gateway: gatewayPin,
-        }),
-        prompt: promptText,
-        system: GEO_ANSWER_SYSTEM_PROMPT,
-        maxOutputTokens: GEO_ANSWER_MAX_TOKENS,
-        abortSignal: signal,
-      }),
-    catch: (cause) =>
-      new GeoScanError({
-        message: `Engine ${engine} failed to answer`,
-        cause,
-      }),
-  }).pipe(
-    Effect.timeoutOrElse({
-      duration: GEO_ANSWER_TIMEOUT_MS,
-      orElse: () =>
-        Effect.fail(
-          new GeoScanError({
-            message: `Engine ${engine} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
-            timedOut: true,
-          })
-        ),
-    })
-  );
-  const answer: GeoEngineAnswer = {
-    text: result.text,
-    grounding: extractGrounding(result),
-    sources: collectGroundedSources(result.sources),
-    finishReason: result.finishReason,
-    usage: result.usage,
-    zdrEnforced: getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null,
-  };
-  return answer;
+  const models = yield* GeoModelService;
+  return yield* models.answer({
+    organizationId,
+    engine,
+    prompt: promptText,
+    zdr,
+    gateway: gatewayPin,
+  });
 });
 
 const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
@@ -455,21 +405,6 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   );
 });
 
-function collectGroundedSources(
-  sources: Awaited<ReturnType<typeof generateText>>["sources"]
-): GeoCheckSourceItem[] {
-  const seen = new Set<string>();
-  const collected: GeoCheckSourceItem[] = [];
-  for (const source of sources) {
-    if (source.sourceType !== "url" || seen.has(source.url)) {
-      continue;
-    }
-    seen.add(source.url);
-    collected.push({ url: source.url, title: source.title ?? null });
-  }
-  return collected;
-}
-
 const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
   function* (
     organizationId: string,
@@ -477,55 +412,13 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
     messages: ModelMessage[],
     zdr: GeoZdrMode
   ) {
-    const result = yield* Effect.tryPromise({
-      try: (signal) => {
-        const invocation = buildGroundedInvocation(engine, {
-          organizationId,
-          zdr,
-        });
-        return generateText({
-          model: invocation.model,
-          tools: invocation.tools,
-          stopWhen: stepCountIs(GROUNDED_MAX_STEPS),
-          messages,
-          system: GEO_ANSWER_SYSTEM_PROMPT,
-          maxOutputTokens: GEO_GROUNDED_ANSWER_MAX_TOKENS,
-          abortSignal: signal,
-        });
-      },
-      catch: (cause) =>
-        new GeoScanError({
-          message: `Grounded engine ${engine.key} failed to answer`,
-          cause,
-        }),
-    }).pipe(
-      Effect.timeoutOrElse({
-        duration: GEO_ANSWER_TIMEOUT_MS,
-        orElse: () =>
-          Effect.fail(
-            new GeoScanError({
-              message: `Grounded engine ${engine.key} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
-              timedOut: true,
-            })
-          ),
-      })
-    );
-    const grounding = extractGrounding(result);
-    const resultSources = collectGroundedSources(result.sources);
-    const answer: GeoGroundedAnswer = {
-      text: result.text,
-      grounding,
-      finishReason: result.finishReason,
-      sources:
-        resultSources.length > 0
-          ? resultSources
-          : grounding.sources.map(({ title, url }) => ({ title, url })),
-      usage: result.usage,
-      zdrEnforced: GEO_DIRECT_GROUNDED_PROVIDERS.has(engine.provider)
-        ? false
-        : (getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null),
-    };
-    return answer;
+    const models = yield* GeoModelService;
+    return yield* models.groundedAnswer({
+      organizationId,
+      engine,
+      messages,
+      zdr,
+    });
   }
 );
 
@@ -534,37 +427,11 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   promptText: string,
   answer: string
 ) {
-  const judged = yield* Effect.tryPromise({
-    try: async (signal) => {
-      const result = await generateText({
-        model: gateway(GEO_JUDGE_MODEL, {
-          organizationId: context.organizationId,
-        }),
-        output: Output.object({ schema: geoJudgeResultSchema }),
-        prompt: buildJudgePrompt(context, promptText, answer),
-        system:
-          "You analyze AI assistant answers for brand mentions. Respond only with the requested structured data.",
-        maxOutputTokens: GEO_JUDGE_MAX_TOKENS,
-        abortSignal: signal,
-      });
-      return result.output;
-    },
-    catch: (cause) =>
-      new GeoJudgeError({ message: "Judge model failed", cause }),
-  }).pipe(
-    Effect.timeoutOrElse({
-      duration: GEO_PROVIDER_TIMEOUT_MS,
-      orElse: () =>
-        Effect.fail(
-          new GeoJudgeError({
-            message: `Judge model timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
-            timedOut: true,
-            cause: new Error("Judge model request timed out"),
-          })
-        ),
-    })
-  );
-  return judged;
+  const models = yield* GeoModelService;
+  return yield* models.judge({
+    organizationId: context.organizationId,
+    prompt: buildJudgePrompt(context, promptText, answer),
+  });
 });
 
 const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
@@ -572,39 +439,12 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
   language: string,
   prompts: GeoPromptDefinition[]
 ) {
-  const translations = yield* Effect.tryPromise({
-    try: async (signal) => {
-      const result = await generateText({
-        model: gateway(GEO_JUDGE_MODEL, {
-          organizationId,
-        }),
-        output: Output.object({ schema: geoTranslationResultSchema }),
-        prompt: `Translate each prompt into ${language}. Keep brand and product names unchanged. Return the translations in the same order.\n\n${JSON.stringify(prompts.map((prompt) => prompt.text))}`,
-        system:
-          "You translate user prompts faithfully, preserving intent and named entities. Respond only with the requested structured data.",
-        maxOutputTokens: GEO_TRANSLATION_MAX_TOKENS,
-        abortSignal: signal,
-      });
-      return result.output.translations;
-    },
-    catch: (cause) =>
-      new GeoTranslationError({
-        message: `Translation to ${language} failed`,
-        language,
-        cause,
-      }),
-  }).pipe(
-    Effect.timeoutOrElse({
-      duration: GEO_PROVIDER_TIMEOUT_MS,
-      orElse: () =>
-        Effect.fail(
-          new GeoTranslationError({
-            message: `Translation to ${language} timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
-            language,
-          })
-        ),
-    })
-  );
+  const models = yield* GeoModelService;
+  const translations = yield* models.translate({
+    organizationId,
+    language,
+    prompts: prompts.map((prompt) => prompt.text),
+  });
   if (translations.length !== prompts.length) {
     return yield* Effect.fail(
       new GeoTranslationError({

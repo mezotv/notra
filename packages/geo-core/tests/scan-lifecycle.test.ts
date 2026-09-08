@@ -46,6 +46,7 @@ mock.module("@notra/ai/utils/geo-opencode-box", () => ({
 const { runGeoScanCronSweep } = await import("../src/geo/scan-schedule");
 const { loadGeoProjectBrand } = await import("../src/geo/project-brand");
 const { startClaimedGeoScanRun } = await import("../src/geo/scan-handoff");
+const { registerGeoBoundaryTests } = await import("./geo-boundaries");
 const {
   claimGeoScanRun,
   createGeoScanRow,
@@ -73,6 +74,8 @@ const sweep = () =>
       Effect.provideService(GeoWorkflowService, workflows)
     )
   );
+
+registerGeoBoundaryTests();
 
 beforeAll(initializeDatabase, 30_000);
 afterAll(() => postgres.close());

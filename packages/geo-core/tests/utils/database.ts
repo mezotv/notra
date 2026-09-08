@@ -2,6 +2,13 @@ import { PGlite } from "@electric-sql/pglite";
 import {
   brandSettings,
   geoScans,
+  geoPrompts,
+  geoPromptSuggestions,
+  geoAgentReadinessReports,
+  geoCompetitors,
+  googleSearchConsoleIntegrations,
+  geoMentionChecks,
+  users,
   geoSettings,
   organizations,
   projects,
@@ -13,6 +20,13 @@ import type { ScanSettingsInput } from "../types/fixtures";
 
 // Generate DDL from production tables so column/constraint changes reach tests.
 const schema = {
+  users,
+  geoPrompts,
+  geoPromptSuggestions,
+  geoAgentReadinessReports,
+  geoCompetitors,
+  googleSearchConsoleIntegrations,
+  geoMentionChecks,
   organizations,
   brandSettings,
   projects,
