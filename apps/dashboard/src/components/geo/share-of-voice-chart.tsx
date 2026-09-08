@@ -2,7 +2,6 @@
 
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { useState } from "react";
 
@@ -39,7 +38,7 @@ function ShareOfVoiceRankingRow({
       </span>
       <CompetitorLogo
         className="size-5 shrink-0"
-        domain={findCompetitorDomain(competitors, row.brand)}
+        competitors={competitors}
         name={row.brand}
       />
       <span className="min-w-0 flex-1 truncate text-sm" title={row.brand}>

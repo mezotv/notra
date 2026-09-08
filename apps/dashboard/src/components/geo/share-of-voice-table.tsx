@@ -5,7 +5,6 @@ import {
   GEO_FAMILY_STAT_TREND_HINT,
   GEO_SPARKLINE_MIN_POINTS,
 } from "@notra/geo-core/constants/geo";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { GeoBar } from "@notra/ui/components/geo/geo-bar";
@@ -72,7 +71,7 @@ export function ShareOfVoiceTable({
           {row.kind === "brand" && (
             <CompetitorLogo
               className="size-4 shrink-0"
-              domain={findCompetitorDomain(competitors, row.brand)}
+              competitors={competitors}
               name={row.brand}
             />
           )}

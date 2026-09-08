@@ -1,7 +1,6 @@
 "use client";
 
 import { GEO_PROMPT_RECEIPT_LABELS } from "@notra/geo-core/constants/geo";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type {
   GeoAnswerSource,
   GeoCompetitor,
@@ -75,7 +74,7 @@ function CompetitorsCell({
             <span className="flex min-w-0 items-center gap-3 text-sm">
               <CompetitorLogo
                 className="size-6 rounded-md border"
-                domain={findCompetitorDomain(competitors, name)}
+                competitors={competitors}
                 name={name}
               />
               <span className="min-w-0 truncate" title={name}>

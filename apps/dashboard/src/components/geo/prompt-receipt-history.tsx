@@ -10,7 +10,6 @@ import {
   GEO_PROMPT_HISTORY_SKELETON_ROWS,
   GEO_PROMPT_RECEIPT_LABELS,
 } from "@notra/geo-core/constants/geo";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { TablePagination } from "@notra/ui/components/shared/table-pagination";
@@ -31,6 +30,9 @@ import {
   promptOutcomeLabel,
 } from "@/utils/geo-prompt-history";
 import { pageRowCount, tableHeightFor } from "@/utils/table";
+
+/** Shared first-line box so icons, chips, and text sit on one baseline. */
+const HISTORY_LINE_CLASS = "flex min-h-6 items-center";
 
 function positionLabel(position: number | null): string {
   return position === null ? GEO_PROMPT_HISTORY_EMPTY_POSITION : `#${position}`;
@@ -70,13 +72,15 @@ function BrandToken({
   competitors: readonly GeoCompetitor[] | undefined;
 }) {
   return (
-    <span className="text-foreground inline-flex h-5 items-center gap-1 font-medium">
+    <span className={cn(HISTORY_LINE_CLASS, "min-w-0 gap-1.5 font-medium")}>
       <CompetitorLogo
-        className="size-3.5 rounded-[3px]"
-        domain={findCompetitorDomain(competitors, name)}
+        className="size-4 shrink-0 rounded-[4px]"
+        competitors={competitors}
         name={name}
       />
-      {name}
+      <span className="min-w-0 truncate" title={name}>
+        {name}
+      </span>
     </span>
   );
 }
@@ -126,7 +130,10 @@ function ChangesCell({ entry }: { entry: PromptHistoryEntry }) {
     <ul className="flex flex-col gap-1">
       {entry.changes.map((change) => (
         <li
-          className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 text-sm leading-5"
+          className={cn(
+            HISTORY_LINE_CLASS,
+            "text-muted-foreground min-w-0 flex-wrap gap-x-1 gap-y-1"
+          )}
           key={`${entry.check.id}-${change.kind}`}
         >
           <span className="sr-only">{promptHistoryChangeLabel(change)}</span>
@@ -148,15 +155,15 @@ function NewCompetitorsCell({
 }) {
   if (names.length === 0) {
     return (
-      <span className="text-muted-foreground/60 inline-flex h-5 items-center">
+      <span className={cn(HISTORY_LINE_CLASS, "text-muted-foreground/60")}>
         {GEO_PROMPT_HISTORY_EMPTY_COMPETITORS}
       </span>
     );
   }
   return (
-    <ul className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5">
+    <ul className="flex min-w-0 flex-col gap-1.5">
       {names.map((name) => (
-        <li className="contents" key={name}>
+        <li className="min-w-0" key={name}>
           <BrandToken competitors={competitors} name={name} />
         </li>
       ))}
@@ -224,7 +231,10 @@ export function PromptReceiptHistory({
             return onSelect ? (
               <button
                 aria-label={`${GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer} · ${timestamp}`}
-                className="focus-visible:ring-ring min-h-8 cursor-pointer rounded-sm text-left underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                className={cn(
+                  HISTORY_LINE_CLASS,
+                  "focus-visible:ring-ring cursor-pointer rounded-sm text-left underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                )}
                 onClick={(event) => {
                   event.stopPropagation();
                   onSelect(check);
@@ -235,7 +245,7 @@ export function PromptReceiptHistory({
                 {date}
               </button>
             ) : (
-              date
+              <span className={HISTORY_LINE_CLASS}>{date}</span>
             );
           },
         },
@@ -244,7 +254,7 @@ export function PromptReceiptHistory({
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.outcome,
           width: "144px",
           cell: ({ check }) => (
-            <span className="inline-flex items-center gap-2">
+            <span className={cn(HISTORY_LINE_CLASS, "gap-2")}>
               <PromptOutcomeIcon mentioned={check.mentioned} />
               <span
                 className={
@@ -260,29 +270,28 @@ export function PromptReceiptHistory({
           key: "position",
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.position,
           width: "80px",
-          cell: ({ check }) => <PositionChip position={check.position} />,
+          cell: ({ check }) => (
+            <span className={HISTORY_LINE_CLASS}>
+              <PositionChip position={check.position} />
+            </span>
+          ),
         },
         {
           key: "changes",
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.changes,
           width: "192px",
-          cell: (entry) => (
-            <div className="whitespace-normal">
-              <ChangesCell entry={entry} />
-            </div>
-          ),
+          cell: (entry) => <ChangesCell entry={entry} />,
         },
         {
           key: "newCompetitors",
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors,
-          minWidth: "192px",
+          width: "1fr",
+          minWidth: "176px",
           cell: (entry) => (
-            <div className="whitespace-normal">
-              <NewCompetitorsCell
-                competitors={competitors}
-                names={entry.newCompetitors}
-              />
-            </div>
+            <NewCompetitorsCell
+              competitors={competitors}
+              names={entry.newCompetitors}
+            />
           ),
         },
       ]}
