@@ -154,7 +154,7 @@ export function OrganizationDetailsCard({
         await setLastVisitedOrganization(updatedSlug);
 
         if (updatedSlug !== slug) {
-          router.replace(`/${updatedSlug}/settings/general`);
+          router.replace(`/${updatedSlug}?settings=general`);
         }
 
         toast.success("Organization updated successfully");

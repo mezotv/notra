@@ -15,14 +15,14 @@ import { CreditSummaryCards } from "@/components/billing/credit-summary-cards";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { CreditUsageChart } from "@/components/billing/credit-usage-chart";
 import { Button } from "@/components/button";
-import { PageContainer } from "@/components/layout/container";
 import { NotFoundContent } from "@/components/not-found-content";
+import { SettingsPane } from "@/components/settings/settings-pane";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import type { CreditRangeOption } from "@/types/billing/credits";
 
-export default function CreditsPageClient() {
+export function CreditsSettingsPane() {
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
@@ -59,16 +59,12 @@ export default function CreditsPageClient() {
       : 0;
 
   if (!(aiCreditsLoading || hasAiCredits)) {
-    return (
-      <PageContainer className="flex flex-1 flex-col">
-        <NotFoundContent className="flex-1" />
-      </PageContainer>
-    );
+    return <NotFoundContent className="py-12" />;
   }
 
   if (success) {
     return (
-      <PageContainer className="flex flex-1 flex-col items-center justify-center">
+      <div className="relative flex flex-col items-center justify-center py-12">
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
           <Confetti
             colors={[
@@ -100,44 +96,34 @@ export default function CreditsPageClient() {
             Go to dashboard
           </Button>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
   return (
-    <PageContainer
-      className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
-      variant="default"
-    >
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Credits</h1>
-            <p className="text-muted-foreground">
-              Monitor your AI credit balance and usage
-            </p>
-          </div>
+    <SettingsPane>
+      <CreditSummaryCards
+        balanceAction={
           <Button
-            className="gap-2 self-start"
+            aria-label="Top up credits"
             onClick={() => setTopupOpen(true)}
+            size="icon-sm"
+            variant="ghost"
           >
-            <HugeiconsIcon className="size-4" icon={Add01Icon} />
-            Top Up Credits
+            <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
           </Button>
-        </div>
-        <CreditSummaryCards
-          customer={customer}
-          isLoading={customerLoading}
-          totalUsage={totalUsage}
-          range={range}
-        />
-        <CreditUsageChart
-          data={aggregatedList}
-          range={range}
-          onRangeChange={setRange}
-        />
-        <CreditActivity />
-      </div>
+        }
+        customer={customer}
+        isLoading={customerLoading}
+        range={range}
+        totalUsage={totalUsage}
+      />
+      <CreditUsageChart
+        data={aggregatedList}
+        onRangeChange={setRange}
+        range={range}
+      />
+      <CreditActivity />
       <CreditTopupModal
         onOpenChange={(open) => {
           setTopupOpen(open);
@@ -149,6 +135,6 @@ export default function CreditsPageClient() {
         open={topupOpen}
         success={topupSuccess}
       />
-    </PageContainer>
+    </SettingsPane>
   );
 }

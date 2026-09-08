@@ -2,6 +2,7 @@ import type { GeoWriterBrief } from "@notra/ai/types/geo-writer";
 import type { GeoWriterSourceKind } from "@notra/db/types/geo-writer";
 import type {
   AiTrafficResponse,
+  GeoAnswerSource,
   GeoChangeEvent,
   GeoChangesSummary,
   GeoChangesSummaryGroup,
@@ -11,7 +12,6 @@ import type {
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoEngineFamily,
-  MentionProviderRow,
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoIngestSetupResponse,
@@ -19,15 +19,15 @@ import type {
   GeoJourneyPathKind,
   GeoLanguageSharePoint,
   GeoModelCatalog,
+  GeoModelCatalogEntry,
   GeoOverviewEngine,
   GeoPresenceStatus,
   GeoProject,
-  GeoAnswerSource,
   GeoPromptHistoryCheck,
   GeoPromptIntent,
   GeoPromptReceiptView,
-  GeoPromptResultSummary,
   GeoPromptResult,
+  GeoPromptResultSummary,
   GeoPromptSequence,
   GeoPromptSource,
   GeoRangePreset,
@@ -41,15 +41,16 @@ import type {
   GeoTab,
   GeoTimeseriesPoint,
   GeoTrackedPrompt,
+  GeoTrafficFunnelStageKey,
   GeoTrafficLogEntry,
   GeoTrafficPage,
   GeoTrafficPoint,
   GeoTrafficSource,
   GeoTrafficSourceGroupDefinition,
-  GeoTrafficFunnelStageKey,
   GeoTrafficTotals,
   GeoTrafficTrendRow,
   GeoVisitorType,
+  MentionProviderRow,
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import type { GeoRequestPayload } from "@usenotra/geo";
@@ -844,10 +845,66 @@ export interface CopyCodeButtonProps {
   onCopy?: () => void;
 }
 
+export type GeoSettingsFormSection = "brand" | "languages" | "models";
+
 export interface GeoSettingsFormProps {
   organizationId: string;
   settings: GeoSettings | null;
   catalog: GeoModelCatalog;
+  hideHeader?: boolean;
+  section?: GeoSettingsFormSection;
+}
+
+export interface GeoBrandSectionProps {
+  id: string;
+  companyName: string;
+  onCompanyNameChange: (value: string) => void;
+  aliases: string[];
+  onAliasesChange: (values: string[]) => void;
+  conversionPaths: string[];
+  onConversionPathsChange: (values: string[]) => void;
+  nameMissing: boolean;
+  savedAt: Date | null;
+}
+
+export interface GeoLanguagesSectionProps {
+  languages: string[];
+  onLanguagesChange: (values: string[]) => void;
+}
+
+export interface GeoModelsSectionProps {
+  id: string;
+  catalog: GeoModelCatalog;
+  engines: string[];
+  onEnginesChange: (values: string[]) => void;
+  enforceZdr: boolean;
+  onEnforceZdrChange: (value: boolean) => void;
+  nonZdrApproved: string[];
+  onNonZdrApprovedChange: (values: string[]) => void;
+  canEnforceZdr: boolean;
+  planLoading: boolean;
+  enabled: boolean;
+  onEnabledChange: (value: boolean) => void;
+  scanIntervalHours: number;
+  onScanIntervalHoursChange: (value: number) => void;
+}
+
+export interface GeoSettingsAutosaveInput {
+  organizationId: string;
+  companyName: string;
+  aliases: string[];
+  competitors: string[];
+  conversionPaths: string[];
+  languages: string[];
+  engines: string[];
+  enforceZdr: boolean;
+  nonZdrApproved: string[];
+  enabled: boolean;
+  scanIntervalHours: number;
+  canEnforceZdr: boolean;
+  planLoading: boolean;
+  catalog: GeoModelCatalog;
+  settings: GeoSettings | null;
 }
 
 export interface GeoTagListProps {
@@ -880,6 +937,66 @@ export interface GeoEnginePickerProps {
   labeled?: boolean;
   /** Rendered as the first row of the options group under the model list. */
   scheduleRow?: ReactNode;
+}
+
+export interface GeoEngineProviderListProps {
+  catalog: GeoModelCatalog;
+  disabled: boolean;
+  expanded: ReadonlySet<string>;
+  id: string;
+  lastSelected: boolean;
+  nonZdrApproved: readonly string[];
+  onToggleExpanded: (providerId: string) => void;
+  onToggleModel: (model: GeoModelCatalogEntry, checked: boolean) => void;
+  onToggleProvider: (
+    models: readonly GeoModelCatalogEntry[],
+    visibleModels: readonly GeoModelCatalogEntry[],
+    checked: boolean
+  ) => void;
+  onToggleShowAllModels: (providerId: string) => void;
+  onToggleShowMore: () => void;
+  selected: readonly string[];
+  showAllModels: ReadonlySet<string>;
+  showMore: boolean;
+  zdrActive: boolean;
+}
+
+export interface GeoEngineProviderRowProps {
+  approvedNonZdrIds: ReadonlySet<string>;
+  catalog: GeoModelCatalog;
+  disabled: boolean;
+  expanded: boolean;
+  hiddenCount: number;
+  id: string;
+  lastSelected: boolean;
+  onToggleExpanded: (providerId: string) => void;
+  onToggleModel: (model: GeoModelCatalogEntry, checked: boolean) => void;
+  onToggleProvider: GeoEngineProviderListProps["onToggleProvider"];
+  onToggleShowAllModels: (providerId: string) => void;
+  provider: GeoModelCatalog["providers"][number];
+  providerIndex: number;
+  reduceMotion: boolean | null;
+  revealIndex: number;
+  selectedCount: number;
+  selectedIds: ReadonlySet<string>;
+  showAllModels: boolean;
+  showMore: boolean;
+  zdrActive: boolean;
+}
+
+export interface GeoEngineProviderModelsProps {
+  additionalModels: readonly GeoModelCatalogEntry[];
+  approvedNonZdrIds: ReadonlySet<string>;
+  disabled: boolean;
+  id: string;
+  lastSelected: boolean;
+  onToggleModel: (model: GeoModelCatalogEntry, checked: boolean) => void;
+  onToggleShowAllModels: (providerId: string) => void;
+  primaryModels: readonly GeoModelCatalogEntry[];
+  providerId: string;
+  selectedIds: ReadonlySet<string>;
+  showAllModels: boolean;
+  zdrActive: boolean;
 }
 
 export type GeoFlagState = "enabled" | "disabled" | "unavailable";
