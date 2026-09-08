@@ -119,8 +119,10 @@ project, target URL, and running-status predicates, so an old worker cannot
 overwrite a replacement scan.
 
 `AgentReadinessNetwork` supplies report reads, SSE scans, and the feedback.md
-check. The native fetch adapters forward Effect cancellation and retain their
-existing timeouts. An incomplete SSE stream is cancelled before its reader lock
+check. Its implementation in `geo/agent-readiness-live.ts` owns the API report
+mapper, HTTP requests, SSE parsing, reader lifecycle, and live layer. The native
+fetch adapters forward Effect cancellation and retain their existing timeouts.
+An incomplete SSE stream is cancelled before its reader lock
 is released. The feedback.md check still uses the shared public-URL fetch
 validation and its existing best-effort result policy.
 
@@ -155,22 +157,30 @@ Workflow SDK steps execute Effects through their host layer; durable scheduling
 remains in Workflow SDK.
 
 The live model adapter forwards AbortSignal and retains the answer, judge, and
-translation timeouts. SDK-level retries are explicitly disabled with
-`maxRetries: 0`. The existing scan batch policy still allows one retry for a
-typed answer or judge timeout. Ordinary provider failures do not retry, and
-Search Console generation has no retry. Direct Cursor, OpenCode, and AI Overview
+translation timeouts. All five live model calls retain the SDK's default retry
+setting; the adapter adds no Effect-level retry policy. The existing scan batch
+policy still allows one domain retry for a typed answer or judge timeout.
+Ordinary provider failures do not trigger a domain retry, and Search Console
+generation adds no domain retry. Direct Cursor, OpenCode, and AI Overview
 adapters retain their existing implementations.
 
-The GEO suite includes 30 additional cases registered from
-`tests/geo-boundaries.ts` by `tests/scan-lifecycle.test.ts`. Tests use production
-Drizzle tables and constraints in PGlite, fake Effect services for provider
-results, and an injected fetch adapter for readiness transport tests. They cover
+The GEO suite includes 30 boundary cases independently discovered in
+`tests/agent-readiness.test.ts`, `tests/search-console.test.ts`,
+`tests/suggestions.test.ts`, and `tests/model-scan.test.ts`. Each DB-backed file
+explicitly imports the shared infrastructure mocks and owns database setup,
+reset, and teardown hooks. The mocked database export remains stable across
+Bun's module cache while each file receives a fresh PGlite database.
+Tests use production Drizzle tables and constraints in PGlite, fake Effect
+services for provider results, and an injected fetch adapter for readiness
+transport tests. They cover
 typed failures, cancellation cleanup, replacement protection, failed handoff
 stamping, integration-version changes during generation, SQL rollback,
 selected-project acceptance, duplicate reuse, competing status transitions,
 and real scan-batch persistence with fake answers and judges. PGlite serializes
 transactions on one connection; these tests do not measure contention across
-production PostgreSQL connections. No paid SDK or gateway module mock is used.
+production PostgreSQL connections. Fake model-service tests establish domain
+retry behavior, not the live SDK adapter's retries. No paid network calls or paid
+SDK or gateway module mocks are used.
 
 ```sh
 cd packages/geo-core

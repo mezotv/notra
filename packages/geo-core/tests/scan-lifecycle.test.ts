@@ -23,30 +23,17 @@ import { buildGeoPrompts } from "../src/geo/prompts";
 import type { GeoWorkflowServiceShape } from "../src/types/deps";
 import {
   initializeDatabase,
-  postgres,
+  database,
   resetDatabase,
   seedProject,
   settingsFor,
   testDb,
 } from "./utils/database";
-
-// Replace only infrastructure boundaries; scheduling, SQL predicates, hand-off,
-// ownership checks and finalizers below are the production implementations.
-mock.module("@notra/db/drizzle", () => ({ db: testDb }));
-mock.module("@notra/ai/evlog", () => ({
-  geoLog: { info: mock(), warn: mock(), error: mock() },
-  geoLogDrainEnabled: true,
-  flushGeoLog: async () => undefined,
-}));
-const cleanupBoxes = mock(async () => undefined);
-mock.module("@notra/ai/utils/geo-opencode-box", () => ({
-  deleteStaleGeoOpenCodeBoxes: cleanupBoxes,
-}));
+import { cleanupBoxes } from "./utils/infrastructure";
 
 const { runGeoScanCronSweep } = await import("../src/geo/scan-schedule");
 const { loadGeoProjectBrand } = await import("../src/geo/project-brand");
 const { startClaimedGeoScanRun } = await import("../src/geo/scan-handoff");
-const { registerGeoBoundaryTests } = await import("./geo-boundaries");
 const {
   claimGeoScanRun,
   createGeoScanRow,
@@ -75,10 +62,8 @@ const sweep = () =>
     )
   );
 
-registerGeoBoundaryTests();
-
 beforeAll(initializeDatabase, 30_000);
-afterAll(() => postgres.close());
+afterAll(() => database.postgres.close());
 beforeEach(async () => {
   await resetDatabase();
   startWorkflow.mockReset();

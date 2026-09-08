@@ -12,6 +12,7 @@ import type {
 } from "../types/suggestions";
 import { geoDb } from "./effect";
 import { GeoDatabaseError } from "./errors";
+import { lockGeoProjectInTransaction } from "./lock";
 import { toTrackedPrompt } from "./mappers";
 import { requireGeoProject } from "./projects";
 import { promptKey } from "./prompt-key";
@@ -90,9 +91,7 @@ export const acceptSuggestion = Effect.fn("geo.suggestions.accept")(function* (
   return yield* Effect.tryPromise({
     try: () =>
       db.transaction(async (tx) => {
-        await tx.execute(
-          sql`SELECT pg_advisory_xact_lock(hashtextextended(${`geo-project:${projectId}`}, 0))`
-        );
+        await lockGeoProjectInTransaction(tx, projectId);
         // Read pending state under a row lock, so dismiss/accept cannot both win.
         const [suggestion] = await tx
           .select()
@@ -142,9 +141,7 @@ export const acceptAllSuggestions = Effect.fn("geo.suggestions.acceptAll")(
     const { projectId } = yield* requireGeoProject(input);
     return yield* geoDb("accept all suggestions", () =>
       db.transaction(async (tx) => {
-        await tx.execute(
-          sql`SELECT pg_advisory_xact_lock(hashtextextended(${`geo-project:${projectId}`}, 0))`
-        );
+        await lockGeoProjectInTransaction(tx, projectId);
         const suggestions = await tx
           .select()
           .from(geoPromptSuggestions)

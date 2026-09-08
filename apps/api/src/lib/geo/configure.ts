@@ -9,7 +9,7 @@ import {
   GeoGenerationService,
   GeoWorkflowService,
 } from "@notra/geo-core/deps";
-import { agentReadinessNetworkLive } from "@notra/geo-core/geo/agent-readiness";
+import { agentReadinessNetworkLive } from "@notra/geo-core/geo/agent-readiness-live";
 import { geoModelLive } from "@notra/geo-core/geo/model-live";
 import { geoSearchConsoleLive } from "@notra/geo-core/geo/search-console-live";
 import type { GeoZdrEntitlement } from "@notra/geo-core/types/geo";

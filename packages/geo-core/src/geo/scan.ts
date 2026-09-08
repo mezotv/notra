@@ -222,23 +222,6 @@ Analyze the answer and report:
 The answer may be written in any language or script; count mentions of the company or its aliases regardless of language.`;
 }
 
-const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
-  organizationId: string,
-  engine: string,
-  promptText: string,
-  zdr: GeoZdrMode,
-  gatewayPin: Exclude<GeoModelGateway, "cursor" | "box" | "serpapi"> | undefined
-) {
-  const models = yield* GeoModelService;
-  return yield* models.answer({
-    organizationId,
-    engine,
-    prompt: promptText,
-    zdr,
-    gateway: gatewayPin,
-  });
-});
-
 const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
   engine: string,
   promptText: string
@@ -396,31 +379,15 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   if (engine === GEO_AI_OVERVIEW_ENGINE_ID) {
     return yield* askAiOverviewEngineEffect(engine, promptText, language);
   }
-  return yield* askGatewayEngine(
+  const models = yield* GeoModelService;
+  return yield* models.answer({
     organizationId,
     engine,
-    promptText,
+    prompt: promptText,
     zdr,
-    gatewayPin
-  );
+    gateway: gatewayPin,
+  });
 });
-
-const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
-  function* (
-    organizationId: string,
-    engine: GeoGroundedEngine,
-    messages: ModelMessage[],
-    zdr: GeoZdrMode
-  ) {
-    const models = yield* GeoModelService;
-    return yield* models.groundedAnswer({
-      organizationId,
-      engine,
-      messages,
-      zdr,
-    });
-  }
-);
 
 const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   context: GeoCheckContext,
@@ -484,13 +451,14 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   context: GeoCheckContext,
   task: GeoCheckTask
 ) {
+  const models = yield* GeoModelService;
   const grounded = task.grounded
-    ? yield* askGroundedConversation(
-        context.organizationId,
-        task.grounded,
-        [{ role: "user", content: task.prompt.text }],
-        task.zdr
-      )
+    ? yield* models.groundedAnswer({
+        organizationId: context.organizationId,
+        engine: task.grounded,
+        messages: [{ role: "user", content: task.prompt.text }],
+        zdr: task.zdr,
+      })
     : null;
   const answer =
     grounded ??
@@ -1557,14 +1525,15 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
   let usage = EMPTY_TOKEN_USAGE;
   let droppedTurns = 0;
 
+  const models = yield* GeoModelService;
   for (const [index, step] of steps.entries()) {
     messages.push({ role: "user", content: step });
-    const answer = yield* askGroundedConversation(
-      context.organizationId,
-      grounded,
+    const answer = yield* models.groundedAnswer({
+      organizationId: context.organizationId,
+      engine: grounded,
       messages,
-      zdr
-    );
+      zdr,
+    });
     usage = addTokenUsage(usage, answer.usage);
     if (zdr !== "none" && answer.zdrEnforced === false) {
       yield* geoLogWarn({
