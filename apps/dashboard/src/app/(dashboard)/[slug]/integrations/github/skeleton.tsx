@@ -56,10 +56,11 @@ export function GitHubLegacyIntegrationsSkeleton() {
     <section className="space-y-3">
       <div className="space-y-0.5">
         <h2 className="text-lg font-semibold">
-          Personal access token (Legacy)
+          Repositories without the GitHub App
         </h2>
         <p className="text-muted-foreground text-sm">
-          Legacy integrations connected with a personal access token.
+          Connect the GitHub App, then select and save these repositories.
+          Existing publishing settings will be kept.
         </p>
       </div>
       <Card
