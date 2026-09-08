@@ -82,6 +82,49 @@ The existing API service and GEO suites are not live provider or production
 end-to-end tests. The additional tests written during this Effect adoption
 are not included in the repository.
 
+## GitHub repository selection and token resolution
+
+The dashboard's repository-selection and publishing-authentication boundaries
+now use `runOrpcEffect`. Their programs live in
+`packages/ai/src/integrations/github-selection.ts` and `github-token.ts`, with
+explicit Effect dependencies and shared tagged errors in
+`packages/ai/src/schemas/github-operations.ts`. Token consumers retain their
+Promise entry points; repository listing and selection use the Effect entry
+points directly.
+
+Repository discovery completes before persistence. Selection changes, migration
+of existing records, and default output creation share one database transaction.
+Organization and repository row locks serialize selection updates, and installation
+rows are rechecked inside the transaction. These authoritative reads and token
+lookups bypass Drizzle's query cache. Repository-list cache invalidation happens
+after commit and is best-effort; it cannot report a saved selection as failed.
+
+Token resolution scopes installation access to the repository's organization and
+keeps missing credentials, missing installations, provider failures, persistence
+failures, and configuration/decryption errors distinct. Only transport boundaries
+choose the public error message. Neither database writes nor token creation are
+automatically retried. The PR branch/commit/reconciliation workflow remains
+Promise-based.
+
+Publishing prefers the configured GitHub App so commits and pull requests are
+authored by the bot. It uses the linked installation, or an enabled installation
+matching the repository owner in the same organization. A configured App with
+no matching installation prompts the user to connect it; PAT fallback is only
+available when the App is not configured. Publishing authentication uses the
+same typed credential resolver and uncached installation checks.
+
+Clone, repository and tool-context token entry points delegate to the same
+integration token resolver after their caller-specific access checks. Repository
+discovery is shared by the listing and selection programs; cache I/O, response
+decoding and GitHub requests have separate typed failures. Cache reads and writes
+remain required, while post-commit invalidation remains best-effort.
+
+`planGitHubRepositorySelection` computes identity matches and deselections from
+the rows locked by the transaction. Publishing recovery and pause eligibility
+live in `github-publish-policy.ts`; its oRPC adapter owns failure tracking and
+transport responses. Both repository-selection UI entry points use
+`useGitHubRepositorySelection` for fetching, account filtering and saving.
+
 ## Daily GEO scan reliability
 
 Durable scheduling and batch orchestration remain in the Workflow SDK; Effect
@@ -106,3 +149,91 @@ advances the next tick before hand-off; a rejected hand-off waits until the next
 configured interval. Billing finalization failures are still logged and suppressed.
 Changing those policies requires durable reconciliation and proven billing
 idempotency, not broad retries around a paid scan.
+
+## GEO readiness, Search Console, suggestions, and model calls
+
+Agent Readiness loading, scan claims, workflow handoff, completion, and failure
+stamping now compose Effects in `packages/geo-core/src/geo/agent-readiness.ts`.
+Database operations use `geoDb`; missing targets, claim conflicts, remote
+failures, and rejected handoffs have typed errors. If failure stamping also
+fails, `AgentReadinessStampError` retains both the original failure and the
+database failure. Completion and failure writes keep the report, organization,
+project, target URL, and running-status predicates, so an old worker cannot
+overwrite a replacement scan.
+
+`AgentReadinessNetwork` supplies report reads, SSE scans, and the feedback.md
+check. Its implementation in `geo/agent-readiness-live.ts` owns the API report
+mapper, HTTP requests, SSE parsing, reader lifecycle, and live layer. The native
+fetch adapters forward Effect cancellation and retain their existing timeouts.
+An incomplete SSE stream is cancelled before its reader lock
+is released. The feedback.md check still uses the shared public-URL fetch
+validation and its existing best-effort result policy.
+
+Search Console sync and site selection compose Effects in
+`geo/search-console.ts`. `GeoSearchConsoleService` owns the Google query adapter;
+`GeoModelService.suggest` owns paid generation. Generation finishes before the
+SQL transaction. The transaction checks the integration version, replaces only
+pending suggestions, and updates sync metadata atomically. Reauthentication and
+skipped outcomes remain distinct, and `lastError` contains curated copy. A failed
+error stamp retains both failures in `GeoSearchConsoleStampError`.
+
+The shared `@notra/ai` Google query function does not accept an AbortSignal. It
+still owns token refresh and reauthentication persistence. Effect interruption
+cannot cancel that function's in-flight request or database work. Drizzle
+transactions also run to commit or rollback once submitted. Neither boundary
+gains an automatic retry.
+
+Suggestion listing, acceptance, bulk acceptance, and dismissal live in
+`geo/suggestions.ts`. Acceptance resolves the selected project through
+`requireGeoProject(input)`, acquires the existing project advisory lock, and
+reads pending suggestions with a row lock. The SQL transaction reuses normalized
+duplicate prompts and changes suggestion status atomically. Dismissal uses a
+conditional pending-status update. The dashboard retains authorization,
+PostHog events, and public response shapes; internal event metadata does not
+appear in responses. Both host error mappers recognize missing suggestions.
+
+`GeoModelService` provides typed gateway answers, grounded conversations,
+judging, translation, and Search Console generation. `geo/model-live.ts` uses
+the existing AI SDK, gateway routing, schemas, grounding extraction, and token
+limits. Both host layers supply the model, Google, and readiness adapters.
+Workflow SDK steps execute Effects through their host layer; durable scheduling
+remains in Workflow SDK.
+
+The live model adapter forwards AbortSignal and retains the answer, judge, and
+translation timeouts. All five live model calls retain the SDK's default retry
+setting; the adapter adds no Effect-level retry policy. The existing scan batch
+policy still allows one domain retry for a typed answer or judge timeout.
+Ordinary provider failures do not trigger a domain retry, and Search Console
+generation adds no domain retry. Direct Cursor, OpenCode, and AI Overview
+adapters retain their existing implementations.
+
+The GEO boundary cases are independently discovered in
+`tests/agent-readiness.test.ts`, `tests/search-console.test.ts`,
+`tests/suggestions.test.ts`, and `tests/model-scan.test.ts`. Each DB-backed file
+explicitly imports the shared infrastructure mocks and owns database setup,
+reset, and teardown hooks. The mocked database export remains stable across
+Bun's module cache while each file receives a fresh PGlite database.
+Tests use production Drizzle tables and constraints in PGlite, fake Effect
+services for provider results, and an injected fetch adapter for readiness
+transport tests. They cover
+typed failures, cancellation cleanup, replacement protection, failed handoff
+stamping, integration-version changes during generation, SQL rollback,
+selected-project acceptance, duplicate reuse, terminal-state rejection,
+and real scan-batch persistence with fake answers and judges. PGlite serializes
+transactions on one connection; these tests do not measure contention across
+production PostgreSQL connections. Fake model-service tests establish domain
+retry behavior, not the live SDK adapter's retries. No paid network calls or paid
+SDK or gateway module mocks are used.
+
+```sh
+cd packages/geo-core
+bun run test
+bun run check-types
+```
+
+From the repository root, verify the callers with:
+
+```sh
+bun run check-types --filter=@notra/geo-core --filter=dashboard --filter=api
+bun test apps/dashboard/tests/geo-scan-workflow.test.ts apps/dashboard/tests/geo-scan-cron.test.ts
+```
