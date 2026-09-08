@@ -1,11 +1,12 @@
-import { LOG_CONTEXT_FIELDS } from "@/constants/logs";
+import { LOG_CONTEXT_ALIASES, LOG_CONTEXT_FIELDS } from "@/constants/logs";
 import type { LogEntryProps } from "@/types/logs/details-sheet";
 
 export function LogTechnicalDetails({ entry }: LogEntryProps) {
   const payload = entry.payload;
   const contextFields = Object.entries(LOG_CONTEXT_FIELDS).flatMap(
     ([key, label]) => {
-      const value = payload?.[key];
+      const value =
+        payload?.[key] ?? payload?.[LOG_CONTEXT_ALIASES[key] ?? key];
       return typeof value === "string" || typeof value === "number"
         ? [{ key, label, value: String(value) }]
         : [];

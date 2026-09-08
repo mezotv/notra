@@ -50,6 +50,11 @@ export function LogsSettingsPane() {
     direction: "desc",
   });
   const resetPage = () => setPage(1);
+  const refreshLogs = () => {
+    if (organizationId) {
+      return logsQuery.refetch();
+    }
+  };
   const logsQuery = useQuery({
     ...dashboardOrpc.logs.webhooks.overview.queryOptions({
       input: { organizationId },
@@ -91,7 +96,7 @@ export function LogsSettingsPane() {
           setStatus(value);
           resetPage();
         }}
-        onRefresh={() => logsQuery.refetch()}
+        onRefresh={refreshLogs}
         isFetching={logsQuery.isFetching}
         hasData={Boolean(logsQuery.data)}
       />
@@ -101,11 +106,7 @@ export function LogsSettingsPane() {
           className="flex items-center justify-between gap-3 text-sm"
         >
           <p>Unable to load logs. Try refreshing.</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => logsQuery.refetch()}
-          >
+          <Button variant="outline" size="sm" onClick={refreshLogs}>
             Retry
           </Button>
         </div>

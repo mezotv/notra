@@ -42,6 +42,13 @@ export interface GitHubWebhookSettingsProps {
   organizationId: string;
 }
 
+export interface GitHubWebhookRotationDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}
+
 export type GitHubClient = ReturnType<typeof createOctokit>;
 export type GitHubPublishContentType = "blog_post" | "changelog";
 

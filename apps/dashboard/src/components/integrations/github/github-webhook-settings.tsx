@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
+import { GitHubWebhookRotationDialog } from "@/components/integrations/github/github-webhook-rotation-dialog";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubWebhookSettingsProps } from "@/types/integrations/github";
 import { copyTextToClipboard } from "@/utils/copy-to-clipboard";
@@ -18,6 +19,7 @@ export function GitHubWebhookSettings({
   const urlId = useId();
   const secretId = useId();
   const [revealed, setRevealed] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const input = { organizationId, repositoryId: repository.id };
   const config = useQuery({
     ...dashboardOrpc.integrations.repositories.webhook.get.queryOptions({
@@ -144,7 +146,7 @@ export function GitHubWebhookSettings({
           variant="outline"
           size="sm"
           disabled={generate.isPending}
-          onClick={() => generate.mutate()}
+          onClick={() => setConfirmOpen(true)}
         >
           Regenerate secret
         </Button>
@@ -160,6 +162,14 @@ export function GitHubWebhookSettings({
           Open GitHub webhooks
         </a>
       </div>
+      <GitHubWebhookRotationDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        isPending={generate.isPending}
+        onConfirm={() =>
+          generate.mutate(undefined, { onSuccess: () => setConfirmOpen(false) })
+        }
+      />
     </div>
   );
 }

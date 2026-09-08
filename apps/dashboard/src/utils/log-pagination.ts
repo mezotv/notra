@@ -11,24 +11,26 @@ export function getLogPage(logs: readonly Log[], options: LogPageOptions) {
         log.title.toLowerCase().includes(search) ||
         log.errorMessage?.toLowerCase().includes(search))
   );
-  const sort = options.sort ?? { key: "createdAt", direction: "desc" };
-  filtered.sort((a, b) => {
-    let comparison = 0;
-    if (sort.key === "createdAt") {
-      comparison =
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    } else if (sort.key === "title") {
-      comparison = a.title.localeCompare(b.title);
-    } else if (sort.key === "status") {
-      comparison = a.status.localeCompare(b.status);
-    } else if (sort.key === "integrationType") {
-      comparison = a.integrationType.localeCompare(b.integrationType);
-    }
-    return (
-      (sort.direction === "asc" ? comparison : -comparison) ||
-      a.id.localeCompare(b.id)
-    );
-  });
+  const sort = options.sort;
+  if (sort) {
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      if (sort.key === "createdAt") {
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sort.key === "title") {
+        comparison = a.title.localeCompare(b.title);
+      } else if (sort.key === "status") {
+        comparison = a.status.localeCompare(b.status);
+      } else if (sort.key === "integrationType") {
+        comparison = a.integrationType.localeCompare(b.integrationType);
+      }
+      return (
+        (sort.direction === "asc" ? comparison : -comparison) ||
+        a.id.localeCompare(b.id)
+      );
+    });
+  }
   const totalPages = Math.max(1, Math.ceil(filtered.length / options.pageSize));
   const page = Math.min(totalPages, Math.max(1, options.page));
   return {

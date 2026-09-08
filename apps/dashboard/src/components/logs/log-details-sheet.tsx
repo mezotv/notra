@@ -92,6 +92,7 @@ export function LogDetailsSheet({
             {destination ? (
               <Button
                 render={<Link href={destination.href} />}
+                nativeButton={false}
                 onClick={() => onOpenChange(false)}
               >
                 {destination.label}

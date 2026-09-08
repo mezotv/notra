@@ -5,6 +5,7 @@ import { GitHubRepositoriesSkeleton } from "@/app/(dashboard)/[slug]/integration
 import { Button } from "@/components/button";
 import { GitHubRepositoryPreview } from "@/components/integrations/github/github-repository-preview";
 import { GitHubRepositoryRow } from "@/components/integrations/github/github-repository-row";
+import { useRepositoryHashScroll } from "@/hooks/use-repository-hash-scroll";
 import type { GitHubRepositoriesSectionProps } from "@/types/integrations/github-settings";
 
 function RepositoryList({
@@ -20,7 +21,7 @@ function RepositoryList({
   if (isLoadingLegacyIntegrations) {
     return <GitHubRepositoriesSkeleton />;
   }
-  if (legacyQuery.isError) {
+  if (legacyQuery.isError && !legacyQuery.data) {
     return (
       <div role="alert" className="py-6">
         <p className="text-sm">Unable to load repositories.</p>
@@ -83,6 +84,7 @@ export function GitHubRepositoriesSection(
 ) {
   const { githubIntegrations, isLoadingLegacyIntegrations, legacyQuery } =
     props;
+  useRepositoryHashScroll(legacyQuery.data);
   const empty =
     !isLoadingLegacyIntegrations &&
     !legacyQuery.isError &&
@@ -112,6 +114,21 @@ export function GitHubRepositoriesSection(
         </p>
       </div>
       <div className="min-w-0 space-y-4">
+        {legacyQuery.isError && legacyQuery.data ? (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-3 text-sm"
+          >
+            <p>Unable to refresh repositories. Showing the last loaded data.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => legacyQuery.refetch()}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
         <RepositoryList {...props} />
       </div>
     </section>

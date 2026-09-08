@@ -131,8 +131,9 @@ export const saveGitHubRepositorySelection = Effect.fn(
               githubAppInstallationId: sql`excluded.github_app_installation_id`,
               githubRepositoryId: sql`excluded.github_repository_id`,
               githubRepositoryPrivate: sql`excluded.github_repository_private`,
-              repositoryEnabled: true,
-              enabled: true,
+              ...(!params.preserveExisting
+                ? { repositoryEnabled: true, enabled: true }
+                : {}),
             },
             setWhere: eq(
               githubIntegrations.organizationId,

@@ -49,9 +49,6 @@ export function GitHubRepositoryMenu({
             <DropdownMenuItem onClick={() => onDialog("token")}>
               Update access token
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onToggle}>
-              {isEnabled ? "Pause repository" : "Enable repository"}
-            </DropdownMenuItem>
             <DropdownMenuItem disabled={isMigrating} onClick={onMigrate}>
               {isMigrating ? "Switching…" : "Switch to GitHub App"}
             </DropdownMenuItem>
@@ -62,6 +59,9 @@ export function GitHubRepositoryMenu({
             ) : null}
           </>
         )}
+        <DropdownMenuItem onClick={onToggle}>
+          {isEnabled ? "Pause repository" : "Enable repository"}
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => onDialog("delete")}
           variant="destructive"

@@ -25,6 +25,11 @@ export const LOG_CONTEXT_FIELDS = {
   runId: "Run ID",
 } as const;
 
+export const LOG_CONTEXT_ALIASES: Record<string, string> = {
+  runId: "workflowRunId",
+  triggerName: "scheduleName",
+};
+
 export const SOURCE_VALUES = [
   "all",
   "github",
