@@ -19,6 +19,7 @@ import { type ReactNode, useState } from "react";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
 import { Table } from "@/components/motion/table";
+import { TABLE_MAX_HEIGHT, TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
 import type {
   PromptHistoryChange,
@@ -177,14 +178,6 @@ export function PromptReceiptHistory({
   const pageCount = Math.max(1, Math.ceil(totalItems / HISTORY_PAGE_SIZE));
   const page = Math.min(requestedPage, pageCount);
 
-  if (!isLoading && entries.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        {GEO_PROMPT_RECEIPT_LABELS.noHistory}
-      </p>
-    );
-  }
-
   const visible = isLoading
     ? []
     : entries.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
@@ -274,7 +267,7 @@ export function PromptReceiptHistory({
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.changes,
           width: "192px",
           cell: (entry) => (
-            <div className="max-h-14 overflow-y-auto whitespace-normal">
+            <div className="whitespace-normal">
               <ChangesCell entry={entry} />
             </div>
           ),
@@ -284,7 +277,7 @@ export function PromptReceiptHistory({
           header: GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors,
           minWidth: "192px",
           cell: (entry) => (
-            <div className="max-h-14 overflow-y-auto whitespace-normal">
+            <div className="whitespace-normal">
               <NewCompetitorsCell
                 competitors={competitors}
                 names={entry.newCompetitors}
@@ -294,14 +287,17 @@ export function PromptReceiptHistory({
         },
       ]}
       data={visible}
+      emptyState={GEO_PROMPT_RECEIPT_LABELS.noHistory}
       footer={footer}
       getRowId={(entry) => entry.check.id}
-      height={tableHeightFor(
-        isLoading ? GEO_PROMPT_HISTORY_SKELETON_ROWS : visible.length,
-        72
-      )}
+      height={
+        isLoading || entries.length === 0
+          ? tableHeightFor(isLoading ? GEO_PROMPT_HISTORY_SKELETON_ROWS : 0)
+          : TABLE_MAX_HEIGHT
+      }
       loading={isLoading}
-      rowHeight={72}
+      rowHeight={TABLE_ROW_HEIGHT}
+      rowSizing="content"
       skeletonRows={GEO_PROMPT_HISTORY_SKELETON_ROWS}
     />
   );

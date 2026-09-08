@@ -9,6 +9,7 @@ import type {
   GeoPromptResultSummary,
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { geoPromptIntentLabel } from "@notra/geo-core/utils/geo-prompt-intent";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
@@ -112,7 +113,7 @@ function HistoryAnswerBanner({
 }
 
 function PromptAnswerHeader({
-  prompt,
+  row,
   results,
   active,
   view,
@@ -129,13 +130,13 @@ function PromptAnswerHeader({
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pr-8">
         <SheetTitle className="min-w-0 text-sm leading-5 font-medium">
           <button
-            aria-label={`Copy prompt: ${prompt}`}
+            aria-label={`Copy prompt: ${row.prompt}`}
             className="bg-background hover:bg-muted/50 focus-visible:ring-ring cursor-pointer rounded-lg border px-3 py-2 text-left wrap-anywhere shadow-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            onClick={() => copyTextToClipboard(prompt, "Copied prompt")}
+            onClick={() => copyTextToClipboard(row.prompt, "Copied prompt")}
             title="Copy prompt"
             type="button"
           >
-            {prompt}
+            {row.prompt}
           </button>
         </SheetTitle>
         <SheetDescription className="sr-only">
@@ -152,6 +153,24 @@ function PromptAnswerHeader({
           </time>
         ) : null}
       </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-muted-foreground text-xs">Intent</dt>
+          <dd>{geoPromptIntentLabel(row.intent)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground text-xs">Best position</dt>
+          <dd className="tabular-nums">
+            {row.bestPosition === null ? "Not ranked" : `#${row.bestPosition}`}
+          </dd>
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <dt className="text-muted-foreground text-xs">Tags</dt>
+          <dd className="max-h-20 overflow-auto break-words">
+            {row.tags.length > 0 ? row.tags.join(", ") : "No tags"}
+          </dd>
+        </div>
+      </dl>
       {results.length > 0 && active ? (
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <PromptEngineSwitcher
@@ -319,7 +338,7 @@ function PromptAnswerPage({
         active={active}
         onSelectEngine={selectEngine}
         onSelectView={selectView}
-        prompt={row.prompt}
+        row={row}
         results={results}
         view={view}
       />

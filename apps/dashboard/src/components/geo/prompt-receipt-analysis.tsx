@@ -11,7 +11,8 @@ import type { ReactNode } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptReceiptHistory } from "@/components/geo/prompt-receipt-history";
-import { Table } from "@/components/motion/table";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { PromptReceiptAnalysisProps } from "@/types/geo";
 import {
   promptHistoryChanges,
@@ -136,47 +137,54 @@ function SearchQueries({ queries }: { queries: readonly string[] }) {
   );
 }
 
-function SourcesTable({ sources }: { sources: GeoAnswerSource[] }) {
+const sourceColumns: TableColumn<GeoAnswerSource>[] = [
+  {
+    key: "title",
+    header: "Source",
+    width: "1fr",
+    minWidth: "12rem",
+    cell: (source) => (
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate text-sm">{source.title}</span>
+        <span className="text-muted-foreground truncate text-xs">
+          {source.domain}
+        </span>
+      </span>
+    ),
+  },
+  {
+    key: "url",
+    header: "URL",
+    width: "1fr",
+    minWidth: "12rem",
+    cell: (source) => {
+      const href = getSafeReferenceSourceUrl(source.url);
+      return href ? (
+        <a
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 block truncate rounded-sm text-xs underline-offset-2 outline-none hover:underline focus-visible:ring-2"
+          href={href}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {source.url}
+        </a>
+      ) : (
+        <span className="text-muted-foreground block truncate text-xs">
+          {source.url}
+        </span>
+      );
+    },
+  },
+];
+
+function SourcesTable({ sources }: { sources: readonly GeoAnswerSource[] }) {
   return (
     <Table
-      columns={[
-        {
-          key: "title",
-          header: "Source",
-          cell: (source) => (
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm">{source.title}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {source.domain}
-              </span>
-            </span>
-          ),
-        },
-        {
-          key: "url",
-          header: "URL",
-          cell: (source) => {
-            const href = getSafeReferenceSourceUrl(source.url);
-            return href ? (
-              <a
-                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 block truncate rounded-sm text-xs underline-offset-2 outline-none hover:underline focus-visible:ring-2"
-                href={href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {source.url}
-              </a>
-            ) : (
-              <span className="text-muted-foreground block truncate text-xs">
-                {source.url}
-              </span>
-            );
-          },
-        },
-      ]}
-      data={sources}
+      columns={sourceColumns}
+      data={Array.from(sources)}
       getRowId={(source) => source.url}
       height={tableHeightFor(sources.length)}
+      rowHeight={TABLE_ROW_HEIGHT}
     />
   );
 }
