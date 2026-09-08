@@ -34,6 +34,8 @@ export function GeoSettingsForm({
   organizationId,
   settings,
   catalog,
+  hideHeader = false,
+  section,
 }: GeoSettingsFormProps) {
   const id = useId();
   const [companyName, setCompanyName] = useState(
@@ -179,112 +181,135 @@ export function GeoSettingsForm({
     saveStatus = "Saved";
   }
 
+  const showBrand = section === undefined || section === "brand";
+  const showLanguages = section === undefined || section === "languages";
+  const showModels = section === undefined || section === "models";
+
+  const saveStatusText = saveStatus ? (
+    <p
+      aria-live="polite"
+      className="text-muted-foreground text-xs tabular-nums"
+    >
+      {saveStatus}
+    </p>
+  ) : null;
+
   return (
     <div className="w-full space-y-6">
-      <header className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">GEO Settings</h1>
-          <p className="text-muted-foreground">
-            How your brand is identified and where prompts are scanned.
-          </p>
-        </div>
-        {saveStatus ? (
-          <p
-            aria-live="polite"
-            className="text-muted-foreground pt-2 text-xs tabular-nums"
-          >
-            {saveStatus}
-          </p>
-        ) : null}
-      </header>
-      <div className="space-y-6">
-        <TitleCard as="section" heading="Brand" headingAs="h2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={`${id}-name`}>Company name</Label>
-              <p className="text-muted-foreground text-xs">
-                The primary name we match in answers.
-              </p>
-              <Input
-                aria-invalid={nameMissing && savedAt !== null}
-                id={`${id}-name`}
-                onChange={(event) => setCompanyName(event.target.value)}
-                placeholder="Notra"
-                value={companyName}
-              />
-            </div>
-            <GeoTagList
-              description="Other spellings, product names, or the bare domain."
-              id={`${id}-aliases`}
-              label="Aliases"
-              max={GEO_MAX_ALIASES}
-              onChange={setAliases}
-              placeholder="usenotra"
-              values={aliases}
-            />
+      {hideHeader && saveStatusText ? (
+        <div className="text-right">{saveStatusText}</div>
+      ) : null}
+      {hideHeader ? null : (
+        <header className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">GEO Settings</h1>
+            <p className="text-muted-foreground">
+              How your brand is identified and where prompts are scanned.
+            </p>
           </div>
-        </TitleCard>
-        <SettingsSection
-          description={GEO_CONVERSION_PATHS_DESCRIPTION}
-          title={GEO_CONVERSION_PATHS_LABEL}
-        >
-          <GeoTagList
-            id={`${id}-conversion-paths`}
-            label={GEO_CONVERSION_PATHS_LABEL}
-            labeled={false}
-            max={GEO_MAX_CONVERSION_PATHS}
-            onChange={(values) =>
-              setConversionPaths(normalizeConversionPaths(values))
-            }
-            placeholder={GEO_CONVERSION_PATHS_PLACEHOLDER}
-            values={conversionPaths}
-          />
-        </SettingsSection>
-        <SettingsSection
-          description="Languages your prompts are scanned in. English is on by default."
-          title="Languages"
-        >
-          <GeoLanguagePicker
-            labeled={false}
-            onChange={setLanguages}
-            selected={languages}
-          />
-        </SettingsSection>
-        <TitleCard as="section" heading="Models" headingAs="h2">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <p className="text-muted-foreground min-w-0 flex-1 text-sm text-pretty">
-                Each enabled provider runs on every prompt, on the frequency you
-                set here.
-              </p>
+          {saveStatusText ? <div className="pt-2">{saveStatusText}</div> : null}
+        </header>
+      )}
+      <div className="space-y-6">
+        {showBrand ? (
+          <>
+            <TitleCard as="section" heading="Brand" headingAs="h2">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`${id}-name`}>Company name</Label>
+                  <p className="text-muted-foreground text-xs">
+                    The primary name we match in answers.
+                  </p>
+                  <Input
+                    aria-invalid={nameMissing && savedAt !== null}
+                    id={`${id}-name`}
+                    onChange={(event) => setCompanyName(event.target.value)}
+                    placeholder="Notra"
+                    value={companyName}
+                  />
+                </div>
+                <GeoTagList
+                  description="Other spellings, product names, or the bare domain."
+                  id={`${id}-aliases`}
+                  label="Aliases"
+                  max={GEO_MAX_ALIASES}
+                  onChange={setAliases}
+                  placeholder="usenotra"
+                  values={aliases}
+                />
+              </div>
+            </TitleCard>
+            <SettingsSection
+              description={GEO_CONVERSION_PATHS_DESCRIPTION}
+              title={GEO_CONVERSION_PATHS_LABEL}
+            >
+              <GeoTagList
+                id={`${id}-conversion-paths`}
+                label={GEO_CONVERSION_PATHS_LABEL}
+                labeled={false}
+                max={GEO_MAX_CONVERSION_PATHS}
+                onChange={(values) =>
+                  setConversionPaths(normalizeConversionPaths(values))
+                }
+                placeholder={GEO_CONVERSION_PATHS_PLACEHOLDER}
+                values={conversionPaths}
+              />
+            </SettingsSection>
+          </>
+        ) : null}
+        {showLanguages ? (
+          <SettingsSection
+            description="Languages your prompts are scanned in. English is on by default."
+            title="Languages"
+          >
+            <GeoLanguagePicker
+              labeled={false}
+              onChange={setLanguages}
+              selected={languages}
+            />
+          </SettingsSection>
+        ) : null}
+        {showModels ? (
+          <TitleCard
+            action={
               <GeoScanFrequencySelect
                 id={id}
                 intervalHours={scanIntervalHours}
                 onIntervalChange={setScanIntervalHours}
               />
+            }
+            as="section"
+            heading="Models"
+            headingAs="h2"
+          >
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-sm text-pretty">
+                Each enabled provider runs on every prompt, on the frequency you
+                set here.
+              </p>
+              <GeoEnginePicker
+                canEnforceZdr={canEnforceZdr}
+                catalog={catalog}
+                enforceZdr={enforceZdr}
+                labeled={false}
+                nonZdrApproved={nonZdrApproved}
+                onChange={setEngines}
+                onEnforceZdrChange={setEnforceZdr}
+                onNonZdrApprovedChange={setNonZdrApproved}
+                planLoading={planLoading}
+                scheduleRow={
+                  <GeoScanSchedule
+                    enabled={enabled}
+                    id={id}
+                    intervalHours={scanIntervalHours}
+                    onEnabledChange={setEnabled}
+                  />
+                }
+                selected={engines}
+              />
             </div>
-            <GeoEnginePicker
-              canEnforceZdr={canEnforceZdr}
-              catalog={catalog}
-              enforceZdr={enforceZdr}
-              labeled={false}
-              nonZdrApproved={nonZdrApproved}
-              onChange={setEngines}
-              onEnforceZdrChange={setEnforceZdr}
-              onNonZdrApprovedChange={setNonZdrApproved}
-              planLoading={planLoading}
-              scheduleRow={
-                <GeoScanSchedule
-                  enabled={enabled}
-                  id={id}
-                  intervalHours={scanIntervalHours}
-                  onEnabledChange={setEnabled}
-                />
-              }
-              selected={engines}
-            />
-          </div>
-        </TitleCard>
+          </TitleCard>
+        ) : null}
       </div>
     </div>
   );

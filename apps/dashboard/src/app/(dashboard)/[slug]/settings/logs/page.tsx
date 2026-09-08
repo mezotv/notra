@@ -1,37 +1,14 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import Loading from "./loading";
-import PageClient from "./page-client";
-
-export const metadata: Metadata = {
-  title: "Webhook Logs",
-};
+import { settingsPath } from "@/utils/settings-path";
 
 export const instant = true;
 
-async function PageContent({
+export default async function SettingsLogsRedirect({
   params,
 }: {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <PageClient organizationSlug={slug} />;
+  redirect(settingsPath(slug, "logs"));
 }
-
-function Page({
-  params,
-}: {
-  params: Promise<{
-    slug: string;
-  }>;
-}) {
-  return (
-    <Suspense fallback={<Loading />}>
-      <PageContent params={params} />
-    </Suspense>
-  );
-}
-export default Page;

@@ -2,11 +2,11 @@
 
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { GEO_PICKER_VISIBLE_MODELS } from "@notra/geo-core/constants/geo-model-catalog";
-import type {
-  GeoModelCatalog,
-  GeoModelCatalogEntry,
-} from "@notra/geo-core/types/geo";
+import {
+  GEO_PICKER_VISIBLE_MODELS,
+  GEO_PICKER_VISIBLE_PROVIDERS,
+} from "@notra/geo-core/constants/geo-model-catalog";
+import type { GeoModelCatalogEntry } from "@notra/geo-core/types/geo";
 import {
   applyGeoZdrEngineFallback,
   sortKnownEngines,
@@ -58,21 +58,6 @@ import {
 } from "@/utils/billing-plans";
 
 const ROW_CLASS = "flex items-center justify-between gap-3 px-3 py-2";
-
-function partiallySelectedProviders(
-  catalog: GeoModelCatalog,
-  selected: ReadonlySet<string>
-): Set<string> {
-  const expanded = new Set<string>();
-  for (const provider of catalog.providers) {
-    const models = geoModelsForProvider(catalog, provider.id);
-    const count = models.filter((model) => selected.has(model.id)).length;
-    if (count > 0 && count < models.length) {
-      expanded.add(provider.id);
-    }
-  }
-  return expanded;
-}
 
 function GeoModelRow({
   approved,
@@ -170,18 +155,8 @@ export function GeoEnginePicker({
   const checkoutReturnHandled = useRef(false);
   const selectedIds = new Set(selected);
   const approvedNonZdrIds = new Set(nonZdrApproved);
-  const [expanded, setExpanded] = useState<Set<string>>(() =>
-    partiallySelectedProviders(catalog, selectedIds)
-  );
-  const [showMore, setShowMore] = useState(() =>
-    catalog.providers.some(
-      (provider) =>
-        !provider.featured &&
-        geoModelsForProvider(catalog, provider.id).some((model) =>
-          selectedIds.has(model.id)
-        )
-    )
-  );
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [showMore, setShowMore] = useState(false);
   const [pendingApproval, setPendingApproval] =
     useState<GeoModelCatalogEntry | null>(null);
   const [showAllModels, setShowAllModels] = useState<Set<string>>(
@@ -344,9 +319,7 @@ export function GeoEnginePicker({
     setAddonLoading(false);
   };
 
-  const hiddenProviders = catalog.providers.filter(
-    (provider) => !provider.featured
-  );
+  const hiddenProviders = catalog.providers.slice(GEO_PICKER_VISIBLE_PROVIDERS);
   const hiddenProviderIndex = new Map(
     hiddenProviders.map((provider, index) => [provider.id, index])
   );
@@ -369,8 +342,9 @@ export function GeoEnginePicker({
 
       <div className="border-border/80 bg-background overflow-hidden rounded-lg border">
         <ul>
-          {catalog.providers.map((provider) => {
-            const isVisible = provider.featured || showMore;
+          {catalog.providers.map((provider, providerIndex) => {
+            const isPreviewed = providerIndex < GEO_PICKER_VISIBLE_PROVIDERS;
+            const isVisible = isPreviewed || showMore;
             const revealIndex = hiddenProviderIndex.get(provider.id) ?? 0;
             const staggerDelay = showMore
               ? revealIndex * 0.045
@@ -430,7 +404,7 @@ export function GeoEnginePicker({
                   reduceMotion
                     ? { duration: 0 }
                     : {
-                        delay: provider.featured ? 0 : staggerDelay,
+                        delay: isPreviewed ? 0 : staggerDelay,
                         filter: { duration: 0.18 },
                         height: {
                           duration: 0.24,
@@ -592,7 +566,7 @@ export function GeoEnginePicker({
               </motion.li>
             );
           })}
-          {catalog.providers.some((provider) => !provider.featured) ? (
+          {hiddenCount > 0 ? (
             <li className="bg-background">
               <button
                 aria-expanded={showMore}

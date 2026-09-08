@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { settingsPath } from "@/utils/settings-path";
+
 export const instant = false;
 
 interface PageProps {
@@ -8,5 +10,5 @@ interface PageProps {
 
 export default async function BillingUsagePage({ params }: PageProps) {
   const { slug } = await params;
-  redirect(`/${slug}/settings/billing?tab=usage`);
+  redirect(settingsPath(slug, "billing", { tab: "usage" }));
 }

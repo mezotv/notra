@@ -44,9 +44,9 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { Button } from "@/components/button";
-import { PageContainer } from "@/components/layout/container";
 import { NotFoundContent } from "@/components/not-found-content";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SettingsPane } from "@/components/settings/settings-pane";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
@@ -134,7 +134,7 @@ function renderEventRows(events: ListEventsRow[] | undefined) {
   });
 }
 
-export default function CreditsPageClient() {
+export function CreditsSettingsPane() {
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
@@ -242,16 +242,12 @@ export default function CreditsPageClient() {
   }, [aggregatedList]);
 
   if (!(aiCreditsLoading || hasAiCredits)) {
-    return (
-      <PageContainer className="flex flex-1 flex-col">
-        <NotFoundContent className="flex-1" />
-      </PageContainer>
-    );
+    return <NotFoundContent className="py-12" />;
   }
 
   if (success) {
     return (
-      <PageContainer className="flex flex-1 flex-col items-center justify-center">
+      <div className="relative flex flex-col items-center justify-center py-12">
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
           <Confetti
             colors={[
@@ -283,235 +279,227 @@ export default function CreditsPageClient() {
             Go to dashboard
           </Button>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
   const isLoading = customerLoading;
 
   return (
-    <PageContainer
-      className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
-      variant="default"
-    >
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Credits</h1>
-            <p className="text-muted-foreground">
-              Monitor your AI credit balance and usage
-            </p>
-          </div>
-          <Button
-            className="gap-2 self-start"
-            onClick={() => setTopupOpen(true)}
-          >
-            <HugeiconsIcon className="size-4" icon={Add01Icon} />
-            Top Up Credits
-          </Button>
+    <SettingsPane>
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
+          <Skeleton className="h-28 rounded-xl" />
         </div>
-
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <TitleCard accentColor="#10b981" heading="Current Balance">
-              <div>
-                <p className="text-3xl font-bold tracking-tight tabular-nums">
-                  {aiCreditsBalance !== null
-                    ? formatDollars(aiCreditsBalance)
-                    : "-"}
-                </p>
-                {aiCreditsIncluded !== null && (
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    of {formatDollars(aiCreditsIncluded)} included
-                  </p>
-                )}
-              </div>
-            </TitleCard>
-
-            <TitleCard accentColor="#8b5cf6" heading="Used This Period">
-              <div>
-                <p className="text-3xl font-bold tracking-tight tabular-nums">
-                  {formatDollars(totalUsage)}
-                </p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  in the last {CREDIT_RANGE_LABELS[range]}
-                </p>
-              </div>
-            </TitleCard>
-
-            <TitleCard heading="Usage">
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold tracking-tight tabular-nums">
-                    {Math.round(usagePercent)}%
-                  </p>
-                  <p className="text-muted-foreground text-sm">of plan</p>
-                </div>
-                <div className="bg-muted mt-3 h-2 w-full overflow-hidden rounded-full">
-                  <div
-                    className={cn(
-                      "duration-slower h-full rounded-full transition-all",
-                      usagePercent > 90
-                        ? "bg-destructive"
-                        : usageBarColor(usagePercent)
-                    )}
-                    style={{ width: `${usagePercent}%` }}
-                  />
-                </div>
-              </div>
-            </TitleCard>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold">Usage</h2>
-            <Tabs
-              onValueChange={(value) => {
-                if (isCreditRange(value, CREDIT_RANGES)) {
-                  setRange(value);
-                }
-              }}
-              value={range}
-            >
-              <TabsList variant="line">
-                {CREDIT_RANGES.map((value) => (
-                  <TabsTrigger key={value} value={value}>
-                    {value.toUpperCase()}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
-
-          <div className="rounded-xl border p-4">
-            {chartData.length > 0 ? (
-              <ChartContainer
-                className="aspect-auto h-[240px] w-full"
-                config={chartConfig}
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <TitleCard
+            accentColor="#10b981"
+            action={
+              <Button
+                aria-label="Top up credits"
+                onClick={() => setTopupOpen(true)}
+                size="icon-sm"
+                variant="ghost"
               >
-                <BarChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
-                >
-                  <CartesianGrid
-                    className="stroke-border/20"
-                    strokeDasharray="3 3"
-                    vertical={false}
-                  />
-                  <XAxis
-                    axisLine={false}
-                    className="text-muted-foreground/60 text-xs"
-                    dataKey="date"
-                    minTickGap={32}
-                    tickFormatter={(value: number) => formatShortDate(value)}
-                    tickLine={false}
-                    tickMargin={8}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    className="text-muted-foreground/60 text-xs"
-                    tickFormatter={(value: number) => formatDollars(value)}
-                    tickLine={false}
-                    tickMargin={8}
-                    width={48}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value) => formatDollars(Number(value))}
-                        labelFormatter={(_, payload) => {
-                          const item = payload?.[0]?.payload;
-                          return item?.date ? formatShortDate(item.date) : "";
-                        }}
-                      />
-                    }
-                    cursor={false}
-                  />
-                  <Bar
-                    dataKey="ai_credits"
-                    fill="var(--color-ai_credits)"
-                    opacity={0.8}
-                    radius={[3, 3, 0, 0]}
-                  />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className="text-muted-foreground flex h-[240px] items-center justify-center text-sm">
-                No usage data for this period
+                <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
+              </Button>
+            }
+            heading="Current Balance"
+          >
+            <div>
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
+                {aiCreditsBalance !== null
+                  ? formatDollars(aiCreditsBalance)
+                  : "-"}
+              </p>
+              {aiCreditsIncluded !== null && (
+                <p className="text-muted-foreground mt-1 text-sm">
+                  of {formatDollars(aiCreditsIncluded)} included
+                </p>
+              )}
+            </div>
+          </TitleCard>
+
+          <TitleCard accentColor="#8b5cf6" heading="Used This Period">
+            <div>
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
+                {formatDollars(totalUsage)}
+              </p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                in the last {CREDIT_RANGE_LABELS[range]}
+              </p>
+            </div>
+          </TitleCard>
+
+          <TitleCard heading="Usage">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold tracking-tight tabular-nums">
+                  {Math.round(usagePercent)}%
+                </p>
+                <p className="text-muted-foreground text-sm">of plan</p>
               </div>
-            )}
-          </div>
+              <div className="bg-muted mt-3 h-2 w-full overflow-hidden rounded-full">
+                <div
+                  className={cn(
+                    "duration-slower h-full rounded-full transition-all",
+                    usagePercent > 90
+                      ? "bg-destructive"
+                      : usageBarColor(usagePercent)
+                  )}
+                  style={{ width: `${usagePercent}%` }}
+                />
+              </div>
+            </div>
+          </TitleCard>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold">Usage</h2>
+          <Tabs
+            onValueChange={(value) => {
+              if (isCreditRange(value, CREDIT_RANGES)) {
+                setRange(value);
+              }
+            }}
+            value={range}
+          >
+            <TabsList variant="line">
+              {CREDIT_RANGES.map((value) => (
+                <TabsTrigger key={value} value={value}>
+                  {value.toUpperCase()}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
 
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Recent Activity</h2>
-          <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="w-[120px] text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventsLoading
-                  ? Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={`skeleton-${i.toString()}`}>
-                        <TableCell>
-                          <Skeleton className="h-4 w-32" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="ml-auto h-4 w-16" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  : renderEventRows(visibleEvents)}
-              </TableBody>
-            </Table>
-          </div>
-          {(hasPrevious || hasMore) && (
-            <Pagination className="justify-end">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    className={cn(
-                      !hasPrevious && "pointer-events-none opacity-50"
-                    )}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (hasPrevious) {
-                        setPage(Math.max(1, page - 1));
-                      }
-                    }}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    className={cn(!hasMore && "pointer-events-none opacity-50")}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (hasMore) {
-                        setPage(page + 1);
-                      }
-                    }}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+        <div className="rounded-xl border p-4">
+          {chartData.length > 0 ? (
+            <ChartContainer
+              className="aspect-auto h-[240px] w-full"
+              config={chartConfig}
+            >
+              <BarChart
+                accessibilityLayer
+                data={chartData}
+                margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+              >
+                <CartesianGrid
+                  className="stroke-border/20"
+                  strokeDasharray="3 3"
+                  vertical={false}
+                />
+                <XAxis
+                  axisLine={false}
+                  className="text-muted-foreground/60 text-xs"
+                  dataKey="date"
+                  minTickGap={32}
+                  tickFormatter={(value: number) => formatShortDate(value)}
+                  tickLine={false}
+                  tickMargin={8}
+                />
+                <YAxis
+                  axisLine={false}
+                  className="text-muted-foreground/60 text-xs"
+                  tickFormatter={(value: number) => formatDollars(value)}
+                  tickLine={false}
+                  tickMargin={8}
+                  width={48}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatDollars(Number(value))}
+                      labelFormatter={(_, payload) => {
+                        const item = payload?.[0]?.payload;
+                        return item?.date ? formatShortDate(item.date) : "";
+                      }}
+                    />
+                  }
+                  cursor={false}
+                />
+                <Bar
+                  dataKey="ai_credits"
+                  fill="var(--color-ai_credits)"
+                  opacity={0.8}
+                  radius={[3, 3, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="text-muted-foreground flex h-[240px] items-center justify-center text-sm">
+              No usage data for this period
+            </div>
           )}
         </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Recent Activity</h2>
+        <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[180px]">Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="w-[120px] text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {eventsLoading
+                ? Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i.toString()}`}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-4 w-16" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : renderEventRows(visibleEvents)}
+            </TableBody>
+          </Table>
+        </div>
+        {(hasPrevious || hasMore) && (
+          <Pagination className="justify-end">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  className={cn(
+                    !hasPrevious && "pointer-events-none opacity-50"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (hasPrevious) {
+                      setPage(Math.max(1, page - 1));
+                    }
+                  }}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  className={cn(!hasMore && "pointer-events-none opacity-50")}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (hasMore) {
+                      setPage(page + 1);
+                    }
+                  }}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
 
       <CreditTopupModal
@@ -525,6 +513,6 @@ export default function CreditsPageClient() {
         open={topupOpen}
         success={topupSuccess}
       />
-    </PageContainer>
+    </SettingsPane>
   );
 }

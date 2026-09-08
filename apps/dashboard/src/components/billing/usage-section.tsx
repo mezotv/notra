@@ -26,6 +26,10 @@ import {
   IntegrationCardDither,
   useIntegrationCardDither,
 } from "@/components/integrations/integration-card-dither";
+import {
+  USAGE_FEATURE_SKELETON_KEYS,
+  USAGE_METRIC_SKELETON_KEYS,
+} from "@/constants/billing";
 import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
@@ -170,10 +174,40 @@ export function UsageSection() {
 
   if (customerLoading && !customer) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-[360px] rounded-xl" />
+      <div className="space-y-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight">Usage</h2>
+            <p className="text-muted-foreground text-sm">
+              Track your feature usage and remaining balances
+            </p>
+          </div>
+          <Skeleton className="h-8 w-64 rounded-lg" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {USAGE_METRIC_SKELETON_KEYS.map((key) => (
+            <TitleCard heading={<Skeleton className="h-5 w-32" />} key={key}>
+              <Skeleton className="h-8 w-24" />
+            </TitleCard>
+          ))}
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-20" />
+          <div className="divide-y rounded-xl border">
+            {USAGE_FEATURE_SKELETON_KEYS.map((key) => (
+              <div
+                className="flex items-center justify-between gap-4 p-4"
+                key={key}
+              >
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-8 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -191,7 +225,7 @@ export function UsageSection() {
           onValueChange={(value) => setRange(value as RangeOption)}
           value={range}
         >
-          <TabsList variant="line">
+          <TabsList aria-label="Usage range">
             {ranges.map((value) => (
               <TabsTrigger key={value} value={value}>
                 {value === "last_cycle" ? "Last cycle" : value.toUpperCase()}

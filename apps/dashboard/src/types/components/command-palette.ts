@@ -1,5 +1,7 @@
 import type { IconSvgElement } from "@hugeicons/react";
 
+import type { SettingsSectionId } from "@/types/settings/modal";
+
 export type CommandSection =
   | "Navigation"
   | "GEO"
@@ -16,6 +18,7 @@ export interface CommandRoute {
   section: CommandSection;
   path: (slug: string) => string;
   requiresAiCredits?: boolean;
+  settingsSection?: SettingsSectionId;
 }
 
 export type AiResult =

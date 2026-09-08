@@ -838,10 +838,14 @@ export interface CopyCodeButtonProps {
   onCopy?: () => void;
 }
 
+export type GeoSettingsFormSection = "brand" | "languages" | "models";
+
 export interface GeoSettingsFormProps {
   organizationId: string;
   settings: GeoSettings | null;
   catalog: GeoModelCatalog;
+  hideHeader?: boolean;
+  section?: GeoSettingsFormSection;
 }
 
 export interface GeoTagListProps {

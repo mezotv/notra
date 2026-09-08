@@ -46,6 +46,7 @@ import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
+import { useSettingsModal } from "@/lib/hooks/use-settings-modal";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { CommandPaletteOpenSource } from "@/types/analytics/studio-events";
 import type {
@@ -147,6 +148,7 @@ export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
   const { activeOrganization } = useOrganizationsContext();
   const { hasAiCredits } = useHasAiCreditsFeature();
+  const { openSettings } = useSettingsModal();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const isApplePlatform = useSyncExternalStore(
@@ -673,6 +675,11 @@ export function CommandPalette() {
                             POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED,
                             { kind: "route", id: item.id }
                           );
+                          if (item.settingsSection) {
+                            handleOpenChange(false);
+                            openSettings(item.settingsSection);
+                            return;
+                          }
                           navigate(item.path(slug));
                         }}
                         value={item.label}

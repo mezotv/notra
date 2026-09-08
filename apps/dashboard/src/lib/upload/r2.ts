@@ -85,6 +85,21 @@ export function getR2BucketName() {
   return getR2Env().bucketName;
 }
 
+export function isR2Configured() {
+  return Boolean(
+    process.env.CLOUDFLARE_ACCESS_KEY_ID &&
+    process.env.CLOUDFLARE_SECRET_ACCESS_KEY &&
+    process.env.CLOUDFLARE_BUCKET_NAME &&
+    process.env.CLOUDFLARE_S3_ENDPOINT &&
+    process.env.CLOUDFLARE_PUBLIC_URL
+  );
+}
+
+export function getOptionalR2PublicUrl() {
+  const publicUrl = process.env.CLOUDFLARE_PUBLIC_URL;
+  return publicUrl ? publicUrl.replace(TRAILING_SLASHES_RE, "") : null;
+}
+
 export function getR2PublicUrl() {
   return getR2Env().publicUrl;
 }

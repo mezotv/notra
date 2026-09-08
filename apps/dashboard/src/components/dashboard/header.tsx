@@ -25,8 +25,8 @@ import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useId } from "react";
 
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
@@ -37,6 +37,7 @@ import { FeedbackForm } from "@/components/dashboard/feedback-popover";
 import { NavUser } from "@/components/dashboard/nav-user";
 import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
+import { useSettingsModal } from "@/lib/hooks/use-settings-modal";
 import { withGeoProject } from "@/utils/geo-paths";
 
 const NON_ORG_PATHS: string[] = [];
@@ -53,21 +54,22 @@ const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [geoProjectParam] = useGeoProjectQueryState();
   const id = useId();
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0];
-  const isInSettings = segments[1] === "settings";
-  const preSettingsPathsRef = useRef<Record<string, string>>({});
-  const activeSettingsShortcutSlugRef = useRef<string | null>(null);
   const {
     open: feedbackOpen,
     setOpen: setFeedbackOpen,
     openFeedback,
   } = useFeedback();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const {
+    isOpen: settingsOpen,
+    openSettings,
+    closeSettings,
+  } = useSettingsModal();
   const isApplePlatform = useIsApplePlatform();
 
   function triggerScheduleDemo() {
@@ -77,39 +79,18 @@ export function SiteHeader() {
     btn?.click();
   }
 
-  useEffect(() => {
-    const activeSlug = activeSettingsShortcutSlugRef.current;
-    if (!activeSlug) {
-      return;
-    }
-
-    if (activeSlug !== slug || !isInSettings) {
-      delete preSettingsPathsRef.current[activeSlug];
-      activeSettingsShortcutSlugRef.current = null;
-    }
-  }, [isInSettings, slug]);
-
   useHotkey("Mod+,", (event) => {
     event.preventDefault();
     if (!slug) {
       return;
     }
 
-    if (isInSettings) {
-      const returnPath =
-        activeSettingsShortcutSlugRef.current === slug
-          ? preSettingsPathsRef.current[slug]
-          : null;
-
-      delete preSettingsPathsRef.current[slug];
-      activeSettingsShortcutSlugRef.current = null;
-      router.push(returnPath ?? `/${slug}`);
+    if (settingsOpen) {
+      closeSettings();
       return;
     }
 
-    preSettingsPathsRef.current[slug] = pathname;
-    activeSettingsShortcutSlugRef.current = slug;
-    router.push(`/${slug}/settings/account`);
+    openSettings("account");
   });
 
   useEffect(() => {

@@ -5,14 +5,16 @@ import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
 
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { getR2Config, getR2PublicUrl } from "@/lib/upload/r2";
+import {
+  getOptionalR2PublicUrl,
+  getR2Config,
+  isR2Configured,
+} from "@/lib/upload/r2";
 import {
   type AttachmentFilter,
   deleteManyAttachmentsInputSchema,
   listAttachmentsInputSchema,
 } from "@/schemas/attachments";
-
-const TRAILING_SLASH_REGEX = /\/$/;
 
 const IMAGE_MIME_TYPES = [
   "image/jpeg",
@@ -62,7 +64,7 @@ function buildFilterCondition(
 }
 
 async function deleteR2Keys(keys: string[]) {
-  if (keys.length === 0) {
+  if (keys.length === 0 || !isR2Configured()) {
     return;
   }
   const { client, bucketName } = getR2Config();
@@ -82,8 +84,8 @@ async function deleteR2Keys(keys: string[]) {
 }
 
 function buildPublicUrl(key: string) {
-  const base = getR2PublicUrl().replace(TRAILING_SLASH_REGEX, "");
-  return `${base}/${key}`;
+  const base = getOptionalR2PublicUrl();
+  return base ? `${base}/${key}` : "";
 }
 
 async function requireOrganizationAccess(
@@ -145,7 +147,8 @@ export const attachmentsRouter = {
             : filterCondition
         )
         .orderBy(desc(chatAttachments.createdAt), desc(chatAttachments.id))
-        .limit(LIST_PAGE_SIZE + 1);
+        .limit(LIST_PAGE_SIZE + 1)
+        .$withCache(false);
 
       const hasMore = rows.length > LIST_PAGE_SIZE;
       const page = hasMore ? rows.slice(0, LIST_PAGE_SIZE) : rows;
@@ -162,7 +165,7 @@ export const attachmentsRouter = {
           filename: row.filename,
           mediaType: row.mediaType,
           size: row.size,
-          createdAt: row.createdAt,
+          createdAt: row.createdAt.toISOString(),
           url: buildPublicUrl(row.key),
         })),
         nextCursor,
