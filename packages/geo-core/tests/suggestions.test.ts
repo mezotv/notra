@@ -9,7 +9,7 @@ import {
 } from "bun:test";
 import assert from "node:assert/strict";
 
-import { geoPromptSuggestions, geoPrompts } from "@notra/db/schema";
+import { geoPrompts } from "@notra/db/schema";
 import { Effect, Result } from "effect";
 
 import {
