@@ -237,7 +237,7 @@ function ShareOfVoiceBrandsContent({
               {rows.map((row) => (
                 <ShareOfVoiceBrandRow
                   competitors={competitors}
-                  key={row.brand}
+                  key={row.id}
                   onOpen={
                     onBrandClick
                       ? (brand) => {

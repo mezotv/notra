@@ -5,7 +5,6 @@ import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 
 import { ShareOfVoiceChart } from "@/components/geo/share-of-voice-chart";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
-import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
 import type { CompetitorShareCardProps } from "@/types/geo";
 
@@ -24,14 +23,14 @@ export function CompetitorShareCard({
   );
 
   const openRow = (row: ShareOfVoiceRow) => {
-    if (row.brand === CHART_OTHER_SLICE_LABEL) {
+    if (row.kind === "aggregate") {
       return;
     }
     navigation.openRow(row.brand);
   };
 
   const prefetchRow = (row: ShareOfVoiceRow) => {
-    if (row.brand === CHART_OTHER_SLICE_LABEL) {
+    if (row.kind === "aggregate") {
       return;
     }
     navigation.prefetchRow(row.brand);

@@ -231,7 +231,7 @@ export function ShareOfVoiceChart(props: ShareOfVoiceChartProps) {
               {ranking.map((row) => (
                 <ShareOfVoiceRankingRow
                   competitors={competitors}
-                  key={row.brand}
+                  key={row.id}
                   onOpen={onSliceClick}
                   onPrefetch={onSlicePointerEnter}
                   onTrack={organizationId ? setTrackBrand : undefined}

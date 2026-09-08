@@ -1,7 +1,8 @@
 import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 
 import {
-  CHART_OTHER_SLICE_LABEL,
+  SHARE_OF_VOICE_AGGREGATE_ID,
+  SHARE_OF_VOICE_AGGREGATE_LABEL,
   SHARE_OF_VOICE_RANKING_LIMIT,
 } from "@/constants/charts";
 import type { ChartConfig } from "@/types/charts";
@@ -49,10 +50,12 @@ export function buildShareOfVoiceChartModel({
         : null,
     own: isOwnBrandName(row.brand, companyName, aliases),
   }));
-  const own =
+  const own: ShareOfVoiceRankingRow | null =
     ranked.find((row) => row.own) ??
     (companyName
       ? {
+          id: `brand:${companyName}`,
+          kind: "brand",
           brand: companyName,
           mentions: 0,
           share: 0,
@@ -65,14 +68,16 @@ export function buildShareOfVoiceChartModel({
   const leaders = ranked.slice(0, limit);
   const ranking =
     own && !leaders.some((row) => row.own) ? [...leaders, own] : leaders;
-  const displayed = new Set(ranking.map((row) => row.brand));
-  const others = rows.filter((row) => !displayed.has(row.brand));
+  const displayed = new Set(ranking.map((row) => row.id));
+  const others = rows.filter((row) => !displayed.has(row.id));
   const totalMentions = rows.reduce((sum, row) => sum + row.mentions, 0);
   const otherMentions = others.reduce((sum, row) => sum + row.mentions, 0);
   const other: ShareOfVoiceRow | null =
     otherMentions > 0
       ? {
-          brand: CHART_OTHER_SLICE_LABEL,
+          id: SHARE_OF_VOICE_AGGREGATE_ID,
+          kind: "aggregate",
+          brand: SHARE_OF_VOICE_AGGREGATE_LABEL,
           mentions: otherMentions,
           share: totalMentions > 0 ? otherMentions / totalMentions : 0,
           trend: [],
@@ -88,7 +93,7 @@ export function buildShareOfVoiceChartModel({
       label: row.brand,
       colors: seriesColors(
         shareOfVoiceSliceColor(
-          row.brand,
+          row,
           shareOfVoiceRivalIndex(slices, row.brand, ownBrand),
           competitors,
           ownBrand
