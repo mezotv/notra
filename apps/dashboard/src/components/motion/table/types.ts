@@ -65,6 +65,8 @@ export interface TableProps<T> {
   onDeleteColumn?: (columnKey: string, index: number) => void;
   /** Fixed row height in px — required for virtualization. */
   rowHeight?: number;
+  /** Content-sized rows wrap and render without virtualization. Use for bounded detail lists. */
+  rowSizing?: "fixed" | "content";
   /** Scroll viewport height in px. */
   height?: number;
   /** Floor for the table body when there are fewer rows than `height` allows. */

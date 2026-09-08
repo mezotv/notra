@@ -18,3 +18,10 @@ export interface TablePaginationProps extends TablePaginationState {
   itemLabel?: string;
   className?: string;
 }
+
+export interface TableSkeletonProps {
+  columnWidths?: readonly string[];
+  rows?: number;
+  rowHeight?: number;
+  className?: string;
+}

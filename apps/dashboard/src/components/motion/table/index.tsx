@@ -3,7 +3,14 @@
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -52,6 +59,7 @@ export function Table<T>({
   onInsertColumn,
   onDeleteColumn,
   rowHeight = 48,
+  rowSizing = "fixed",
   height = 440,
   minHeight,
   overscan = 10,
@@ -134,6 +142,7 @@ export function Table<T>({
   }, [displayRows, page, pageSize]);
 
   const virtualizer = useVirtualizer({
+    enabled: rowSizing === "fixed",
     count: pagedRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
@@ -196,10 +205,12 @@ export function Table<T>({
     Math.min(bodyHeight, pagedRows.length * rowHeight)
   );
   const isEmpty = pagedRows.length === 0 && !loading;
-  const scrolls = pagedRows.length * rowHeight > bodyHeight;
-  const overflowClass = scrolls
-    ? "overflow-auto"
-    : "overflow-x-auto overflow-y-hidden";
+  const contentSized = rowSizing === "content";
+  const scrolls = !contentSized && pagedRows.length * rowHeight > bodyHeight;
+  const overflowClass =
+    scrolls || contentSized
+      ? "overflow-auto"
+      : "overflow-x-auto overflow-y-hidden";
   const viewportHeight = scrolls
     ? bodyHeight
     : Math.max(
@@ -308,9 +319,21 @@ export function Table<T>({
     : null;
   // Real columns + checkbox; the trailing spacer adds one more in colSpans.
   const leadColumns = columns.length + (selectable ? 1 : 0);
+  const bodyStyle: CSSProperties = {
+    scrollbarGutter: contentSized || scrolls ? "stable" : undefined,
+  };
+  if (contentSized && pagedRows.length > 0) {
+    bodyStyle.maxHeight = bodyHeight + hScrollbarPx;
+    bodyStyle.minHeight = minBodyHeight;
+  } else {
+    bodyStyle.height = viewportHeight + hScrollbarPx;
+  }
 
   return (
-    <div className={cn("w-full text-sm", className)}>
+    <div
+      aria-busy={loading}
+      className={cn("w-full min-w-0 text-sm", className)}
+    >
       {/* Overlap (>= rounded-2xl) hides the header's side border in the body radius. */}
       <div
         className={cn(
@@ -325,7 +348,9 @@ export function Table<T>({
         <div
           className="overflow-hidden"
           ref={headerScrollRef}
-          style={scrolls ? { scrollbarGutter: "stable" } : undefined}
+          style={
+            scrolls || contentSized ? { scrollbarGutter: "stable" } : undefined
+          }
         >
           <table
             className={cn(
@@ -376,14 +401,7 @@ export function Table<T>({
         )}
         onScroll={handleScroll}
         ref={scrollRef}
-        style={
-          scrolls
-            ? {
-                height: viewportHeight + hScrollbarPx,
-                scrollbarGutter: "stable",
-              }
-            : { height: viewportHeight + hScrollbarPx }
-        }
+        style={bodyStyle}
       >
         <table
           className={cn(
@@ -397,7 +415,7 @@ export function Table<T>({
             {pagedRows.length === 0 && loading ? (
               <SkeletonRows
                 columns={orderedColumns}
-                count={Math.max(1, Math.ceil(height / rowHeight))}
+                count={Math.max(1, Math.ceil(bodyHeight / rowHeight))}
                 rowHeight={rowHeight}
                 selectable={selectable}
               />
@@ -439,6 +457,7 @@ export function Table<T>({
                       onToggleRow={toggleRow}
                       renderRowContextMenu={renderRowContextMenu}
                       rowHeight={rowHeight}
+                      rowSizing={rowSizing}
                       rowRef={(el) => {
                         rowRefs.current[entry.id] = el;
                       }}

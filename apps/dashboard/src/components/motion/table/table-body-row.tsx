@@ -27,6 +27,7 @@ export function TableBodyRow<T>({
   index,
   isLastRow,
   rowHeight,
+  rowSizing,
   selectable,
   isSelected,
   columns,
@@ -44,6 +45,7 @@ export function TableBodyRow<T>({
   index: number;
   isLastRow: boolean;
   rowHeight: number;
+  rowSizing: TableProps<T>["rowSizing"];
   selectable: boolean;
   isSelected: boolean;
   columns: TableColumn<T>[];
@@ -123,12 +125,20 @@ export function TableBodyRow<T>({
         <td
           className={cn(
             "text-foreground max-w-0 overflow-hidden px-4",
+            rowSizing === "content" && "align-top",
             cellBorder,
             alignText(column.align)
           )}
           key={column.key}
         >
-          <div className={cn(TABLE_CELL_INNER_CLASS, alignText(column.align))}>
+          <div
+            className={cn(
+              TABLE_CELL_INNER_CLASS,
+              rowSizing === "content" &&
+                "overflow-visible py-3 whitespace-normal",
+              alignText(column.align)
+            )}
+          >
             {!column.cell && column.editable ? (
               <EditableCell
                 label={`${column.key} for row ${index + 1}`}

@@ -19,14 +19,6 @@ import {
   PaginationPrevious,
 } from "@notra/ui/components/ui/pagination";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
@@ -41,8 +33,10 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
+import { Table, type TableColumn } from "@/components/motion/table";
 import { NotFoundContent } from "@/components/not-found-content";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
@@ -63,6 +57,7 @@ import {
 } from "@/utils/format";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { hasMorePaginatedResults } from "@/utils/pagination";
+import { paginatedTableHeightFor } from "@/utils/table";
 
 const chartConfig = {
   ai_credits: {
@@ -102,34 +97,36 @@ function getCreditEventLabel(event: ListEventsRow) {
   return source ? formatSnakeCaseLabel(source) : "—";
 }
 
-function renderEventRows(events: ListEventsRow[] | undefined) {
-  if (!events?.length) {
-    return (
-      <TableRow>
-        <TableCell
-          className="text-muted-foreground h-24 text-center"
-          colSpan={3}
-        >
-          No usage events yet
-        </TableCell>
-      </TableRow>
-    );
-  }
-
-  return events.map((event) => {
-    return (
-      <TableRow key={event.id}>
-        <TableCell className="text-muted-foreground text-sm">
-          {formatFullDate(event.timestamp)}
-        </TableCell>
-        <TableCell className="text-sm">{getCreditEventLabel(event)}</TableCell>
-        <TableCell className="text-right text-sm font-medium tabular-nums">
-          {formatDollars(event.value)}
-        </TableCell>
-      </TableRow>
-    );
-  });
-}
+const eventColumns: TableColumn<ListEventsRow>[] = [
+  {
+    key: "timestamp",
+    header: "Date",
+    width: "14rem",
+    cell: (event) => (
+      <span className="text-muted-foreground text-sm">
+        {formatFullDate(event.timestamp)}
+      </span>
+    ),
+  },
+  {
+    key: "type",
+    header: "Type",
+    width: "1fr",
+    minWidth: "10rem",
+    cell: (event) => getCreditEventLabel(event),
+  },
+  {
+    key: "value",
+    header: "Amount",
+    width: "8rem",
+    align: "right",
+    cell: (event) => (
+      <span className="font-medium tabular-nums">
+        {formatDollars(event.value)}
+      </span>
+    ),
+  },
+];
 
 export default function CreditsPageClient() {
   const { slug } = useParams<{ slug: string }>();
@@ -450,34 +447,17 @@ export default function CreditsPageClient() {
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Recent Activity</h2>
-          <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[180px]">Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="w-[120px] text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventsLoading
-                  ? Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={`skeleton-${i.toString()}`}>
-                        <TableCell>
-                          <Skeleton className="h-4 w-32" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="ml-auto h-4 w-16" />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  : renderEventRows(visibleEvents)}
-              </TableBody>
-            </Table>
-          </div>
+          <Table
+            columns={eventColumns}
+            data={eventsLoading ? [] : (visibleEvents ?? [])}
+            emptyState="No usage events yet"
+            getRowId={(event) => event.id}
+            height={paginatedTableHeightFor(
+              eventsLoading ? 5 : (visibleEvents?.length ?? 0)
+            )}
+            loading={eventsLoading}
+            rowHeight={TABLE_ROW_HEIGHT}
+          />
           {(hasPrevious || hasMore) && (
             <Pagination className="justify-end">
               <PaginationContent>
