@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import {
   createGitHubAppInstallationTokenForRecord,
+  getTokenForIntegrationId,
   isGitHubAppConfigured,
   listGitHubAppInstallationsByOrganization,
 } from "./github";
@@ -33,14 +34,15 @@ function selectGitHubAppInstallationForOwner<
 
 /**
  * Content publishing authenticates as the GitHub App installation so
- * commits and pull requests are authored by `{slug}[bot]`.
+ * commits and pull requests are authored by `{slug}[bot]`. Personal access
+ * tokens stay available when the GitHub App is not configured.
  */
 export async function getGitHubPublishToken(
   integrationId: string,
   options?: { organizationId?: string }
 ) {
   if (!isGitHubAppConfigured()) {
-    throw new GitHubAppRequiredForPublishError();
+    return getTokenForIntegrationId(integrationId, options);
   }
 
   const integration = await db.query.githubIntegrations.findFirst({
