@@ -573,7 +573,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     <button
                       aria-expanded={isActive}
                       aria-haspopup="menu"
-                      className={`duration-fast inline-flex items-center gap-1 font-sans text-base leading-5 tracking-[-0.02em] transition-colors ease-out aria-expanded:text-[#1E1E1E] dark:aria-expanded:text-white ${mutedNavClass}`}
+                      className={`duration-fast inline-flex cursor-pointer items-center gap-1 font-sans text-base leading-5 tracking-[-0.02em] transition-colors ease-out aria-expanded:text-[#1E1E1E] dark:aria-expanded:text-white ${mutedNavClass}`}
                       key={entry.label}
                       onClick={() =>
                         setActiveGroup(isActive ? null : entry.label)
