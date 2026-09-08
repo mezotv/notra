@@ -155,21 +155,71 @@ function buildManagedContent(params: BuildContentPullRequestBodyParams) {
   return joinParagraphs([renderOpenInNotraLink(params), article]);
 }
 
+function clampWrappedManaged(wrapped: string, maxLength: number) {
+  if (wrapped.length <= maxLength) {
+    return wrapped;
+  }
+
+  const endMarker = `\n${GITHUB_PULL_REQUEST_BODY_SECTION_END}`;
+  const notice = `\n\n${PULL_REQUEST_BODY_TRUNCATION_NOTICE}`;
+  const reserved = notice.length + endMarker.length;
+  const minimum = wrapManagedSection("");
+
+  if (maxLength < reserved) {
+    return minimum.length <= maxLength
+      ? minimum
+      : GITHUB_PULL_REQUEST_BODY_SECTION_END;
+  }
+
+  const maxPrefixLength = maxLength - reserved;
+  if (maxPrefixLength <= GITHUB_PULL_REQUEST_BODY_SECTION_START.length) {
+    return minimum.length <= maxLength
+      ? minimum
+      : GITHUB_PULL_REQUEST_BODY_SECTION_END;
+  }
+
+  return `${wrapped.slice(0, maxPrefixLength).trimEnd()}${notice}${endMarker}`;
+}
+
 function clampPullRequestBody(body: string) {
   if (body.length <= GITHUB_PULL_REQUEST_BODY_MAX_LENGTH) {
     return body;
   }
 
-  const endMarker = `\n${GITHUB_PULL_REQUEST_BODY_SECTION_END}`;
-  const notice = `\n\n${PULL_REQUEST_BODY_TRUNCATION_NOTICE}`;
-  const maxPrefixLength =
-    GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - notice.length - endMarker.length;
+  const sectionStart = body.indexOf(GITHUB_PULL_REQUEST_BODY_SECTION_START);
+  const sectionEnd =
+    sectionStart >= 0
+      ? body.indexOf(
+          GITHUB_PULL_REQUEST_BODY_SECTION_END,
+          sectionStart + GITHUB_PULL_REQUEST_BODY_SECTION_START.length
+        )
+      : -1;
 
-  if (maxPrefixLength <= GITHUB_PULL_REQUEST_BODY_SECTION_START.length) {
-    return body.slice(0, GITHUB_PULL_REQUEST_BODY_MAX_LENGTH);
+  if (sectionStart >= 0 && sectionEnd >= sectionStart) {
+    const prefix = body.slice(0, sectionStart);
+    const managed = body.slice(
+      sectionStart,
+      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+    );
+    const suffix = body.slice(
+      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+    );
+    const minimumManagedLength = wrapManagedSection("").length;
+
+    const maxWithSuffix =
+      GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - prefix.length - suffix.length;
+    if (maxWithSuffix >= minimumManagedLength) {
+      return `${prefix}${clampWrappedManaged(managed, maxWithSuffix)}${suffix}`;
+    }
+
+    const maxWithoutSuffix =
+      GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - prefix.length;
+    if (maxWithoutSuffix >= minimumManagedLength) {
+      return `${prefix}${clampWrappedManaged(managed, maxWithoutSuffix)}`;
+    }
   }
 
-  return `${body.slice(0, maxPrefixLength).trimEnd()}${notice}${endMarker}`;
+  return clampWrappedManaged(body, GITHUB_PULL_REQUEST_BODY_MAX_LENGTH);
 }
 
 export function buildContentPullRequestBody(
@@ -193,9 +243,11 @@ export function mergeContentPullRequestBody(
   );
 
   if (sectionStart >= 0 && sectionEnd >= sectionStart) {
-    return `${existingBody.slice(0, sectionStart)}${managedBody}${existingBody.slice(
-      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
-    )}`;
+    return clampPullRequestBody(
+      `${existingBody.slice(0, sectionStart)}${managedBody}${existingBody.slice(
+        sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+      )}`
+    );
   }
 
   const legacyManagedContents = [buildManagedIntro(params)];
@@ -225,9 +277,11 @@ export function mergeContentPullRequestBody(
       existingBody[legacySectionEnd] === "\n";
 
     if (startsAtParagraphBoundary && endsAtParagraphBoundary) {
-      return `${existingBody.slice(0, legacySectionStart)}${managedBody}${existingBody.slice(
-        legacySectionEnd
-      )}`;
+      return clampPullRequestBody(
+        `${existingBody.slice(0, legacySectionStart)}${managedBody}${existingBody.slice(
+          legacySectionEnd
+        )}`
+      );
     }
   }
 
@@ -242,5 +296,5 @@ export function mergeContentPullRequestBody(
     return managedBody;
   }
 
-  return `${existingBody.trimEnd()}\n\n${managedBody}`;
+  return clampPullRequestBody(`${existingBody.trimEnd()}\n\n${managedBody}`);
 }
