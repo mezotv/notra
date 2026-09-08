@@ -39,7 +39,7 @@ export const BLOG_AUTHORS: NotraBlogAuthor[] = [
   },
   {
     id: "notra",
-    name: "Notra",
+    name: "Notra Team",
     image: "/blog/authors/notra.png",
     slug: "notra",
     bio: null,
