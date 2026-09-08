@@ -24,7 +24,6 @@ import {
   geoAgentReadinessReports,
   geoPromptSuggestions,
   geoPrompts,
-  projects,
 } from "@notra/db/schema";
 import { GEO_SAMPLE_DATA_ENABLED } from "@notra/geo-core/constants/geo";
 import {
@@ -75,7 +74,6 @@ import {
   loadGeoLanguageShare,
   loadGeoOverview,
   loadGeoPromptHistory,
-  loadGeoPromptResults,
   loadGeoSettings,
   loadGeoTimeseries,
   loadGeoTrafficJourneys,
@@ -96,6 +94,10 @@ import {
   requireGeoProject,
 } from "@notra/geo-core/geo/projects";
 import { promptKey } from "@notra/geo-core/geo/prompt-key";
+import {
+  loadGeoPromptResultDetail,
+  loadGeoPromptResultSummaries,
+} from "@notra/geo-core/geo/prompt-results";
 import {
   clearGeoSampleData,
   seedGeoSampleData,
@@ -138,6 +140,7 @@ import {
   geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
   geoPromptHistoryInputSchema,
+  geoPromptResultDetailInputSchema,
   geoPromptRescanInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
@@ -598,20 +601,6 @@ function getGscScheduleIdsForDisconnect(
   ];
 }
 
-async function requireDefaultProjectId(
-  organizationId: string
-): Promise<string> {
-  const row = await db.query.projects.findFirst({
-    columns: { id: true },
-    where: eq(projects.organizationId, organizationId),
-    orderBy: [asc(projects.createdAt)],
-  });
-  if (!row) {
-    throw badRequest("Configure your brand tracking settings first");
-  }
-  return row.id;
-}
-
 async function acceptSuggestionInTx(
   tx: DbTransaction,
   organizationId: string,
@@ -888,11 +877,16 @@ export const geoRouter = {
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoTimeseries(input, geoWindow(input)))),
-  promptResults: authorizedProcedure
+  promptResultSummaries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(
-      geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
+      geoHandler((input) =>
+        loadGeoPromptResultSummaries(input, geoWindow(input))
+      )
     ),
+  promptResultDetail: authorizedProcedure
+    .input(geoPromptResultDetailInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptResultDetail(input))),
   changes: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoChanges(input))),
@@ -1906,7 +1900,10 @@ export const geoRouter = {
         throw notFound("Suggestion not found");
       }
 
-      const projectId = await requireDefaultProjectId(input.organizationId);
+      const { projectId } = await runOrpcEffect(
+        requireGeoProject(input),
+        toGeoOrpcError
+      );
       const accepted = await db.transaction((tx) =>
         acceptSuggestionInTx(tx, input.organizationId, projectId, suggestion)
       );
@@ -1958,7 +1955,10 @@ export const geoRouter = {
         return { accepted: 0 };
       }
 
-      const projectId = await requireDefaultProjectId(input.organizationId);
+      const { projectId } = await runOrpcEffect(
+        requireGeoProject(input),
+        toGeoOrpcError
+      );
       await db.transaction(async (tx) => {
         for (const row of rows) {
           await acceptSuggestionInTx(tx, input.organizationId, projectId, row);

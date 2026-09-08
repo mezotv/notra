@@ -218,20 +218,20 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
   },
   // Meta
   {
+    id: "meta/muse-spark-1.3",
+    provider: "meta",
+    label: "Muse Spark 1.3",
+    zdr: "none",
+    released: "2026-09-03",
+    default: false,
+    gateways: ["vercel", "openrouter"],
+  },
+  {
     id: "meta/muse-spark-1.2",
     provider: "meta",
     label: "Muse Spark 1.2",
     zdr: "none",
     released: "2026-08-05",
-    default: false,
-    gateways: ["vercel", "openrouter"],
-  },
-  {
-    id: "meta/muse-spark-1.1",
-    provider: "meta",
-    label: "Muse Spark 1.1",
-    zdr: "none",
-    released: "2026-07-09",
     default: false,
     gateways: ["vercel", "openrouter"],
   },
@@ -390,6 +390,8 @@ export const GEO_MODEL_FEED_URL = "https://ai-gateway.vercel.sh/v1/models";
 export const GEO_MODEL_FEED_REVALIDATE_SECONDS = 3600;
 /** Models shown per provider before "Show x other models". */
 export const GEO_PICKER_VISIBLE_MODELS = 3;
+/** Providers shown in the picker before "Show x more providers". */
+export const GEO_PICKER_VISIBLE_PROVIDERS = 7;
 /** Newest models kept per provider; defaults are always included. */
 export const GEO_MODELS_PER_PROVIDER = 10;
 export const GEO_MODEL_EXCLUDED_TAGS: ReadonlySet<string> = new Set([
@@ -398,6 +400,14 @@ export const GEO_MODEL_EXCLUDED_TAGS: ReadonlySet<string> = new Set([
 ]);
 /** Host-speed variants and previews duplicate a model's answers. */
 export const GEO_MODEL_EXCLUDED_ID_PATTERN = /(-fast|-beta|-contributor)$/;
+/** Retired catalog ids that the gateway feed may still publish. */
+export const GEO_MODEL_EXCLUDED_IDS: ReadonlySet<string> = new Set([
+  "meta/muse-spark-1.1",
+]);
+/** Stored engine ids that should keep scanning as their replacement. */
+export const GEO_MODEL_REPLACED_IDS: Readonly<Record<string, string>> = {
+  "meta/muse-spark-1.1": "meta/muse-spark-1.3",
+};
 /**
  * Coding, vision and edge-sized specialities. They are never used to answer
  * the prompts we scan, so they would only crowd out a provider's general

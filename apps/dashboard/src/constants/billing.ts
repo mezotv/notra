@@ -80,6 +80,36 @@ export const INVOICE_PRODUCT_NAME_FALLBACKS: Record<string, string> = {
 
 export const INVOICE_TABLE_COLUMN_COUNT = 4;
 
+export const BILLING_PLAN_SKELETON_KEYS = [
+  PLANS.STARTER,
+  PLANS.GROWTH,
+  PLANS.SCALE,
+] as const;
+
+export const BILLING_PLAN_FEATURE_SKELETON_KEYS = [
+  "feature-1",
+  "feature-2",
+  "feature-3",
+  "feature-4",
+  "feature-5",
+  "feature-6",
+] as const;
+
+export const BILLING_INVOICE_SKELETON_KEYS = [
+  "invoice-1",
+  "invoice-2",
+  "invoice-3",
+] as const;
+
+export const USAGE_METRIC_SKELETON_KEYS = ["used", "remaining"] as const;
+
+export const USAGE_FEATURE_SKELETON_KEYS = [
+  "feature-1",
+  "feature-2",
+  "feature-3",
+  "feature-4",
+] as const;
+
 export const GEO_PLAN_REQUIRED_MESSAGE =
   "GEO requires a Starter, Growth, or Scale plan";
 

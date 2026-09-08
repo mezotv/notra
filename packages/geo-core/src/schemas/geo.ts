@@ -255,6 +255,11 @@ export const geoProjectDeleteInputSchema = object({
   projectId: string().min(1),
 });
 
+export const geoPromptResultDetailInputSchema =
+  geoOrganizationInputSchema.extend({
+    checkId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+  });
+
 export const geoPromptHistoryInputSchema = geoOrganizationInputSchema.extend({
   promptId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
 });
@@ -510,7 +515,6 @@ export const geoWriterWorkflowPayloadSchema = object({
   runId: string().min(1),
 });
 
-export const geoSuggestionIdInputSchema = object({
-  organizationId: string().min(1),
+export const geoSuggestionIdInputSchema = geoOrganizationInputSchema.extend({
   suggestionId: string().min(1),
 });

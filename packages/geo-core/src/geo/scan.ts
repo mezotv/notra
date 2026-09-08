@@ -108,6 +108,7 @@ import {
   isGeoScanRunning,
   summarizeGeoEngineAttempts,
 } from "../utils/geo-scan";
+import { withGeoTiming } from "../utils/geo-timing";
 import { fetchGoogleAiOverview } from "./ai-overview";
 import { askCursorEngine } from "./cursor";
 import { geoSkip } from "./effect";
@@ -1383,7 +1384,10 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
     tasks,
     (task) => {
       const fields = checkFailureFields(checkContext, task);
-      return runGeoCheck(checkContext, task).pipe(
+      return withGeoTiming(runGeoCheck(checkContext, task), {
+        ...fields,
+        event: "geo.check.attempt.completed",
+      }).pipe(
         Effect.tapError((error) =>
           (error._tag === "GeoScanError" || error._tag === "GeoJudgeError") &&
           error.timedOut === true

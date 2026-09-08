@@ -1,9 +1,9 @@
 "use client";
 
 import { FEATURES } from "@notra/ai/billing/features";
-import { useCustomer } from "autumn-js/react";
 
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 
 /**
  * Reads the remaining AI answers (GEO scan quota) from Autumn.
@@ -15,7 +15,7 @@ export function useAnswersBalance() {
     data: customer,
     isLoading,
     refetch,
-  } = useCustomer({
+  } = useBillingCustomer({
     expand: ["balances.feature", "subscriptions.plan"],
   });
 
