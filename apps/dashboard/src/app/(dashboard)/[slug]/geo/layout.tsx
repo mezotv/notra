@@ -18,7 +18,7 @@ export default async function GeoLayout({
       <GeoCatalogWarmer organizationSlug={slug} />
       <Suspense fallback={<GeoPageSkeleton />}>
         <GeoProjectQueryProvider key={slug}>
-          <GeoUpgradeGate slug={slug}>
+          <GeoUpgradeGate fallback={<GeoPageSkeleton />} slug={slug}>
             {children}
             {modal}
           </GeoUpgradeGate>
