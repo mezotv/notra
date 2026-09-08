@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: ["@notra/ui", "@notra/email", "@notra/kiwi"],
   serverExternalPackages: ["@remotion/bundler", "@remotion/renderer"],
+  outputFileTracingIncludes: {
+    "/blog/**/opengraph-image*": ["./public/blog/authors/**/*"],
+  },
   rewrites: async () => {
     return [
       {
