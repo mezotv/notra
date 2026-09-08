@@ -38,6 +38,24 @@ export const BLOG_AUTHORS: NotraBlogAuthor[] = [
     ],
   },
   {
+    id: "jan",
+    name: "Jan Burzinski",
+    image: "/blog/authors/jan.webp",
+    slug: "jan",
+    bio: null,
+    role: "Founding Intern",
+    socials: [
+      {
+        url: "https://x.com/miaugladiator1",
+        platform: "x",
+      },
+      {
+        url: "https://www.janburzinski.de/",
+        platform: "website",
+      },
+    ],
+  },
+  {
     id: "notra",
     name: "Notra Team",
     image: "/blog/authors/notra.png",
