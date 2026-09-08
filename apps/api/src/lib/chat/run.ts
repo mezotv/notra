@@ -10,7 +10,7 @@ import {
   clearLastResponseStopped,
   generateAndSetChatTitle,
   generateChatId,
-  getChatSession,
+  getStandaloneChatSession,
   loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
@@ -93,7 +93,10 @@ export async function runChatMessage({
   let externalChannelClaimed = false;
 
   if (resolvedChatId) {
-    const existingChat = await getChatSession(organizationId, resolvedChatId);
+    const existingChat = await getStandaloneChatSession(
+      organizationId,
+      resolvedChatId
+    );
     if (!existingChat) {
       return c.json({ error: "Chat not found" }, 404);
     }

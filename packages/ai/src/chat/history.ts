@@ -2,7 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { projectScopeFilter } from "@notra/db/utils/projects";
 import { generateText, type UIMessage } from "ai";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
   CHAT_ABORT_FLAG_TTL_SECONDS,
@@ -10,6 +10,7 @@ import {
   CHAT_LAST_STOPPED_TTL_SECONDS,
   CHAT_WORKFLOW_REQUEST_TTL_SECONDS,
 } from "../constants/chat";
+import { DASHBOARD_AGENT_CHANNEL_SOURCE } from "../constants/dashboard-agent";
 import { gateway } from "../gateway";
 import { withGatewayAutomaticCaching } from "../provider-options";
 import { uiMessageSchema } from "../schemas/chat";
@@ -66,7 +67,7 @@ function toExternalChannelId(
   if (!source) {
     return null;
   }
-  if (source === "dashboard") {
+  if (source === "dashboard" || source === "agent") {
     return { source };
   }
   if ((source === "discord" || source === "slack") && id) {
@@ -139,7 +140,7 @@ async function upsertChatSession(
   messages: UIMessage[],
   mode: "append" | "replace",
   externalChannelId?: ExternalChannelId | null,
-  expectedLastMessageId?: string,
+  expectedLastMessageId?: string | null,
   contentId?: string,
   projectId?: string | null
 ) {
@@ -211,6 +212,12 @@ async function upsertChatSession(
       : [...(existingRow.messages as UIMessage[]), ...messages];
 
   if (existingRow) {
+    let expectedHistory;
+    if (expectedLastMessageId === null) {
+      expectedHistory = sql`jsonb_array_length(${chatSessions.messages}) = 0`;
+    } else if (expectedLastMessageId !== undefined) {
+      expectedHistory = sql`${chatSessions.messages}->-1->>'id' = ${expectedLastMessageId}`;
+    }
     const updated = await db
       .update(chatSessions)
       .set({
@@ -225,9 +232,7 @@ async function upsertChatSession(
           contentId
             ? eq(chatSessions.contentId, contentId)
             : isNull(chatSessions.contentId),
-          expectedLastMessageId
-            ? sql`${chatSessions.messages}->-1->>'id' = ${expectedLastMessageId}`
-            : undefined
+          expectedHistory
         )
       )
       .returning({ id: chatSessions.id });
@@ -236,16 +241,21 @@ async function upsertChatSession(
       return false;
     }
   } else {
-    await db.insert(chatSessions).values({
-      id: chatId,
-      organizationId,
-      contentId,
-      projectId: projectId ?? null,
-      title,
-      messages: messages as unknown as Record<string, unknown>,
-      externalChannelSource: externalChannelId?.source ?? null,
-      externalChannelId: externalChannelId?.id ?? null,
-    });
+    const inserted = await db
+      .insert(chatSessions)
+      .values({
+        id: chatId,
+        organizationId,
+        contentId,
+        projectId: projectId ?? null,
+        title,
+        messages: messages as unknown as Record<string, unknown>,
+        externalChannelSource: externalChannelId?.source ?? null,
+        externalChannelId: externalChannelId?.id ?? null,
+      })
+      .onConflictDoNothing()
+      .returning({ id: chatSessions.id });
+    return inserted.length > 0;
   }
 
   return true;
@@ -369,7 +379,7 @@ export async function replaceChatHistory(
   chatId: string,
   messages: UIMessage[],
   externalChannelId?: ExternalChannelId | null,
-  expectedLastMessageId?: string,
+  expectedLastMessageId?: string | null,
   projectId?: string | null
 ): Promise<boolean> {
   return upsertChatSession(
@@ -536,6 +546,16 @@ export async function getChatSession(
   return toSessionSummary(row);
 }
 
+export async function getStandaloneChatSession(
+  organizationId: string,
+  chatId: string
+): Promise<ChatSessionSummary | null> {
+  const session = await getChatSession(organizationId, chatId);
+  return session?.externalChannelId?.source === DASHBOARD_AGENT_CHANNEL_SOURCE
+    ? null
+    : session;
+}
+
 export async function claimChatSessionForExternalChannel(
   organizationId: string,
   source: ExternalChannelLookupSource,
@@ -613,12 +633,34 @@ export async function listChatSessions(
         eq(chatSessions.organizationId, organizationId),
         isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt),
+        or(
+          isNull(chatSessions.externalChannelSource),
+          ne(chatSessions.externalChannelSource, DASHBOARD_AGENT_CHANNEL_SOURCE)
+        ),
         projectScopeFilter(chatSessions.projectId, projectId)
       )
     );
 
   const sessions = rows.map(toSessionSummary);
   return sortChatSessions(sessions);
+}
+
+export async function listDashboardAgentChatSessions(
+  organizationId: string
+): Promise<ChatSessionSummary[]> {
+  const rows = await db
+    .select(chatSessionSummaryColumns)
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.externalChannelSource, DASHBOARD_AGENT_CHANNEL_SOURCE),
+        isNull(chatSessions.contentId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
+
+  return sortChatSessions(rows.map(toSessionSummary));
 }
 
 export async function listContentChatSessions(

@@ -32,6 +32,7 @@ import { useCommandPalette } from "@/components/command-palette/command-palette-
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
+import { DashboardAgentButton } from "@/components/dashboard/dashboard-agent-button";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { FeedbackForm } from "@/components/dashboard/feedback-popover";
 import { NavUser } from "@/components/dashboard/nav-user";
@@ -361,6 +362,7 @@ export function SiteHeader() {
             tabIndex={-1}
             type="button"
           />
+          <DashboardAgentButton />
           <NavUser />
           <ResponsiveDialog onOpenChange={setFeedbackOpen} open={feedbackOpen}>
             <ResponsiveDialogContent
