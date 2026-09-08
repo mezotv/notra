@@ -264,9 +264,7 @@ export function GapDetailDialog({
     <ResponsiveDialog onOpenChange={onOpenChange} open={row !== null}>
       <ResponsiveDialogContent className="flex max-h-[85svh] flex-col sm:max-w-2xl">
         <ResponsiveDialogHeader className="shrink-0">
-          <ResponsiveDialogTitle>
-            {prompt ? "Prompt gap details" : "Search gap details"}
-          </ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>Prompt gap details</ResponsiveDialogTitle>
           <ResponsiveDialogDescription className="sr-only">
             Source question, supporting metrics, and suggested content.
           </ResponsiveDialogDescription>
