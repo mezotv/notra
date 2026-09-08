@@ -1,9 +1,6 @@
 "use client";
 
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  GEO_PROMPT_HISTORY_ANSWER_LABELS,
   GEO_PROMPT_HISTORY_CHANGE_LABELS,
   GEO_PROMPT_HISTORY_COLUMN_LABELS,
   GEO_PROMPT_HISTORY_EMPTY_COMPETITORS,
@@ -13,25 +10,14 @@ import {
   GEO_PROMPT_RECEIPT_LABELS,
 } from "@notra/geo-core/constants/geo";
 import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
-import type {
-  GeoCompetitor,
-  GeoPromptHistoryCheck,
-} from "@notra/geo-core/types/geo";
+import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { TablePagination } from "@notra/ui/components/shared/table-pagination";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
+import { Table } from "@/components/motion/table";
 import { cn } from "@/lib/utils";
 import type {
   PromptHistoryChange,
@@ -42,19 +28,7 @@ import {
   promptHistoryChangeLabel,
   promptOutcomeLabel,
 } from "@/utils/geo-prompt-history";
-import { pageRowCount } from "@/utils/table";
-
-const SKELETON_KEYS = Array.from(
-  { length: GEO_PROMPT_HISTORY_SKELETON_ROWS },
-  (_, index) => `history-skeleton-${index}`
-);
-
-const CELL_CLASS = "py-3 align-top";
-const SCAN_COLUMN_CLASS = "w-36";
-const OUTCOME_COLUMN_CLASS = "w-36";
-const POSITION_COLUMN_CLASS = "w-20";
-const CHANGES_COLUMN_CLASS = "w-48";
-const ACTION_COLUMN_CLASS = "w-10 pr-2 pl-0";
+import { pageRowCount, tableHeightFor } from "@/utils/table";
 
 function positionLabel(position: number | null): string {
   return position === null ? GEO_PROMPT_HISTORY_EMPTY_POSITION : `#${position}`;
@@ -188,116 +162,6 @@ function NewCompetitorsCell({
   );
 }
 
-function HistoryRow({
-  entry,
-  competitors,
-  onSelect,
-}: {
-  entry: PromptHistoryEntry;
-  competitors: readonly GeoCompetitor[] | undefined;
-  onSelect?: (check: GeoPromptHistoryCheck) => void;
-}) {
-  const { check } = entry;
-  const selectable = Boolean(onSelect);
-  const actionLabel = `${GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer} · ${formatAiTrafficTimestamp(check.capturedAt)}`;
-  return (
-    <TableRow
-      className={cn(selectable && "group cursor-pointer")}
-      onClick={selectable ? () => onSelect?.(check) : undefined}
-    >
-      <TableCell className={cn(CELL_CLASS, SCAN_COLUMN_CLASS)}>
-        <time
-          className="inline-flex h-5 items-center tabular-nums"
-          dateTime={check.capturedAt}
-          title={check.scanId}
-        >
-          {formatAiTrafficTimestamp(check.capturedAt)}
-        </time>
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, OUTCOME_COLUMN_CLASS)}>
-        <span className="inline-flex h-5 items-center gap-2">
-          <PromptOutcomeIcon mentioned={check.mentioned} />
-          <span
-            className={
-              check.mentioned ? "text-foreground" : "text-muted-foreground"
-            }
-          >
-            {promptOutcomeLabel(check.mentioned)}
-          </span>
-        </span>
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, POSITION_COLUMN_CLASS)}>
-        <span
-          className={cn(
-            "inline-flex h-5 items-center tabular-nums",
-            check.position === null
-              ? "text-muted-foreground/60"
-              : "text-foreground"
-          )}
-        >
-          {positionLabel(check.position)}
-        </span>
-      </TableCell>
-      <TableCell
-        className={cn(CELL_CLASS, CHANGES_COLUMN_CLASS, "whitespace-normal")}
-      >
-        <ChangesCell entry={entry} />
-      </TableCell>
-      <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>
-        <NewCompetitorsCell
-          competitors={competitors}
-          names={entry.newCompetitors}
-        />
-      </TableCell>
-      {selectable ? (
-        <TableCell className={cn(CELL_CLASS, ACTION_COLUMN_CLASS)}>
-          <button
-            aria-label={actionLabel}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-5 items-center justify-center rounded-sm opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect?.(check);
-            }}
-            title={GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
-            type="button"
-          >
-            <HugeiconsIcon
-              className="size-4"
-              icon={ArrowRight01Icon}
-              strokeWidth={2}
-            />
-          </button>
-        </TableCell>
-      ) : null}
-    </TableRow>
-  );
-}
-
-function SkeletonRow({ selectable }: { selectable: boolean }) {
-  return (
-    <TableRow>
-      <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-28" />
-      </TableCell>
-      <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-24" />
-      </TableCell>
-      <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-8" />
-      </TableCell>
-      <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-32" />
-      </TableCell>
-      <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-40" />
-      </TableCell>
-      {selectable ? (
-        <TableCell className={cn(CELL_CLASS, ACTION_COLUMN_CLASS)} />
-      ) : null}
-    </TableRow>
-  );
-}
-
 const HISTORY_PAGE_SIZE = GEO_PROMPT_HISTORY_PREVIEW_ROWS;
 
 export function PromptReceiptHistory({
@@ -325,70 +189,101 @@ export function PromptReceiptHistory({
     ? []
     : entries.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
   const paginated = totalItems > HISTORY_PAGE_SIZE;
+  let footer: ReactNode;
+  if (!isLoading && paginated) {
+    footer = (
+      <TablePagination
+        page={page}
+        pageCount={pageCount}
+        pageRowCount={pageRowCount(page, HISTORY_PAGE_SIZE, totalItems)}
+        pageSize={HISTORY_PAGE_SIZE}
+        setPage={setPage}
+        totalItems={totalItems}
+      />
+    );
+  } else if (!isLoading && entries.length === 1) {
+    footer = (
+      <p className="text-muted-foreground px-4 py-3 text-xs">
+        {GEO_PROMPT_RECEIPT_LABELS.singleScan}
+      </p>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="overflow-hidden rounded-xl border">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className={SCAN_COLUMN_CLASS}>
-                {GEO_PROMPT_HISTORY_COLUMN_LABELS.date}
-              </TableHead>
-              <TableHead className={OUTCOME_COLUMN_CLASS}>
-                {GEO_PROMPT_HISTORY_COLUMN_LABELS.outcome}
-              </TableHead>
-              <TableHead className={POSITION_COLUMN_CLASS}>
-                {GEO_PROMPT_HISTORY_COLUMN_LABELS.position}
-              </TableHead>
-              <TableHead className={CHANGES_COLUMN_CLASS}>
-                {GEO_PROMPT_HISTORY_COLUMN_LABELS.changes}
-              </TableHead>
-              <TableHead>
-                {GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors}
-              </TableHead>
-              {selectable ? (
-                <TableHead className={ACTION_COLUMN_CLASS}>
-                  <span className="sr-only">
-                    {GEO_PROMPT_HISTORY_ANSWER_LABELS.viewAnswer}
-                  </span>
-                </TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody aria-busy={isLoading}>
-            {isLoading
-              ? SKELETON_KEYS.map((key) => (
-                  <SkeletonRow key={key} selectable={selectable} />
-                ))
-              : visible.map((entry) => (
-                  <HistoryRow
-                    competitors={competitors}
-                    entry={entry}
-                    key={entry.check.id}
-                    onSelect={onSelect}
-                  />
-                ))}
-          </TableBody>
-        </Table>
-        {!isLoading && paginated ? (
-          <div className="border-t">
-            <TablePagination
-              page={page}
-              pageCount={pageCount}
-              pageRowCount={pageRowCount(page, HISTORY_PAGE_SIZE, totalItems)}
-              pageSize={HISTORY_PAGE_SIZE}
-              setPage={setPage}
-              totalItems={totalItems}
-            />
-          </div>
-        ) : null}
-      </div>
-      {entries.length === 1 ? (
-        <p className="text-muted-foreground text-xs">
-          {GEO_PROMPT_RECEIPT_LABELS.singleScan}
-        </p>
-      ) : null}
-    </div>
+    <Table
+      columns={[
+        {
+          key: "scan",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.date,
+          width: "144px",
+          cell: ({ check }) => (
+            <time
+              className="tabular-nums"
+              dateTime={check.capturedAt}
+              title={check.scanId}
+            >
+              {formatAiTrafficTimestamp(check.capturedAt)}
+            </time>
+          ),
+        },
+        {
+          key: "outcome",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.outcome,
+          width: "144px",
+          cell: ({ check }) => (
+            <span className="inline-flex items-center gap-2">
+              <PromptOutcomeIcon mentioned={check.mentioned} />
+              <span
+                className={
+                  check.mentioned ? "text-foreground" : "text-muted-foreground"
+                }
+              >
+                {promptOutcomeLabel(check.mentioned)}
+              </span>
+            </span>
+          ),
+        },
+        {
+          key: "position",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.position,
+          width: "80px",
+          cell: ({ check }) => <PositionChip position={check.position} />,
+        },
+        {
+          key: "changes",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.changes,
+          width: "192px",
+          cell: (entry) => (
+            <div className="max-h-14 overflow-y-auto whitespace-normal">
+              <ChangesCell entry={entry} />
+            </div>
+          ),
+        },
+        {
+          key: "newCompetitors",
+          header: GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors,
+          minWidth: "192px",
+          cell: (entry) => (
+            <div className="max-h-14 overflow-y-auto whitespace-normal">
+              <NewCompetitorsCell
+                competitors={competitors}
+                names={entry.newCompetitors}
+              />
+            </div>
+          ),
+        },
+      ]}
+      data={visible}
+      footer={footer}
+      getRowId={(entry) => entry.check.id}
+      height={tableHeightFor(
+        isLoading ? GEO_PROMPT_HISTORY_SKELETON_ROWS : visible.length,
+        72
+      )}
+      loading={isLoading}
+      onRowClick={selectable ? (entry) => onSelect?.(entry.check) : undefined}
+      rowHeight={72}
+      skeletonRows={GEO_PROMPT_HISTORY_SKELETON_ROWS}
+    />
   );
 }

@@ -7,19 +7,11 @@ import type {
   GeoCompetitor,
   GeoPromptResult,
 } from "@notra/geo-core/types/geo";
-import { LogoStack } from "@notra/ui/components/geo/logo-stack";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
 import type { ReactNode } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptReceiptHistory } from "@/components/geo/prompt-receipt-history";
+import { Table } from "@/components/motion/table";
 import type { PromptReceiptAnalysisProps } from "@/types/geo";
 import {
   promptHistoryChanges,
@@ -28,6 +20,7 @@ import {
   promptSentimentLabel,
 } from "@/utils/geo-prompt-history";
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
+import { tableHeightFor } from "@/utils/table";
 
 function sentimentToneClass(sentiment: string | null): string {
   if (sentiment === "positive") {
@@ -71,41 +64,39 @@ function CompetitorsCell({
   names: readonly string[];
   competitors: readonly GeoCompetitor[] | undefined;
 }) {
-  if (names.length === 0) {
-    return (
-      <span className="text-muted-foreground">
-        {GEO_PROMPT_RECEIPT_LABELS.noCompetitors}
-      </span>
-    );
-  }
   return (
-    <LogoStack
-      items={names.map((name) => ({
-        key: name,
-        label: name,
-        renderIcon: (className) => (
-          <CompetitorLogo
-            className={className}
-            domain={findCompetitorDomain(competitors, name)}
-            name={name}
-          />
-        ),
-      }))}
+    <Table
+      columns={[
+        {
+          key: "name",
+          header: "Brand",
+          cell: ({ name }) => (
+            <span className="flex min-w-0 items-center gap-3 text-sm">
+              <CompetitorLogo
+                className="size-6 rounded-md border"
+                domain={findCompetitorDomain(competitors, name)}
+                name={name}
+              />
+              <span className="min-w-0 truncate" title={name}>
+                {name}
+              </span>
+            </span>
+          ),
+        },
+      ]}
+      data={names.map((name) => ({ name }))}
+      emptyState={GEO_PROMPT_RECEIPT_LABELS.noCompetitors}
+      getRowId={({ name }) => name}
+      height={tableHeightFor(names.length)}
     />
   );
 }
 
-function OutcomeStrip({
-  result,
-  competitors,
-}: {
-  result: GeoPromptResult;
-  competitors: readonly GeoCompetitor[] | undefined;
-}) {
+function OutcomeStrip({ result }: { result: GeoPromptResult }) {
   return (
     <section
       aria-label="Outcome"
-      className="bg-muted/30 grid grid-cols-2 gap-x-4 gap-y-5 rounded-xl border p-4 sm:grid-cols-[1fr_1fr_1fr_1.4fr]"
+      className="bg-background grid grid-cols-2 gap-x-4 gap-y-5 rounded-xl border p-4 sm:grid-cols-3"
     >
       <OutcomeCell label="Outcome">
         <OutcomeValue mentioned={result.mentioned} />
@@ -120,73 +111,73 @@ function OutcomeStrip({
           {promptSentimentLabel(result.sentiment)}
         </span>
       </OutcomeCell>
-      <OutcomeCell label={GEO_PROMPT_RECEIPT_LABELS.competitors}>
-        <CompetitorsCell competitors={competitors} names={result.competitors} />
-      </OutcomeCell>
     </section>
   );
 }
 
 function SearchQueries({ queries }: { queries: readonly string[] }) {
   return (
-    <ul className="flex flex-wrap gap-1.5">
-      {queries.map((query) => (
-        <li
-          className="bg-muted/60 text-foreground rounded-full border px-2.5 py-1 text-xs"
-          key={query}
-        >
-          {query}
-        </li>
-      ))}
-    </ul>
+    <Table
+      columns={[
+        {
+          key: "query",
+          header: "Search query",
+          cell: ({ query }) => (
+            <span className="block truncate" title={query}>
+              {query}
+            </span>
+          ),
+        },
+      ]}
+      data={queries.map((query) => ({ query }))}
+      getRowId={({ query }) => query}
+      height={tableHeightFor(queries.length)}
+    />
   );
 }
 
-function SourcesTable({ sources }: { sources: readonly GeoAnswerSource[] }) {
+function SourcesTable({ sources }: { sources: GeoAnswerSource[] }) {
   return (
-    <div className="overflow-hidden rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-xs">Source</TableHead>
-            <TableHead className="text-xs">URL</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sources.map((source) => {
+    <Table
+      columns={[
+        {
+          key: "title",
+          header: "Source",
+          cell: (source) => (
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm">{source.title}</span>
+              <span className="text-muted-foreground truncate text-xs">
+                {source.domain}
+              </span>
+            </span>
+          ),
+        },
+        {
+          key: "url",
+          header: "URL",
+          cell: (source) => {
             const href = getSafeReferenceSourceUrl(source.url);
-            return (
-              <TableRow key={source.url}>
-                <TableCell className="max-w-[16rem]">
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm">{source.title}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {source.domain}
-                    </span>
-                  </span>
-                </TableCell>
-                <TableCell className="max-w-[20rem]">
-                  {href ? (
-                    <a
-                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 block truncate rounded-sm text-xs underline-offset-2 outline-none hover:underline focus-visible:ring-2"
-                      href={href}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      {source.url}
-                    </a>
-                  ) : (
-                    <span className="text-muted-foreground block truncate text-xs">
-                      {source.url}
-                    </span>
-                  )}
-                </TableCell>
-              </TableRow>
+            return href ? (
+              <a
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 block truncate rounded-sm text-xs underline-offset-2 outline-none hover:underline focus-visible:ring-2"
+                href={href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {source.url}
+              </a>
+            ) : (
+              <span className="text-muted-foreground block truncate text-xs">
+                {source.url}
+              </span>
             );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+          },
+        },
+      ]}
+      data={sources}
+      getRowId={(source) => source.url}
+      height={tableHeightFor(sources.length)}
+    />
   );
 }
 
@@ -200,7 +191,7 @@ function ReceiptSection({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex min-w-0 flex-col gap-3">
       <h3 className="flex items-baseline gap-2 text-sm font-medium">
         {title}
         {typeof count === "number" ? (
@@ -225,9 +216,18 @@ export function PromptReceiptAnalysis({
   const entries = promptHistoryChanges(history);
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-      <div className="flex w-full flex-col gap-7 px-6 py-6">
-        <OutcomeStrip competitors={competitors} result={result} />
+    <div className="bg-muted/20 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="flex w-full flex-col gap-4 p-4">
+        <OutcomeStrip result={result} />
+        <ReceiptSection
+          count={result.competitors.length}
+          title={GEO_PROMPT_RECEIPT_LABELS.competitors}
+        >
+          <CompetitorsCell
+            competitors={competitors}
+            names={result.competitors}
+          />
+        </ReceiptSection>
         {result.searchQueries.length > 0 ? (
           <ReceiptSection title={GEO_PROMPT_RECEIPT_LABELS.searches}>
             <SearchQueries queries={result.searchQueries} />
