@@ -1,5 +1,9 @@
 import type { Log } from "@/types/webhooks/webhooks";
 
+export interface LogEntryProps {
+  entry: Log;
+}
+
 export interface LogSelection {
   organizationId: string;
   log: Log;

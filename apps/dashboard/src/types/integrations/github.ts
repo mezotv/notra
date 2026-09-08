@@ -25,6 +25,13 @@ export interface GitHubRepositoryActionsProps {
 
 export type GitHubRepositoryDialog = "edit" | "token" | "delete" | null;
 
+export interface GitHubRepositoryMenuProps extends GitHubRepositoryActionsProps {
+  isEnabled: boolean;
+  isPending: boolean;
+  onToggle: () => void;
+  onDialog: (dialog: GitHubRepositoryDialog) => void;
+}
+
 export interface GitHubLegacyPageProps {
   params: Promise<{ slug: string; id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

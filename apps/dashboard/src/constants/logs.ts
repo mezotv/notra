@@ -4,6 +4,7 @@ import type {
 } from "@/types/webhooks/webhooks";
 
 export const LOGS_PAGE_SIZE = 10;
+export const LOG_SEARCH_DEBOUNCE_MS = 150;
 export const LOGS_OVERVIEW_STALE_TIME_MS = 30_000;
 
 export const LOG_STATUS_DESCRIPTIONS = {
