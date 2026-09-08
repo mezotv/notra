@@ -93,8 +93,8 @@ import {
   isGeoScanRunning,
   summarizeGeoEngineAttempts,
 } from "../utils/geo-scan";
-import { addAgentTokenUsage as addTokenUsage } from "../utils/token-usage";
 import { withGeoTiming } from "../utils/geo-timing";
+import { addAgentTokenUsage as addTokenUsage } from "../utils/token-usage";
 import { fetchGoogleAiOverview } from "./ai-overview";
 import { askCursorEngine } from "./cursor";
 import { geoSkip } from "./effect";
