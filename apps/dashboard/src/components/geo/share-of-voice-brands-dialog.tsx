@@ -2,7 +2,6 @@
 
 import { Search01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -45,7 +44,7 @@ function ShareOfVoiceBrandRow({
     <>
       <CompetitorLogo
         className="size-6 shrink-0 rounded-md"
-        domain={findCompetitorDomain(competitors, row.brand)}
+        competitors={competitors}
         name={row.brand}
       />
       <span className="min-w-0">

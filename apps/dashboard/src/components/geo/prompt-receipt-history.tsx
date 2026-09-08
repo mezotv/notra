@@ -10,15 +10,12 @@ import {
   GEO_PROMPT_HISTORY_SKELETON_ROWS,
   GEO_PROMPT_RECEIPT_LABELS,
 } from "@notra/geo-core/constants/geo";
-import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
-import { brandNameEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 import { TablePagination } from "@notra/ui/components/shared/table-pagination";
 import { type ReactNode, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
 import { Table } from "@/components/motion/table";
 import { TABLE_MAX_HEIGHT, TABLE_ROW_HEIGHT } from "@/constants/table";
@@ -74,20 +71,13 @@ function BrandToken({
   name: string;
   competitors: readonly GeoCompetitor[] | undefined;
 }) {
-  const domain = findCompetitorDomain(competitors, name);
-  const engineKey = domain ? null : brandNameEngineIconKey(name);
-
   return (
     <span className={cn(HISTORY_LINE_CLASS, "min-w-0 gap-1.5 font-medium")}>
-      {engineKey ? (
-        <EngineIcon className="size-4 shrink-0" engine={engineKey} />
-      ) : (
-        <CompetitorLogo
-          className="size-4 shrink-0 rounded-[4px]"
-          domain={domain}
-          name={name}
-        />
-      )}
+      <CompetitorLogo
+        className="size-4 shrink-0 rounded-[4px]"
+        competitors={competitors}
+        name={name}
+      />
       <span className="min-w-0 truncate" title={name}>
         {name}
       </span>

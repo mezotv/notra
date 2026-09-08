@@ -1164,7 +1164,9 @@ export interface GeoPromptAnswerThreadProps {
 
 export interface CompetitorLogoProps {
   name: string;
-  domain: string | null;
+  domain?: string | null;
+  /** Tracked competitors — used to resolve a domain before the context.dev lookup. */
+  competitors?: readonly GeoCompetitor[];
   className?: string;
   onSettled?: () => void;
 }

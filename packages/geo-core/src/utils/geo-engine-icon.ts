@@ -38,7 +38,6 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
       "googleother",
       "googlebot",
     ],
-    exact: ["google"],
   },
   {
     key: "gemini",
@@ -214,42 +213,6 @@ export function resolveEngineIconKey(engine: string): EngineIconKey | null {
   for (const rule of ENGINE_ICON_RULES) {
     if (rule.patterns.some((pattern) => value.includes(pattern))) {
       return rule.key;
-    }
-  }
-  return null;
-}
-
-/**
- * Maps a mentioned brand ("ChatGPT Plus", "Claude 3.5 Sonnet") to a first-party
- * engine mark. Token-exact so "Google Analytics" does not become Gemini.
- */
-const BRAND_NAME_ENGINE_TOKENS: readonly (readonly [string, EngineIconKey])[] =
-  [
-    ["chatgpt", "openai"],
-    ["claude", "claude"],
-    ["gemini", "gemini"],
-    ["google", "google"],
-    ["perplexity", "perplexity"],
-    ["copilot", "copilot"],
-    ["grok", "grok"],
-    ["mistral", "mistral"],
-    ["deepseek", "deepseek"],
-  ];
-
-const BRAND_NAME_TOKEN_SPLIT = /[\s/_-]+/;
-
-export function brandNameEngineIconKey(name: string): EngineIconKey | null {
-  const tokens = name
-    .trim()
-    .toLowerCase()
-    .split(BRAND_NAME_TOKEN_SPLIT)
-    .filter((token) => token.length > 0);
-  if (tokens.length === 0) {
-    return null;
-  }
-  for (const [token, key] of BRAND_NAME_ENGINE_TOKENS) {
-    if (tokens.includes(token)) {
-      return key;
     }
   }
   return null;
