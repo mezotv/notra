@@ -40,6 +40,18 @@ export interface GitHubAppRepository {
   defaultBranch: string;
 }
 
+export interface GitHubAccountsSectionProps {
+  accounts: GitHubAppAccount[];
+  repositories: GitHubAppRepository[];
+  selectedRepositoryIds: string[];
+  isLoading: boolean;
+  isError: boolean;
+  onConnect: () => void;
+  onRetry: () => void;
+  onOpenRepositories: (accountId: string) => void;
+  onDisconnect: (accountId: string) => void;
+}
+
 export type GitHubInstallFailureReason =
   | "account-connection-incomplete"
   | "install-start-failed";
@@ -79,6 +91,8 @@ export interface RepositoryMultiSelectProps {
 
 export interface SelectRepositoriesDialogProps {
   repositories: GitHubAppRepository[];
+  error?: string;
+  onRetry?: () => void;
   onSave: (repositoryIds: string[]) => void;
   initialSelected?: string[];
   isLoading?: boolean;
@@ -307,9 +321,19 @@ export interface GitHubPublishFailureDependencies {
 
 export type GitHubPublishRecovery = (
   | { code: "github_authentication_required" }
+  | { code: "github_repository_connection_required" }
+  | { code: "github_token_authentication_required" }
+  | { code: "github_token_permissions_required" }
   | { code: "github_content_publishing_paused" }
   | {
       code: "github_app_permissions_required";
       permissionsUrl?: string;
     }
 ) & { publishingPaused?: boolean };
+export interface UseGitHubRepositorySelectionOptions {
+  organizationId: string;
+  enabled?: boolean;
+  refetchOnMount?: boolean;
+  initialAccountId?: string | null;
+  onSaved: () => void;
+}

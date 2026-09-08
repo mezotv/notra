@@ -1,12 +1,12 @@
 export const OPENCODE_COLORS = {
-  background: "#fdfdfd",
-  surface: "#f6f6f6",
-  foreground: "#1d1d1d",
-  muted: "#929292",
-  subtle: "#dedede",
-  purple: "#8256d6",
-  orange: "#e48600",
-  green: "#00a861",
+  background: "var(--opencode-tui-background, #fdfdfd)",
+  surface: "var(--opencode-tui-surface, #f6f6f6)",
+  foreground: "var(--opencode-tui-foreground, #1d1d1d)",
+  muted: "var(--opencode-tui-muted, #929292)",
+  subtle: "var(--opencode-tui-subtle, #dedede)",
+  purple: "var(--opencode-tui-purple, #8256d6)",
+  orange: "var(--opencode-tui-orange, #e48600)",
+  green: "var(--opencode-tui-green, #00a861)",
 } as const;
 
 /** Beat before the first tool line during a replay. */

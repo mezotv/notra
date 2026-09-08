@@ -9,15 +9,16 @@ import type {
   GeoPromptResultSummary,
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { geoPromptIntentLabel } from "@notra/geo-core/utils/geo-prompt-intent";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
-  ResponsiveDialog,
-  ResponsiveDialogContent,
-  ResponsiveDialogDescription,
-  ResponsiveDialogHeader,
-  ResponsiveDialogTitle,
-} from "@notra/ui/components/shared/responsive-dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@notra/ui/components/ui/sheet";
 import { tween } from "@notra/ui/lib/motion";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
@@ -44,6 +45,7 @@ import type {
   PromptAnswerBodyProps,
   PromptAnswerHeaderProps,
 } from "@/types/geo-prompt-detail";
+import { copyTextToClipboard } from "@/utils/copy-to-clipboard";
 import { sharedEngineAnswerMode } from "@/utils/geo-charts";
 import { geoPromptDetailState } from "@/utils/geo-prompt-detail";
 import {
@@ -111,7 +113,7 @@ function HistoryAnswerBanner({
 }
 
 function PromptAnswerHeader({
-  prompt,
+  row,
   results,
   active,
   view,
@@ -121,25 +123,54 @@ function PromptAnswerHeader({
   const answerMode = sharedEngineAnswerMode(
     results.map((result) => result.engine)
   );
-  const latestCheck = latestPromptCheckAt(results);
+  const latestCheck = active?.lastCheckedAt ?? latestPromptCheckAt(results);
 
   return (
-    <ResponsiveDialogHeader className="shrink-0 gap-4 overflow-visible border-b px-6 pt-5 pb-4">
-      <div className="flex flex-col gap-1 pr-8">
-        <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
-          {prompt}
-        </ResponsiveDialogTitle>
-        <ResponsiveDialogDescription className="sr-only">
+    <SheetHeader className="shrink-0 gap-3 border-b p-4">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pr-8">
+        <SheetTitle className="min-w-0 text-sm leading-5 font-medium">
+          <button
+            aria-label={`Copy prompt: ${row.prompt}`}
+            className="bg-background hover:bg-muted/50 focus-visible:ring-ring inline-flex max-w-full cursor-pointer items-center rounded-md border px-2 py-1 text-left wrap-anywhere shadow-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            onClick={() => copyTextToClipboard(row.prompt, "Copied prompt")}
+            title="Copy prompt"
+            type="button"
+          >
+            {row.prompt}
+          </button>
+        </SheetTitle>
+        <SheetDescription className="sr-only">
           {answerMode
             ? `Latest ${answerMode} answer from each engine`
             : "Latest answer from each engine"}
-        </ResponsiveDialogDescription>
+        </SheetDescription>
         {latestCheck ? (
-          <p className="text-muted-foreground text-sm">
+          <time
+            className="text-muted-foreground shrink-0 text-xs tabular-nums"
+            dateTime={latestCheck}
+          >
             {formatAiTrafficTimestamp(latestCheck)}
-          </p>
+          </time>
         ) : null}
       </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-muted-foreground text-xs">Intent</dt>
+          <dd>{geoPromptIntentLabel(row.intent)}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground text-xs">Best position</dt>
+          <dd className="tabular-nums">
+            {row.bestPosition === null ? "Not ranked" : `#${row.bestPosition}`}
+          </dd>
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <dt className="text-muted-foreground text-xs">Tags</dt>
+          <dd className="max-h-20 overflow-auto break-words">
+            {row.tags.length > 0 ? row.tags.join(", ") : "No tags"}
+          </dd>
+        </div>
+      </dl>
       {results.length > 0 && active ? (
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <PromptEngineSwitcher
@@ -150,7 +181,7 @@ function PromptAnswerHeader({
           <PromptReceiptViewSwitch onChange={onSelectView} view={view} />
         </div>
       ) : null}
-    </ResponsiveDialogHeader>
+    </SheetHeader>
   );
 }
 
@@ -298,16 +329,16 @@ function PromptAnswerPage({
   }
 
   return (
-    <ResponsiveDialogContent
-      className="flex h-[min(calc(100vh-2rem),900px)] max-h-[calc(100vh-2rem)] w-full max-w-[min(calc(100vw-2rem),54rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(calc(100vw-2rem),54rem)]"
-      drawerClassName="h-[94svh] max-h-[94svh]"
+    <SheetContent
+      className="gap-0 overflow-hidden p-0 transition-none data-[side=right]:inset-y-0 data-[side=right]:h-dvh data-[side=right]:w-full motion-reduce:animate-none sm:rounded-2xl sm:border data-[side=right]:sm:inset-y-2 data-[side=right]:sm:right-2 data-[side=right]:sm:h-[calc(100dvh-1rem)] data-[side=right]:sm:max-w-[min(calc(100vw-2rem),54rem)]"
       onKeyDown={handleArrowNavigation}
+      side="right"
     >
       <PromptAnswerHeader
         active={active}
         onSelectEngine={selectEngine}
         onSelectView={selectView}
-        prompt={row.prompt}
+        row={row}
         results={results}
         view={view}
       />
@@ -352,7 +383,7 @@ function PromptAnswerPage({
           )}
         </AnimatePresence>
       </div>
-    </ResponsiveDialogContent>
+    </SheetContent>
   );
 }
 
@@ -372,7 +403,7 @@ export function PromptDetailDialog({
   }
 
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+    <Sheet onOpenChange={onOpenChange} open={open}>
       <PromptAnswerPage
         initialEngine={initialEngine}
         isScanning={isScanning}
@@ -382,6 +413,6 @@ export function PromptDetailDialog({
         row={row}
         surface={surface}
       />
-    </ResponsiveDialog>
+    </Sheet>
   );
 }

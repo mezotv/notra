@@ -6,6 +6,8 @@ import type {
   GeoPromptResult,
 } from "@notra/geo-core/types/geo";
 
+import type { GeoPromptTableRow } from "@/types/geo";
+
 export type GeoPromptDetailState =
   | { status: "ready"; result: GeoPromptResult }
   | { status: "loading" | "error" | "missing" };
@@ -31,7 +33,7 @@ export interface PromptAnswerBodyProps {
 }
 
 export interface PromptAnswerHeaderProps {
-  prompt: string;
+  row: GeoPromptTableRow;
   results: readonly GeoPromptResultSummary[];
   active: GeoPromptResultSummary | null;
   view: GeoPromptReceiptView;

@@ -71,7 +71,6 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { localStorageKeys } from "@/constants/storage";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
@@ -430,9 +429,10 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
 function geoCompetitorRowHref(
   organizationSlug: string,
   brand: string,
-  projectId?: string
+  projectId?: string,
+  aggregate = false
 ): string {
-  if (brand === CHART_OTHER_SLICE_LABEL) {
+  if (aggregate) {
     return withGeoProject(`/${organizationSlug}/geo/competitors`, projectId);
   }
   return withGeoProject(
@@ -454,19 +454,23 @@ export function useGeoCompetitorRowNavigation(
   const { projectId } = useGeoProjectScope();
   const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
 
-  const openRow = (brand: string) => {
+  const openRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.push(geoCompetitorRowHref(organizationSlug, brand, projectId));
+    router.push(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
   };
 
-  const prefetchRow = (brand: string) => {
+  const prefetchRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.prefetch(geoCompetitorRowHref(organizationSlug, brand, projectId));
-    if (brand !== CHART_OTHER_SLICE_LABEL) {
+    router.prefetch(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
+    if (!aggregate) {
       prefetchDetail(brand);
     }
   };
@@ -1109,10 +1113,15 @@ function useInvalidateSuggestionQueries(organizationId: string) {
 }
 
 export function useGeoSuggestionAccept(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const invalidate = useInvalidateSuggestionQueries(organizationId);
   return useMutation({
     mutationFn: (input: GeoSuggestionIdInput) =>
-      dashboardOrpc.geo.suggestionAccept.call({ ...input, organizationId }),
+      dashboardOrpc.geo.suggestionAccept.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
       await invalidate();
       toast.success("Prompt added to tracking");
@@ -1124,10 +1133,14 @@ export function useGeoSuggestionAccept(organizationId: string) {
 }
 
 export function useGeoSuggestionsAcceptAll(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const invalidate = useInvalidateSuggestionQueries(organizationId);
   return useMutation({
     mutationFn: () =>
-      dashboardOrpc.geo.suggestionsAcceptAll.call({ organizationId }),
+      dashboardOrpc.geo.suggestionsAcceptAll.call({
+        organizationId,
+        projectId,
+      }),
     onSuccess: async (result) => {
       await invalidate();
       toast.success(

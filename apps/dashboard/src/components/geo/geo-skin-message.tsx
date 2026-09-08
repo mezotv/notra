@@ -1,8 +1,8 @@
 "use client";
 
 import { ChatgptMessage } from "@notra/ui/components/brainless/chatgpt/chatgpt-message";
-import { ClaudeMessage } from "@notra/ui/components/brainless/claude/claude-message";
 import { ClaudeChatMessage } from "@notra/ui/components/brainless/claude-chat/claude-chat-message";
+import { ClaudeMessage } from "@notra/ui/components/brainless/claude/claude-message";
 import { CodexMessage } from "@notra/ui/components/brainless/codex/codex-message";
 import { GeminiMessage } from "@notra/ui/components/brainless/gemini/gemini-message";
 import { OpencodeMessage } from "@notra/ui/components/brainless/opencode/opencode-message";
