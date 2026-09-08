@@ -14,6 +14,9 @@ export async function apiObservabilityMiddleware(
     try {
       await next();
     } finally {
+      // Hono handles downstream errors before next() resolves. Reapply the ID
+      // because an error handler can replace the response and its headers.
+      c.header("X-Request-Id", requestId);
       logApiRequest(c, Math.round(performance.now() - startedAt));
     }
   });

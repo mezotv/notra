@@ -75,7 +75,7 @@ function getContextDevErrorMessage(
   return `Website data request failed with status ${status}`;
 }
 
-async function parseContextDevError(response: Response) {
+async function parseContextDevError(response: Response): Promise<never> {
   let payload: ContextDevErrorResponse | undefined;
   try {
     payload = (await response.json()) as ContextDevErrorResponse;
@@ -114,7 +114,7 @@ async function requestContextDev<TResponse>(
     status = response.status;
     errorKind = httpErrorKind(status) ?? "operation_error";
     if (!response.ok) {
-      await parseContextDevError(response);
+      return await parseContextDevError(response);
     }
     // Fetch resolves at headers; body reads can still fail. Keep the native
     // JSON decoder and distinguish its SyntaxError from a transport failure.

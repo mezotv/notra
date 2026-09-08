@@ -1,4 +1,4 @@
-import { useLogger, withEvlog } from "@notra/ai/evlog";
+import { useLogger as getRequestLogger, withEvlog } from "@notra/ai/evlog";
 import { httpErrorKind } from "@notra/ai/utils/http-error-kind";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
@@ -29,7 +29,7 @@ const handler = new RPCHandler(dashboardRouter, {
 
 const handle = withEvlog(async (request: Request) => {
   const startedAt = performance.now();
-  const log = useLogger();
+  const log = getRequestLogger();
   log.set({
     event: "api.request.completed",
     surface: "dashboard-rpc",
@@ -61,6 +61,7 @@ const handle = withEvlog(async (request: Request) => {
 });
 
 export const HEAD = handle;
+// react-doctor-disable-next-line react-doctor/nextjs-no-side-effect-in-get-handler -- log.set only enriches request telemetry; it does not mutate application data.
 export const GET = handle;
 export const POST = handle;
 export const PUT = handle;
