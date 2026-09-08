@@ -233,6 +233,7 @@ describe("GEO scan workflow orchestration", () => {
           inputTokens: 20,
           outputTokens: 10,
           totalTokens: 30,
+          totalUsd: expect.closeTo(0.00006, 10),
         },
       },
       "completed",
@@ -402,7 +403,12 @@ describe("GEO scan workflow orchestration", () => {
     });
     expect(finalize).toHaveBeenCalledWith(
       plan.context,
-      { checks: 2, mentions: 1, dropped: 1, usage: EMPTY_AGENT_TOKEN_USAGE },
+      {
+        checks: 2,
+        mentions: 1,
+        dropped: 1,
+        usage: { ...EMPTY_AGENT_TOKEN_USAGE, totalUsd: 0 },
+      },
       "failed",
       plan.claimedAt,
       { retried: false, failureReason: "Error" }
