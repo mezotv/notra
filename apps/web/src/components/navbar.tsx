@@ -716,7 +716,11 @@ export function Navbar({ variant }: NavbarProps = {}) {
               initial={{ opacity: 0, y: -6 }}
               transition={enterExitTransition}
             >
-              <MobileNav onNavigate={() => setIsOpen(false)} />
+              <MobileNav
+                isAuthenticated={isAuthenticated}
+                isResolved={isResolved}
+                onNavigate={() => setIsOpen(false)}
+              />
             </m.div>
           )}
         </AnimatePresence>
@@ -725,9 +729,11 @@ export function Navbar({ variant }: NavbarProps = {}) {
   );
 }
 
-function MobileNav({ onNavigate }: { onNavigate: () => void }) {
-  const { isAuthenticated, isResolved } = useDashboardSession();
-
+function MobileNav({
+  isAuthenticated,
+  isResolved,
+  onNavigate,
+}: NavbarAuthActionsProps & { onNavigate: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       <nav className="flex flex-col gap-1">
@@ -777,34 +783,54 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
         })}
       </nav>
       <div className="flex flex-col gap-2 border-t border-[#1E1E1E14] pt-3 dark:border-white/10">
-        {isResolved && isAuthenticated ? (
-          <Link
-            className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
-            href={AUTH_DASHBOARD_URL}
-            onClick={onNavigate}
-          >
-            Dashboard
-          </Link>
-        ) : isResolved ? (
-          <>
-            <Link
-              className="font-display rounded-md px-3 py-2 text-center text-sm tracking-[-0.015em] text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
-              href={AUTH_SIGNIN_URL}
-              onClick={onNavigate}
-            >
-              Sign In
-            </Link>
-            <TrackedSignupLink
-              className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
-              onClick={onNavigate}
-              source={NAVBAR_MOBILE_SIGNUP_SOURCE}
-            >
-              Sign Up
-            </TrackedSignupLink>
-          </>
-        )}
+        <MobileAuthActions
+          isAuthenticated={isAuthenticated}
+          isResolved={isResolved}
+          onNavigate={onNavigate}
+        />
       </div>
     </div>
+  );
+}
+
+function MobileAuthActions({
+  isAuthenticated,
+  isResolved,
+  onNavigate,
+}: NavbarAuthActionsProps & { onNavigate: () => void }) {
+  if (!isResolved) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return (
+      <Link
+        className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
+        href={AUTH_DASHBOARD_URL}
+        onClick={onNavigate}
+      >
+        Dashboard
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <Link
+        className="font-display rounded-md px-3 py-2 text-center text-sm tracking-[-0.015em] text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
+        href={AUTH_SIGNIN_URL}
+        onClick={onNavigate}
+      >
+        Sign In
+      </Link>
+      <TrackedSignupLink
+        className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
+        onClick={onNavigate}
+        source={NAVBAR_MOBILE_SIGNUP_SOURCE}
+      >
+        Sign Up
+      </TrackedSignupLink>
+    </>
   );
 }
 
