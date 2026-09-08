@@ -22,7 +22,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useCustomer } from "autumn-js/react";
 import {
   parseAsInteger,
   parseAsString,
@@ -43,6 +42,7 @@ import {
   STATUS_LABELS,
   STATUS_VALUES,
 } from "@/constants/logs";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 import { getSourceLabel, getStatusLabel } from "@/utils/logs";
@@ -52,7 +52,7 @@ const SEARCH_DEBOUNCE_MS = 150;
 export function LogsSettingsPane() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer } = useBillingCustomer();
 
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [search, setSearch] = useQueryState("q", parseAsString.withDefault(""));

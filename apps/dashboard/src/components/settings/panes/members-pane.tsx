@@ -11,13 +11,15 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { columns } from "@/components/members/columns";
-import { DataTable } from "@/components/members/data-table";
+import { memberColumns } from "@/components/members/columns";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberPopover } from "@/components/members/invite-member-popover";
+import { Table } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SettingsPane } from "@/components/settings/settings-pane";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { authClient } from "@/lib/auth/client";
+import { tableHeightFor } from "@/utils/table";
 
 export function MembersSettingsPane() {
   const { activeOrganization: organization } = useOrganizationsContext();
@@ -101,19 +103,28 @@ export function MembersSettingsPane() {
         </div>
 
         <TabsContent className="mt-4" value="members">
-          <DataTable
-            columns={columns}
+          <Table
+            columns={memberColumns}
             data={members ?? []}
-            isLoading={membersLoading}
+            emptyState="No members found."
+            getRowId={(member) => member.id}
+            height={tableHeightFor(membersLoading ? 3 : (members?.length ?? 0))}
+            loading={membersLoading}
+            rowHeight={TABLE_ROW_HEIGHT}
           />
         </TabsContent>
 
         <TabsContent className="mt-4" value="pending">
-          <DataTable
+          <Table
             columns={invitationColumns}
             data={pendingInvitations ?? []}
-            emptyMessage="No pending invitations."
-            isLoading={invitationsLoading}
+            emptyState="No pending invitations."
+            getRowId={(invitation) => invitation.id}
+            height={tableHeightFor(
+              invitationsLoading ? 3 : (pendingInvitations?.length ?? 0)
+            )}
+            loading={invitationsLoading}
+            rowHeight={TABLE_ROW_HEIGHT}
           />
         </TabsContent>
       </Tabs>

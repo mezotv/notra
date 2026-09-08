@@ -20,6 +20,11 @@ import {
 import { geoPromptIntentLabel } from "@notra/geo-core/utils/geo-prompt-intent";
 import { collectPromptTags } from "@notra/geo-core/utils/geo-prompt-tags";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import {
+  GEO_PROMPT_FILTER_ALL,
+  GEO_PROMPT_INTENT_FILTER_VALUES,
+  GEO_PROMPT_SOURCE_FILTER_VALUES,
+} from "@notra/schemas/constants/dashboard/geo-prompts";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
@@ -57,15 +62,11 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import {
   GEO_PROMPT_DEFAULT_FILTERS,
-  GEO_PROMPT_FILTER_ALL,
   GEO_PROMPT_FILTER_SELECT_CLASS,
   GEO_PROMPT_INTENT_FILTER_OPTIONS,
-  GEO_PROMPT_INTENT_FILTER_VALUES,
   GEO_PROMPT_SOURCE_FILTER_OPTIONS,
-  GEO_PROMPT_SOURCE_FILTER_VALUES,
   GEO_PROMPT_TAG_FILTER_ALL_LABEL,
   GEO_PROMPT_TAGS_COPY,
-  GEO_PROMPT_TAGS_VISIBLE_COUNT,
   GEO_PROMPT_VIEWS_COPY,
 } from "@/constants/geo-prompts";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
@@ -74,7 +75,6 @@ import type {
   GeoPromptSavedView,
   GeoPromptTableFilters,
   GeoPromptTableRow,
-  PromptTagChipsProps,
   PromptTagsDialogTarget,
   PromptsTableProps,
 } from "@/types/geo";
@@ -86,38 +86,7 @@ import {
 } from "@/utils/geo-prompts";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
-const PROMPT_ACTIONS_WIDTH = "16rem";
-
-function PromptTagChips({ tags }: PromptTagChipsProps) {
-  if (tags.length === 0) {
-    return <span className="text-muted-foreground">-</span>;
-  }
-  const visible = tags.slice(0, GEO_PROMPT_TAGS_VISIBLE_COUNT);
-  const hidden = tags.length - visible.length;
-  return (
-    <div className="flex min-w-0 items-center gap-1 overflow-hidden">
-      {visible.map((tag) => (
-        <Badge className="max-w-24 shrink" key={tag} variant="outline">
-          <span className="truncate">{tag}</span>
-        </Badge>
-      ))}
-      {hidden > 0 ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Badge className="text-muted-foreground" variant="outline">
-                +{hidden}
-              </Badge>
-            }
-          />
-          <TooltipContent>
-            {tags.slice(visible.length).join(", ")}
-          </TooltipContent>
-        </Tooltip>
-      ) : null}
-    </div>
-  );
-}
+const PROMPT_ACTIONS_WIDTH = "12rem";
 
 function PromptRowActions({
   row,
@@ -380,9 +349,16 @@ export function PromptsTable({
       width: "1fr",
       minWidth: "10rem",
       cell: (row) => (
-        <TruncateWithTooltip className="font-medium">
-          {row.prompt}
-        </TruncateWithTooltip>
+        <button
+          aria-label={`Open details: ${row.prompt}`}
+          className="focus-visible:ring-ring flex min-h-8 w-full min-w-0 items-center rounded-sm text-left hover:underline focus-visible:ring-2"
+          onClick={() => setDetail(row)}
+          type="button"
+        >
+          <TruncateWithTooltip className="font-medium">
+            {row.prompt}
+          </TruncateWithTooltip>
+        </button>
       ),
     },
     {
@@ -418,29 +394,6 @@ export function PromptsTable({
           </span>
         ),
       sortValue: (row) => (row.total === 0 ? -1 : row.mentioned / row.total),
-    },
-    {
-      key: "bestPosition",
-      header: "Best",
-      width: "4.5rem",
-      minWidth: "4.5rem",
-      sortable: true,
-      cell: (row) =>
-        row.bestPosition === null ? (
-          <span className="text-muted-foreground">-</span>
-        ) : (
-          <span className="tabular-nums">#{row.bestPosition}</span>
-        ),
-      sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
-    },
-    {
-      key: "tags",
-      header: GEO_PROMPT_TAGS_COPY.column,
-      width: "8rem",
-      minWidth: "7rem",
-      sortable: true,
-      cell: (row) => <PromptTagChips tags={row.tags} />,
-      sortValue: (row) => row.tags.join(" "),
     },
     {
       key: "actions",

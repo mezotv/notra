@@ -1,6 +1,11 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { db } from "@notra/db/drizzle";
 import { chatAttachments, members } from "@notra/db/schema";
+import {
+  type AttachmentFilter,
+  deleteManyAttachmentsInputSchema,
+  listAttachmentsInputSchema,
+} from "@notra/schemas/dashboard/attachments";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
 
@@ -10,11 +15,6 @@ import {
   getR2Config,
   isR2Configured,
 } from "@/lib/upload/r2";
-import {
-  type AttachmentFilter,
-  deleteManyAttachmentsInputSchema,
-  listAttachmentsInputSchema,
-} from "@/schemas/attachments";
 
 const IMAGE_MIME_TYPES = [
   "image/jpeg",

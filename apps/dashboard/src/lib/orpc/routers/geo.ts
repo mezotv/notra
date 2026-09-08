@@ -75,7 +75,6 @@ import {
   loadGeoLanguageShare,
   loadGeoOverview,
   loadGeoPromptHistory,
-  loadGeoPromptResults,
   loadGeoSettings,
   loadGeoTimeseries,
   loadGeoTrafficJourneys,
@@ -96,6 +95,10 @@ import {
   requireGeoProject,
 } from "@notra/geo-core/geo/projects";
 import { promptKey } from "@notra/geo-core/geo/prompt-key";
+import {
+  loadGeoPromptResultDetail,
+  loadGeoPromptResultSummaries,
+} from "@notra/geo-core/geo/prompt-results";
 import {
   clearGeoSampleData,
   seedGeoSampleData,
@@ -138,6 +141,7 @@ import {
   geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
   geoPromptHistoryInputSchema,
+  geoPromptResultDetailInputSchema,
   geoPromptRescanInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
@@ -178,6 +182,17 @@ import type {
   GscSyncResult,
 } from "@notra/geo-core/types/google-search-console";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { geoScanStartInputSchema } from "@notra/schemas/dashboard/geo-analytics";
+import {
+  geoShelfCreateInputSchema,
+  geoShelfListInputSchema,
+  geoShelfListResponseSchema,
+  geoShelfMembersResponseSchema,
+  geoShelfMutationResponseSchema,
+  geoShelfPreviewInputSchema,
+  geoShelfPreviewResponseSchema,
+  geoShelfUpdateInputSchema,
+} from "@notra/schemas/dashboard/geo-shelf";
 import { QstashError } from "@upstash/qstash";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { Effect } from "effect";
@@ -231,17 +246,6 @@ import {
   tooManyRequests,
 } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
-import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
-import {
-  geoShelfCreateInputSchema,
-  geoShelfListInputSchema,
-  geoShelfListResponseSchema,
-  geoShelfMembersResponseSchema,
-  geoShelfMutationResponseSchema,
-  geoShelfPreviewInputSchema,
-  geoShelfPreviewResponseSchema,
-  geoShelfUpdateInputSchema,
-} from "@/schemas/geo-shelf";
 import type { GeoHandlerTracker } from "@/types/analytics/geo-events";
 import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
@@ -888,11 +892,16 @@ export const geoRouter = {
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoTimeseries(input, geoWindow(input)))),
-  promptResults: authorizedProcedure
+  promptResultSummaries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(
-      geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
+      geoHandler((input) =>
+        loadGeoPromptResultSummaries(input, geoWindow(input))
+      )
     ),
+  promptResultDetail: authorizedProcedure
+    .input(geoPromptResultDetailInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptResultDetail(input))),
   changes: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoChanges(input))),

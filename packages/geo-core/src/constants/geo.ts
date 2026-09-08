@@ -15,7 +15,7 @@ import type {
   GeoJourneyPathKind,
   GeoPromptIntent,
   GeoPromptIntentRule,
-  GeoPromptResult,
+  GeoPromptResultSummary,
   GeoRangePreset,
   GeoSearchGapAction,
   GeoTab,
@@ -100,7 +100,7 @@ export const GEO_GAPS_METER_TONE_CLASS = {
 } as const;
 export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 export const GEO_GAPS_WRITE_LABELS = {
-  write: "Write from gap",
+  write: "Write",
   review: "Review",
   writing: "Writing",
   open: "Open post",
@@ -212,7 +212,7 @@ export const GEO_SEARCH_GAP_ACTION_CLASS: Record<GeoSearchGapAction, string> = {
   ignore: "border-border bg-muted/70 text-muted-foreground",
 };
 export const GEO_SEARCH_GAP_WRITE_LABELS = {
-  create: "Write from gap",
+  create: "Write",
   update: "Update page",
   merge: "Merge into page",
   ignore: "Write",
@@ -1083,7 +1083,7 @@ export const GEO_RATE_SPARKLINE_PADDING = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareTimeseriesPoint[] =
   [];
-export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
+export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResultSummary[] = [];
 export const GEO_EMPTY_COMPETITORS: readonly GeoCompetitor[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
@@ -1128,7 +1128,7 @@ export const GEO_CHAT_SKIN_SURFACE: Record<GeoChatSkin, string> = {
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
   perplexity: "bg-white dark:bg-[#111]",
-  opencode: "bg-[#fdfdfd]",
+  opencode: "bg-[var(--opencode-tui-background,#fdfdfd)]",
 };
 
 export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {

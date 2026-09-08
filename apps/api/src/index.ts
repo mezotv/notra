@@ -2,6 +2,7 @@ import "./tcc";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
 import { shutdownPostHogServer } from "@notra/posthog/server";
+import { publicStatusResponseSchema } from "@notra/schemas/api/status";
 import {
   API_OPENAPI_TAGS,
   getRequiredApiScope,
@@ -42,7 +43,6 @@ import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
 import { skillsRoutes } from "./routes/skills";
-import { publicStatusResponseSchema } from "./schemas/status";
 import type { ApiEnv } from "./types/env";
 import {
   API_URL,

@@ -5,6 +5,7 @@ import {
   InformationCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { AttachmentFilter } from "@notra/schemas/dashboard/attachments";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -44,7 +45,6 @@ import {
   ATTACHMENT_TABLE_SKELETON_ROWS,
 } from "@/constants/attachments";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { AttachmentFilter } from "@/schemas/attachments";
 import type { AttachmentRow as AttachmentRowData } from "@/types/settings/attachments";
 import { tableHeightFor } from "@/utils/table";
 

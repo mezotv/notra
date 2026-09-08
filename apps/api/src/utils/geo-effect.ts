@@ -3,10 +3,10 @@ import {
   type GeoFailureWire,
   toGeoFailureWire,
 } from "@notra/geo-core/geo/failure-wire";
+import { remoteGeoFailureBodySchema } from "@notra/schemas/api/internal-geo";
 import { Effect } from "effect";
 
 import { geoCoreApiLayer } from "../lib/geo/configure";
-import { remoteGeoFailureBodySchema } from "../schemas/internal-geo";
 import type {
   GeoApiRuntime,
   GeoFailure,

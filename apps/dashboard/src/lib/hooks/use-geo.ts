@@ -30,7 +30,7 @@ import type {
   GeoProjectsResponse,
   GeoIngestSetupResponse,
   GeoPromptHistoryResponse,
-  GeoPromptResultsResponse,
+  GeoPromptResultSummariesResponse,
   GeoSequenceResultsResponse,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
@@ -60,6 +60,7 @@ import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   keepPreviousData,
+  skipToken,
   useIsMutating,
   useMutation,
   useQuery,
@@ -70,7 +71,6 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { localStorageKeys } from "@/constants/storage";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
@@ -88,6 +88,10 @@ import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { describeGeoImportResult } from "@/utils/geo-import";
 import { withGeoProject } from "@/utils/geo-paths";
+import {
+  geoOverviewQueryInput,
+  geoSettingsQueryInput,
+} from "@/utils/geo-query-input";
 import { toGeoWindowInput } from "@/utils/geo-range";
 
 import { dashboardOrpc } from "../orpc/query";
@@ -146,7 +150,10 @@ async function invalidateGeoScanResultQueries(queryClient: QueryClient) {
       queryKey: dashboardOrpc.geo.timeseries.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.promptResults.key(),
+      queryKey: dashboardOrpc.geo.promptResultSummaries.key(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.promptResultDetail.key(),
     }),
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.changes.key(),
@@ -188,7 +195,7 @@ export function useGeoSettings(organizationId: string) {
 
   const query = useQuery<GeoSettingsResponse>({
     ...dashboardOrpc.geo.settings.queryOptions({
-      input: { organizationId, projectId },
+      input: geoSettingsQueryInput({ organizationId, projectId }),
     }),
     enabled: !!organizationId,
     refetchInterval: (current) =>
@@ -279,7 +286,7 @@ export function useGeoOverview(organizationId: string, range?: GeoRangeQuery) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoOverviewResponse>({
     ...dashboardOrpc.geo.overview.queryOptions({
-      input: { organizationId, projectId, ...toGeoWindowInput(range) },
+      input: geoOverviewQueryInput({ organizationId, projectId }, range),
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -308,13 +315,25 @@ export function useGeoPromptResults(
   enabled = true
 ) {
   const { projectId } = useGeoProjectScope();
-  return useQuery<GeoPromptResultsResponse>({
-    ...dashboardOrpc.geo.promptResults.queryOptions({
+  return useQuery<GeoPromptResultSummariesResponse>({
+    ...dashboardOrpc.geo.promptResultSummaries.queryOptions({
       input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: enabled && !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load prompt results" },
+  });
+}
+
+export function useGeoPromptResultDetail(
+  organizationId: string,
+  checkId: string | null
+) {
+  return useQuery({
+    ...dashboardOrpc.geo.promptResultDetail.queryOptions({
+      input:
+        organizationId && checkId ? { organizationId, checkId } : skipToken,
+    }),
   });
 }
 
@@ -410,9 +429,10 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
 function geoCompetitorRowHref(
   organizationSlug: string,
   brand: string,
-  projectId?: string
+  projectId?: string,
+  aggregate = false
 ): string {
-  if (brand === CHART_OTHER_SLICE_LABEL) {
+  if (aggregate) {
     return withGeoProject(`/${organizationSlug}/geo/competitors`, projectId);
   }
   return withGeoProject(
@@ -434,19 +454,23 @@ export function useGeoCompetitorRowNavigation(
   const { projectId } = useGeoProjectScope();
   const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
 
-  const openRow = (brand: string) => {
+  const openRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.push(geoCompetitorRowHref(organizationSlug, brand, projectId));
+    router.push(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
   };
 
-  const prefetchRow = (brand: string) => {
+  const prefetchRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.prefetch(geoCompetitorRowHref(organizationSlug, brand, projectId));
-    if (brand !== CHART_OTHER_SLICE_LABEL) {
+    router.prefetch(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
+    if (!aggregate) {
       prefetchDetail(brand);
     }
   };

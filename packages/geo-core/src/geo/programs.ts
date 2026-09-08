@@ -112,6 +112,7 @@ import {
   getGeoModelCatalogEntry,
   isGeoEngineZdrCapable,
 } from "../utils/geo-model-catalog";
+import { toGeoPromptResult } from "../utils/geo-prompt-results";
 import { normalizePromptTags } from "../utils/geo-prompt-tags";
 import { groupGeoSparklinePoints } from "../utils/geo-sparkline";
 import { competitorKey } from "./domain";
@@ -853,25 +854,7 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 
   const response: GeoPromptResultsResponse = {
     configured: true,
-    results: rows.map((row) => ({
-      promptId: row.promptId,
-      engine: row.engine,
-      prompt: row.prompt,
-      answer: row.answer,
-      mentioned: row.mentioned,
-      position: row.position,
-      sentiment: row.sentiment,
-      competitors: row.competitors,
-      excerpt: row.excerpt,
-      searchQueries: row.grounding.queries,
-      sources: geoAnswerSourcesFor(row.grounding, row.sources),
-      finishReason: row.finishReason,
-      promptTokens: row.promptTokens,
-      outputTokens: row.outputTokens,
-      reasoningTokens: row.reasoningTokens,
-      truncated: row.truncated,
-      lastCheckedAt: row.lastCheckedAt.toISOString(),
-    })),
+    results: rows.map(toGeoPromptResult),
   };
   return response;
 });

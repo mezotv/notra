@@ -11,6 +11,14 @@ import {
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { redis } from "@notra/ai/utils/redis";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { organizationIdInputSchema } from "@notra/schemas/dashboard/auth/organization";
+import {
+  disconnectGitHubAppInputSchema,
+  type PrepareInstallUrlInput,
+  prepareInstallUrlInputSchema,
+  probeRepositoryInputSchema,
+  saveGitHubAppRepositoriesInputSchema,
+} from "@notra/schemas/dashboard/github";
 import { Data, Effect } from "effect";
 
 import { GITHUB_INSTALL_STATE_TTL_SECONDS } from "@/constants/github";
@@ -27,14 +35,6 @@ import {
   notFound,
   tooManyRequests,
 } from "@/lib/orpc/utils/errors";
-import { organizationIdInputSchema } from "@/schemas/auth/organization";
-import {
-  disconnectGitHubAppInputSchema,
-  type PrepareInstallUrlInput,
-  prepareInstallUrlInputSchema,
-  probeRepositoryInputSchema,
-  saveGitHubAppRepositoriesInputSchema,
-} from "@/schemas/github";
 import type { GitHubAccountType } from "@/types/integrations/github";
 import { ratelimit } from "@/utils/ratelimit";
 
