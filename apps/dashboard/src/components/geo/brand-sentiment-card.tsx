@@ -1,210 +1,116 @@
 "use client";
 
-import { GEO_SENTIMENT_LABELS } from "@notra/geo-core/constants/geo-sentiment";
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useId } from "react";
 
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   SENTIMENT_CHART_CONFIG,
-  SENTIMENT_METHODOLOGY,
-  SENTIMENT_PERCENT,
+  SENTIMENT_SCORE_FORMAT,
+  SENTIMENT_SCORE_HINT,
 } from "@/constants/geo-sentiment";
 import { useGeoSentiment } from "@/lib/hooks/use-geo-sentiment";
-import type {
-  BrandSentimentCardProps,
-  SentimentShareProps,
-} from "@/types/geo-sentiment";
-import { formatEngineFamily } from "@/utils/geo-charts";
-
-import { SentimentEvidence } from "./sentiment-evidence-list";
-
-function SentimentShare({ value }: SentimentShareProps) {
-  return value === null ? "—" : SENTIMENT_PERCENT.format(value);
-}
+import type { BrandSentimentCardProps } from "@/types/geo-sentiment";
 
 export function BrandSentimentCard({
   organizationId,
   isScanning,
 }: BrandSentimentCardProps) {
   const query = useGeoSentiment(organizationId);
-  const data = query.data;
+  const descriptionId = useId();
   return (
     <InstrumentModule
       eyebrow="Brand sentiment"
+      action={
+        <Tooltip>
+          <TooltipTrigger
+            aria-label="About the sentiment score"
+            aria-describedby={descriptionId}
+            className="text-muted-foreground hover:text-foreground inline-flex size-6 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <HugeiconsIcon
+              aria-hidden="true"
+              icon={InformationCircleIcon}
+              size={14}
+            />
+          </TooltipTrigger>
+          <TooltipContent>{SENTIMENT_SCORE_HINT}</TooltipContent>
+        </Tooltip>
+      }
       variant="table"
-      bodyClassName="space-y-4"
+      className="h-full"
+      bodyClassName="flex flex-col gap-3"
     >
-      <p className="text-muted-foreground text-xs">{SENTIMENT_METHODOLOGY}</p>
-      {isScanning ? (
+      <span id={descriptionId} className="sr-only">
+        {SENTIMENT_SCORE_HINT}
+      </span>
+      {query.isPending ? (
         <p className="text-muted-foreground text-sm" role="status">
-          Scan in progress. Persisted answers may be incomplete.
+          Loading sentiment…
         </p>
       ) : null}
-      {query.isPending ? <p role="status">Loading brand sentiment…</p> : null}
       {query.isError ? (
         <div role="alert">
-          <p>Could not load brand sentiment.</p>
-          <Button onClick={() => query.refetch()} variant="outline">
+          <p className="text-sm">Could not load sentiment.</p>
+          <Button variant="ghost" size="sm" onClick={() => query.refetch()}>
             Try again
           </Button>
         </div>
       ) : null}
-      {query.isSuccess && data ? (
+      {query.isSuccess ? (
         <>
-          {data.summary.totalChecks === 0 ? (
+          <p className="text-3xl font-medium tabular-nums">
+            {query.data.summary.score === null
+              ? "—"
+              : SENTIMENT_SCORE_FORMAT.format(query.data.summary.score)}{" "}
+            <span className="text-muted-foreground text-sm font-normal">
+              / 100
+            </span>
+          </p>
+          {query.data.summary.score === null ? (
             <p className="text-muted-foreground text-sm">
-              {isScanning
-                ? "Waiting for answers in this period."
-                : "No answers in this period. Run a scan or select a wider date range."}
+              No rated mentions in this period.
             </p>
           ) : (
-            <>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-3xl font-medium tabular-nums">
-                      <SentimentShare value={data.summary.positiveShare} />
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      Positive · of {data.summary.classifiedMentions} classified
-                      mentions
-                    </p>
-                  </div>
-                  <dl className="grid grid-cols-3 gap-3 text-sm">
-                    {GEO_SENTIMENT_LABELS.map((label) => (
-                      <div key={label}>
-                        <dt className="capitalize">{label}</dt>
-                        <dd className="tabular-nums">
-                          {data.summary[label]} ·{" "}
-                          <SentimentShare
-                            value={data.summary[`${label}Share`]}
-                          />
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="text-muted-foreground text-xs">
-                    {data.summary.totalChecks} answers · {data.summary.mentions}{" "}
-                    mentions · {data.summary.notMentioned} not mentioned
-                    <br />
-                    Classification coverage:{" "}
-                    <SentimentShare
-                      value={data.summary.classificationCoverage}
-                    />{" "}
-                    · {data.summary.unknownMentions} unknown labels
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="mb-2 text-sm font-medium">
-                    Daily positive share (UTC)
-                  </p>
-                  <EChartsAreaChart
-                    animation={false}
-                    className="h-48 w-full"
-                    config={SENTIMENT_CHART_CONFIG}
-                    curveType="linear"
-                    data={data.points.map((point) => ({
-                      ...point,
-                      tooltip: `${point.day} · ${point.classifiedMentions} classified mentions`,
-                    }))}
-                    xDataKey="day"
-                  >
-                    <EChartsAreaChart.Grid variant="solid" />
-                    <EChartsAreaChart.XAxis dataKey="day" />
-                    <EChartsAreaChart.YAxis
-                      tickFormatter={SENTIMENT_PERCENT.format}
-                    />
-                    <EChartsAreaChart.Area
-                      dataKey="positiveShare"
-                      gapMissing
-                      variant="gradient"
-                    />
-                    <EChartsAreaChart.Tooltip
-                      labelKey="tooltip"
-                      hideZeros={false}
-                      valueFormatter={SENTIMENT_PERCENT.format}
-                    />
-                  </EChartsAreaChart>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm tabular-nums">
-                  <caption className="pb-2 text-left font-medium">
-                    Sentiment by engine
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Engine
-                      </th>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Classified
-                      </th>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Positive
-                      </th>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Neutral
-                      </th>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Negative
-                      </th>
-                      <th className="py-2 pr-4 whitespace-nowrap" scope="col">
-                        Unknown
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.engines.map((engine) => (
-                      <tr className="border-t" key={engine.engine}>
-                        <th className="py-2 pr-4 font-normal" scope="row">
-                          {formatEngineFamily(engine.engine)}
-                          <span className="text-muted-foreground block text-xs">
-                            {engine.engine}
-                          </span>
-                        </th>
-                        <td className="pr-4">{engine.classifiedMentions}</td>
-                        {GEO_SENTIMENT_LABELS.map((label) => (
-                          <td className="pr-4 whitespace-nowrap" key={label}>
-                            {engine[label]} ·{" "}
-                            <SentimentShare value={engine[`${label}Share`]} />
-                          </td>
-                        ))}
-                        <td>{engine.unknownMentions}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <details className="text-sm">
-                <summary className="cursor-pointer py-2">Daily values</summary>
-                <ul>
-                  {data.points.map((point) => (
-                    <li className="py-1 tabular-nums" key={point.day}>
-                      {point.day}:{" "}
-                      <SentimentShare value={point.positiveShare} /> positive ·{" "}
-                      {point.classifiedMentions} classified mentions
-                    </li>
-                  ))}
-                </ul>
-              </details>
-              <p className="text-muted-foreground text-xs">
-                Last measured:{" "}
-                {data.summary.lastCheckedAt
-                  ?.replace("T", " ")
-                  .replace("Z", " UTC")}
-                . Each saved answer has equal weight; repeated scans count
-                again. Changes to prompts, engines or the judge can change this
-                distribution.
-              </p>
-            </>
+            <EChartsAreaChart
+              animation={false}
+              className="h-28 w-full"
+              config={SENTIMENT_CHART_CONFIG}
+              curveType="linear"
+              data={query.data.points.map(({ day, score }) => ({ day, score }))}
+              xDataKey="day"
+            >
+              <EChartsAreaChart.XAxis dataKey="day" />
+              <EChartsAreaChart.Area
+                dataKey="score"
+                gapMissing
+                variant="gradient"
+              >
+                <EChartsAreaChart.Dot />
+              </EChartsAreaChart.Area>
+              <EChartsAreaChart.Tooltip
+                hideZeros={false}
+                labelKey="day"
+                valueFormatter={(value) =>
+                  `${SENTIMENT_SCORE_FORMAT.format(value)} / 100`
+                }
+              />
+            </EChartsAreaChart>
           )}
-          <SentimentEvidence
-            negativeCount={data.summary.negative}
-            organizationId={organizationId}
-          />
         </>
+      ) : null}
+      {isScanning ? (
+        <p className="text-muted-foreground text-xs" role="status">
+          Scan in progress
+        </p>
       ) : null}
     </InstrumentModule>
   );

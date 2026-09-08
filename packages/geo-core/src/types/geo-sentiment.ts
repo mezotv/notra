@@ -8,6 +8,7 @@ export type GeoSentimentEvidenceInput = z.infer<
 >;
 
 export interface GeoSentimentBucket extends GeoSentimentCounts {
+  score: number | null;
   classifiedMentions: number;
   unknownMentions: number;
   notMentioned: number;

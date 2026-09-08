@@ -618,6 +618,7 @@ export interface EngineFamilyBrandScope {
 }
 
 export interface EngineRateTableProps extends EngineFamilyBrandScope {
+  organizationId: string;
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];

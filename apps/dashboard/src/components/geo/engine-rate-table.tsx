@@ -13,6 +13,7 @@ import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { sentimentFamilyScore } from "@notra/geo-core/utils/geo-sentiment";
 import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
@@ -28,7 +29,9 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
+import { SENTIMENT_SCORE_FORMAT } from "@/constants/geo-sentiment";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useGeoSentiment } from "@/lib/hooks/use-geo-sentiment";
 import type { EngineRateTableProps } from "@/types/geo";
 import {
   engineFamilyAvgPosition,
@@ -70,6 +73,7 @@ function avgPositionOf(family: GeoEngineFamily): string {
 }
 
 export function EngineRateTable({
+  organizationId,
   engines,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
@@ -79,6 +83,10 @@ export function EngineRateTable({
   aliases,
   competitors,
 }: EngineRateTableProps) {
+  const sentiment = useGeoSentiment(organizationId);
+  const sentimentEngines = sentiment.isSuccess
+    ? sentiment.data.engines
+    : undefined;
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
   const [query, setQuery] = useState("");
@@ -159,6 +167,37 @@ export function EngineRateTable({
           engineFamilyAvgPosition(row) ?? Number.MAX_SAFE_INTEGER,
       },
       {
+        key: "sentiment",
+        header: "Sentiment",
+        width: "7rem",
+        sortable: true,
+        cell: (row) => {
+          if (sentiment.isPending) {
+            return (
+              <span className="text-muted-foreground text-xs">Loading…</span>
+            );
+          }
+          if (sentiment.isError) {
+            return (
+              <span className="text-muted-foreground text-xs">Unavailable</span>
+            );
+          }
+          const score = sentimentFamilyScore(
+            sentimentEngines ?? [],
+            row.family
+          );
+          return (
+            <span className="text-sm tabular-nums">
+              {score === null
+                ? "—"
+                : `${SENTIMENT_SCORE_FORMAT.format(score)} / 100`}
+            </span>
+          );
+        },
+        sortValue: (row) =>
+          sentimentFamilyScore(sentimentEngines ?? [], row.family) ?? -1,
+      },
+      {
         key: "lastChecked",
         header: "Last checked",
         width: "9.375rem",
@@ -183,7 +222,13 @@ export function EngineRateTable({
         },
       },
     ],
-    [filtered.length, timeseriesPoints]
+    [
+      filtered.length,
+      timeseriesPoints,
+      sentimentEngines,
+      sentiment.isPending,
+      sentiment.isError,
+    ]
   );
 
   const emptyReadout = isScanning ? "scanning now" : "no scans yet";

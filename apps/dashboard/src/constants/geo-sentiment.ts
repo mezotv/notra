@@ -3,15 +3,14 @@ import { seriesColors } from "@/utils/chart-colors";
 
 import { CHART_PRIMARY_COLOR } from "./charts";
 
-export const SENTIMENT_METHODOLOGY =
-  "English, single-turn answers · AI-assessed sentiment toward your brand";
-export const SENTIMENT_PERCENT = new Intl.NumberFormat("en", {
-  style: "percent",
-  maximumFractionDigits: 1,
+export const SENTIMENT_SCORE_HINT =
+  "AI-assessed tone toward your brand, from 0 to 100. Positive mentions count as 100, neutral as 50, and negative as 0. English, single-turn answers only. Unknown labels and non-mentions are excluded. This is a descriptive score, not confidence or a percentage.";
+export const SENTIMENT_SCORE_FORMAT = new Intl.NumberFormat("en", {
+  maximumFractionDigits: 0,
 });
 export const SENTIMENT_CHART_CONFIG: ChartConfig = {
-  positiveShare: {
-    label: "Positive share",
+  score: {
+    label: "Sentiment score",
     colors: seriesColors(CHART_PRIMARY_COLOR),
   },
 };

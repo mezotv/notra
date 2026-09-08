@@ -1,18 +1,13 @@
+import type { GeoPromptResult } from "@notra/geo-core/types/geo";
+
 export interface BrandSentimentCardProps {
   organizationId: string;
   isScanning: boolean;
 }
 
-export interface SentimentShareProps {
-  value: number | null;
-}
-
-export interface SentimentEvidenceListProps {
-  organizationId: string;
-  enabled: boolean;
-}
-
-export interface SentimentEvidenceProps {
-  organizationId: string;
-  negativeCount: number;
+export interface AnswerSentimentProps {
+  result: Pick<
+    GeoPromptResult,
+    "mentioned" | "sentiment" | "answer" | "excerpt"
+  >;
 }
