@@ -136,6 +136,7 @@ import {
   toTrackedPrompt,
 } from "./mappers";
 import { loadGeoModelCatalog } from "./model-catalog";
+import { loadGeoProjectBrand } from "./project-brand";
 import {
   ensureGeoProject,
   geoCheckScope,
@@ -1286,15 +1287,7 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
           where: eq(geoSettings.projectId, projectId),
         })
       ),
-      geoDb("brand lookup failed", () =>
-        db.query.brandSettings.findFirst({
-          columns: { companyDescription: true, audience: true },
-          where: and(
-            eq(brandSettings.organizationId, scope.organizationId),
-            eq(brandSettings.id, scope.brandSettingsId ?? "")
-          ),
-        })
-      ),
+      loadGeoProjectBrand({ organizationId: scope.organizationId, projectId }),
     ],
     { concurrency: "unbounded" }
   );
