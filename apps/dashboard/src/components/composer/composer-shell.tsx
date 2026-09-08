@@ -101,12 +101,17 @@ function ComposerChip({
   editLabel,
   onClick,
   pending = false,
+  className,
+  labelClassName,
 }: ComposerChipProps) {
+  const labelClasses = cn("max-w-[12rem] truncate", labelClassName);
+
   return (
     <span
       className={cn(
         "border-foreground/25 bg-background text-foreground inline-flex max-w-full items-center gap-1.5 rounded-md border border-dashed py-1 pr-1 pl-1.5 text-xs",
-        pending ? "border-foreground/15 text-muted-foreground" : null
+        pending ? "border-foreground/15 text-muted-foreground" : null,
+        className
       )}
     >
       {onClick ? (
@@ -117,12 +122,12 @@ function ComposerChip({
           type="button"
         >
           {icon}
-          <span className="max-w-[12rem] truncate">{label}</span>
+          <span className={labelClasses}>{label}</span>
         </button>
       ) : (
         <>
           {icon}
-          <span className="max-w-[12rem] truncate">{label}</span>
+          <span className={labelClasses}>{label}</span>
         </>
       )}
       {onEdit ? (

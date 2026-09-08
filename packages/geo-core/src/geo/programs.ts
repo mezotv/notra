@@ -29,7 +29,7 @@ import {
   queryGeoCheckTimeseries,
   toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
@@ -73,6 +73,7 @@ import type {
   GeoPromptRescanInput,
   GeoPromptResultsResponse,
   GeoPromptUpdateChanges,
+  GeoScanStartInput,
   GeoScopeInput,
   GeoSettingsEngineAddInput,
   GeoSettingsLanguageAddInput,
@@ -104,12 +105,14 @@ import {
   normalizeConversionPaths,
   sumConversionVisits,
 } from "../utils/geo-conversion-paths";
+import { scopeGeoScanEngines } from "../utils/geo-engines";
 import { trackedGeoLanguages } from "../utils/geo-language-rows";
 import {
   geoDefaultEngines,
   getGeoModelCatalogEntry,
   isGeoEngineZdrCapable,
 } from "../utils/geo-model-catalog";
+import { toGeoPromptResult } from "../utils/geo-prompt-results";
 import { normalizePromptTags } from "../utils/geo-prompt-tags";
 import { groupGeoSparklinePoints } from "../utils/geo-sparkline";
 import { competitorKey } from "./domain";
@@ -119,6 +122,7 @@ import {
   GeoPromptDuplicateError,
   GeoPromptNotFoundError,
   GeoScanAlreadyRunningError,
+  GeoScanEnginesEmptyError,
   GeoSettingsDisabledError,
   GeoSettingsMissingError,
   GeoSettingsTrackingError,
@@ -140,7 +144,14 @@ import {
   resolveGeoScope,
 } from "./projects";
 import { promptKey } from "./prompt-key";
-import { buildGeoPrompts, customPromptScanId } from "./prompts";
+import {
+  applyAutoPromptChange,
+  buildGeoPrompts,
+  customPromptScanId,
+  generatedAutoPromptIds,
+  isGeoAutoPromptId,
+  toAutoTrackedPrompts,
+} from "./prompts";
 import { startClaimedGeoScanRun } from "./scan-handoff";
 import { nextGeoScanAt } from "./scan-schedule";
 import { claimGeoScanRun } from "./scan-status";
@@ -644,6 +655,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         nonZdrApprovedEngines: true,
         conversionPaths: true,
         pausedAutoPromptIds: true,
+        removedAutoPromptIds: true,
         enabled: true,
         nextScanAt: true,
         scanIntervalHours: true,
@@ -653,6 +665,8 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   );
   const pausedAutoPromptIds =
     input.pausedAutoPromptIds ?? existingSettings?.pausedAutoPromptIds ?? [];
+  const removedAutoPromptIds =
+    input.removedAutoPromptIds ?? existingSettings?.removedAutoPromptIds ?? [];
   const conversionPaths = normalizeConversionPaths(
     input.conversionPaths ?? existingSettings?.conversionPaths ?? []
   );
@@ -703,6 +717,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         enforceZdr,
         nonZdrApprovedEngines,
         pausedAutoPromptIds,
+        removedAutoPromptIds,
         enabled: input.enabled,
         scanIntervalHours: input.scanIntervalHours,
         nextScanAt,
@@ -718,6 +733,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
           enforceZdr,
           nonZdrApprovedEngines,
           pausedAutoPromptIds,
+          removedAutoPromptIds,
           enabled: input.enabled,
           scanIntervalHours: input.scanIntervalHours,
           nextScanAt,
@@ -838,32 +854,7 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 
   const response: GeoPromptResultsResponse = {
     configured: true,
-    results: rows.map((row) => ({
-      promptId: row.promptId,
-      engine: row.engine,
-      prompt: row.prompt,
-      answer: row.answer,
-      mentioned: row.mentioned,
-      position: row.position,
-      sentiment: row.sentiment,
-      competitors: row.competitors,
-      excerpt: row.excerpt,
-      searchQueries: row.grounding.queries,
-      sources:
-        row.grounding.sources.length > 0
-          ? row.grounding.sources
-          : row.sources.map((source) => ({
-              title: source.title ?? source.url,
-              url: source.url,
-              domain: "",
-            })),
-      finishReason: row.finishReason,
-      promptTokens: row.promptTokens,
-      outputTokens: row.outputTokens,
-      reasoningTokens: row.reasoningTokens,
-      truncated: row.truncated,
-      lastCheckedAt: row.lastCheckedAt.toISOString(),
-    })),
+    results: rows.map(toGeoPromptResult),
   };
   return response;
 });
@@ -1287,7 +1278,7 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
       geoDb("prompts lookup failed", () =>
         db.query.geoPrompts.findMany({
           where: eq(geoPrompts.projectId, projectId),
-          orderBy: [asc(geoPrompts.createdAt)],
+          orderBy: [desc(geoPrompts.createdAt)],
         })
       ),
       geoDb("settings lookup failed", () =>
@@ -1319,27 +1310,20 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
   }
 
   const catalog = yield* loadGeoModelCatalog(scope.organizationId);
-  const autoPrompts = buildGeoPrompts(
-    toGeoSettings(settingsRow, catalog),
-    brand
-      ? {
-          companyDescription: brand.companyDescription,
-          audience: brand.audience,
-        }
-      : null
+  const autoPrompts = toAutoTrackedPrompts(
+    buildGeoPrompts(
+      toGeoSettings(settingsRow, catalog),
+      brand
+        ? {
+            companyDescription: brand.companyDescription,
+            audience: brand.audience,
+          }
+        : null
+    ),
+    settingsRow.pausedAutoPromptIds,
+    settingsRow.removedAutoPromptIds
   );
-
-  const pausedAutoPromptIds = new Set(settingsRow.pausedAutoPromptIds);
-  for (const autoPrompt of autoPrompts) {
-    prompts.push({
-      id: autoPrompt.id,
-      prompt: autoPrompt.text,
-      enabled: !pausedAutoPromptIds.has(autoPrompt.id),
-      source: "auto",
-      tags: [],
-      createdAt: null,
-    });
-  }
+  prompts.push(...autoPrompts);
 
   const response: GeoTrackedPromptsResponse = {
     configured: isTinybirdConfigured(),
@@ -1495,6 +1479,133 @@ export const importGeoPrompts = Effect.fn("geo.promptsImport")(function* (
   return result;
 });
 
+function trackedAutoPrompt(
+  promptId: string,
+  enabled: boolean
+): GeoTrackedPrompt {
+  return {
+    id: promptId,
+    prompt: promptId,
+    enabled,
+    source: "auto",
+    tags: [],
+    createdAt: null,
+  };
+}
+
+type AutoPromptPatchOutcome =
+  | {
+      status: "updated";
+      pausedAutoPromptIds: string[];
+      removedAutoPromptIds: string[];
+    }
+  | { status: "missing-settings" }
+  | { status: "not-found" };
+
+const patchAutoPromptInTransaction = Effect.fn("geo.promptsPatchAutoTx")(
+  function* (
+    tx: DbTransaction,
+    organizationId: string,
+    projectId: string,
+    brandSettingsId: string,
+    promptId: string,
+    change: "pause" | "resume" | "remove"
+  ) {
+    yield* lockGeoProject(tx, projectId);
+    const settingsRow = yield* geoDb("settings lookup failed", () =>
+      tx.query.geoSettings.findFirst({
+        columns: {
+          companyName: true,
+          aliases: true,
+          pausedAutoPromptIds: true,
+          removedAutoPromptIds: true,
+        },
+        where: eq(geoSettings.projectId, projectId),
+      })
+    );
+    if (!settingsRow) {
+      const outcome: AutoPromptPatchOutcome = { status: "missing-settings" };
+      return outcome;
+    }
+    if (settingsRow.removedAutoPromptIds.includes(promptId)) {
+      const outcome: AutoPromptPatchOutcome = { status: "not-found" };
+      return outcome;
+    }
+    const brand = yield* geoDb("brand lookup failed", () =>
+      tx.query.brandSettings.findFirst({
+        columns: { companyDescription: true, audience: true },
+        where: and(
+          eq(brandSettings.organizationId, organizationId),
+          eq(brandSettings.id, brandSettingsId)
+        ),
+      })
+    );
+    const generatedIds = generatedAutoPromptIds(
+      {
+        companyName: settingsRow.companyName,
+        aliases: settingsRow.aliases,
+      },
+      brand
+        ? {
+            companyDescription: brand.companyDescription,
+            audience: brand.audience,
+          }
+        : null
+    );
+    if (!generatedIds.has(promptId)) {
+      const outcome: AutoPromptPatchOutcome = { status: "not-found" };
+      return outcome;
+    }
+    const next = applyAutoPromptChange(
+      settingsRow.pausedAutoPromptIds,
+      settingsRow.removedAutoPromptIds,
+      promptId,
+      change
+    );
+    yield* geoDb("auto prompt update failed", () =>
+      tx
+        .update(geoSettings)
+        .set({
+          pausedAutoPromptIds: next.pausedAutoPromptIds,
+          removedAutoPromptIds: next.removedAutoPromptIds,
+        })
+        .where(eq(geoSettings.projectId, projectId))
+    );
+    const outcome: AutoPromptPatchOutcome = { status: "updated", ...next };
+    return outcome;
+  }
+);
+
+const patchAutoPromptSettings = Effect.fn("geo.promptsPatchAuto")(function* (
+  organizationId: string,
+  projectId: string,
+  brandSettingsId: string,
+  promptId: string,
+  change: "pause" | "resume" | "remove"
+) {
+  const outcome = yield* geoDb("auto prompt update failed", () =>
+    db.transaction((tx) =>
+      Effect.runPromise(
+        patchAutoPromptInTransaction(
+          tx,
+          organizationId,
+          projectId,
+          brandSettingsId,
+          promptId,
+          change
+        )
+      )
+    )
+  );
+  if (outcome.status === "missing-settings") {
+    return yield* Effect.fail(new GeoSettingsMissingError({ organizationId }));
+  }
+  if (outcome.status === "not-found") {
+    return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
+  }
+  return outcome;
+});
+
 export const deleteGeoPrompt = Effect.fn("geo.promptsDelete")(function* (
   input: GeoScopeInput,
   promptId: string
@@ -1513,10 +1624,19 @@ export const deleteGeoPrompt = Effect.fn("geo.promptsDelete")(function* (
       .returning()
   );
 
-  if (!rows.at(0)) {
+  if (rows.at(0)) {
+    return { success: true };
+  }
+  if (!isGeoAutoPromptId(promptId)) {
     return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
   }
-
+  yield* patchAutoPromptSettings(
+    scope.organizationId,
+    scope.projectId,
+    scope.brandSettingsId,
+    promptId,
+    "remove"
+  );
   return { success: true };
 });
 
@@ -1548,44 +1668,39 @@ export const updateGeoPrompt = Effect.fn("geo.promptsUpdate")(function* (
   );
 
   const row = rows.at(0);
-  if (!row) {
+  if (row) {
+    return toTrackedPrompt(row);
+  }
+  if (changes.enabled === undefined || !isGeoAutoPromptId(promptId)) {
     return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
   }
-
-  return toTrackedPrompt(row);
+  yield* patchAutoPromptSettings(
+    scope.organizationId,
+    scope.projectId,
+    scope.brandSettingsId,
+    promptId,
+    changes.enabled ? "resume" : "pause"
+  );
+  return trackedAutoPrompt(promptId, changes.enabled);
 });
 
 export const toggleGeoAutoPrompt = Effect.fn("geo.promptsToggleAuto")(
   function* (input: GeoScopeInput, promptId: string, enabled: boolean) {
     const scope = yield* requireGeoProject(input);
-    const settingsRow = yield* geoDb("settings lookup failed", () =>
-      db.query.geoSettings.findFirst({
-        columns: { pausedAutoPromptIds: true },
-        where: eq(geoSettings.projectId, scope.projectId),
-      })
-    );
-    if (!settingsRow) {
-      return yield* Effect.fail(
-        new GeoSettingsMissingError({ organizationId: scope.organizationId })
-      );
+    if (!isGeoAutoPromptId(promptId)) {
+      return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
     }
-    const paused = new Set(settingsRow.pausedAutoPromptIds);
-    if (enabled) {
-      paused.delete(promptId);
-    } else {
-      paused.add(promptId);
-    }
-    const pausedAutoPromptIds = [...paused];
-    yield* geoDb("auto prompt toggle failed", () =>
-      db
-        .update(geoSettings)
-        .set({ pausedAutoPromptIds })
-        .where(eq(geoSettings.projectId, scope.projectId))
+    const next = yield* patchAutoPromptSettings(
+      scope.organizationId,
+      scope.projectId,
+      scope.brandSettingsId,
+      promptId,
+      enabled ? "resume" : "pause"
     );
     const result: GeoAutoPromptToggleResult = {
       promptId,
       enabled,
-      pausedAutoPromptIds,
+      pausedAutoPromptIds: next.pausedAutoPromptIds,
     };
     return result;
   }
@@ -1612,22 +1727,32 @@ export const toggleGeoPrompt = Effect.fn("geo.promptsToggle")(function* (
   );
 
   const row = rows.at(0);
-  if (!row) {
+  if (row) {
+    return toTrackedPrompt(row);
+  }
+  if (!isGeoAutoPromptId(promptId)) {
     return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
   }
-
-  return toTrackedPrompt(row);
+  yield* patchAutoPromptSettings(
+    scope.organizationId,
+    scope.projectId,
+    scope.brandSettingsId,
+    promptId,
+    enabled ? "resume" : "pause"
+  );
+  return trackedAutoPrompt(promptId, enabled);
 });
 
 export const startGeoScanScoped = Effect.fn("geo.startScanScoped")(function* (
   input: GeoScopeInput,
-  promptIds?: readonly string[]
+  promptIds?: readonly string[],
+  engines?: readonly string[]
 ) {
   const scope = yield* requireGeoProject(input);
   const projectId = scope.projectId;
   const row = yield* geoDb("settings lookup failed", () =>
     db.query.geoSettings.findFirst({
-      columns: { id: true, enabled: true },
+      columns: { id: true, enabled: true, engines: true },
       where: eq(geoSettings.projectId, projectId),
     })
   );
@@ -1640,6 +1765,15 @@ export const startGeoScanScoped = Effect.fn("geo.startScanScoped")(function* (
 
   if (!row.enabled) {
     return yield* Effect.fail(new GeoSettingsDisabledError({ projectId }));
+  }
+
+  const storedEngines = row.engines ?? [];
+  if (
+    engines &&
+    storedEngines.length > 0 &&
+    scopeGeoScanEngines(storedEngines, engines).length === 0
+  ) {
+    return yield* Effect.fail(new GeoScanEnginesEmptyError({ projectId }));
   }
 
   // Claim the scan slot atomically *before* handing off. Reading the settings
@@ -1659,14 +1793,15 @@ export const startGeoScanScoped = Effect.fn("geo.startScanScoped")(function* (
     scope.organizationId,
     projectId,
     claim.claimedAt,
-    promptIds
+    promptIds,
+    engines
   );
 });
 
 export const startGeoScan = Effect.fn("geo.startScan")(function* (
-  input: GeoScopeInput
+  input: GeoScanStartInput
 ) {
-  return yield* startGeoScanScoped(input);
+  return yield* startGeoScanScoped(input, undefined, input.engines);
 });
 
 export const startGeoPromptRescan = Effect.fn("geo.rescanPrompt")(function* (

@@ -70,8 +70,6 @@ import {
   logGeoBillingFailure,
   MAX_JUDGE_COMPETITORS,
   normalizePosition,
-  parseGeoClaimToken,
-  renewGeoScanClaimIfDue,
   requireAnswerText,
 } from "./scan";
 import { claimGeoScanRun, withGeoScanRun } from "./scan-status";
@@ -331,14 +329,8 @@ const runPlannedPersona = Effect.fn("geo.runPlannedPersona")(function* (
 export const runGeoScanPersonaBatch = Effect.fn("geo.runScanPersonaBatch")(
   function* (
     context: GeoScanProjectContext,
-    plannedPersonas: readonly GeoScanPlannedPersona[],
-    claimToken: string
+    plannedPersonas: readonly GeoScanPlannedPersona[]
   ) {
-    const incoming = yield* parseGeoClaimToken(claimToken);
-    const claimedAt = yield* renewGeoScanClaimIfDue(
-      context.projectId,
-      incoming
-    );
     const checkContext = yield* buildGeoScanCheckContext(context);
 
     const outcomes = yield* Effect.forEach(
@@ -386,7 +378,6 @@ export const runGeoScanPersonaBatch = Effect.fn("geo.runScanPersonaBatch")(
       mentions,
       dropped,
       usage,
-      claimedAt: claimedAt.toISOString(),
     };
     return result;
   }
@@ -495,6 +486,7 @@ const runGeoPersonaNowProgram = Effect.fn("geo.runPersonaNow")(function* (
     (scanId) =>
       Effect.gen(function* () {
         const context: GeoCheckContext = {
+          runId,
           organizationId: scope.organizationId,
           projectId,
           scanId,

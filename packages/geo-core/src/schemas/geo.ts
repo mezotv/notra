@@ -97,6 +97,10 @@ export const geoScanWorkflowPayloadSchema = geoOrganizationInputSchema
     claimedAt: iso.datetime().optional(),
     scanId: string().min(1).optional(),
     promptIds: array(string().min(1)).min(1).optional(),
+    engines: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
+      .min(1)
+      .max(GEO_MAX_ENGINES)
+      .optional(),
   })
   .refine(
     (value) =>
@@ -160,6 +164,9 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
     string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH)
   ).max(GEO_MAX_ENGINES),
   pausedAutoPromptIds: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
+    .max(GEO_MAX_PROMPTS)
+    .optional(),
+  removedAutoPromptIds: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
     .max(GEO_MAX_PROMPTS)
     .optional(),
   enabled: boolean(),
@@ -247,6 +254,11 @@ export const geoProjectDeleteInputSchema = object({
   organizationId: string().min(1),
   projectId: string().min(1),
 });
+
+export const geoPromptResultDetailInputSchema =
+  geoOrganizationInputSchema.extend({
+    checkId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+  });
 
 export const geoPromptHistoryInputSchema = geoOrganizationInputSchema.extend({
   promptId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),

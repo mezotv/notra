@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  onboardingWorkspaceFormFieldsSchema,
+  onboardingWorkspaceFormSchema,
+} from "@notra/schemas/dashboard/onboarding/workspace";
+import { slugSchema } from "@notra/schemas/dashboard/organization";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -18,6 +23,7 @@ import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { OnboardingEmailPrefs } from "@/components/onboarding/email-prefs";
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { OnboardingStepViewTracker } from "@/components/onboarding/step-view-tracker";
@@ -34,11 +40,6 @@ import {
   validateLogoFile,
 } from "@/lib/onboarding/logo-file";
 import { submitWorkspaceForm } from "@/lib/onboarding/submit-workspace-form";
-import {
-  onboardingWorkspaceFormFieldsSchema,
-  onboardingWorkspaceFormSchema,
-} from "@/schemas/onboarding/workspace";
-import { slugSchema } from "@/schemas/organization";
 import type { WorkspaceFormProps } from "@/types/onboarding";
 import {
   getHeardAboutNotraLabel,
@@ -113,6 +114,8 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       name: existingOrg?.name ?? "",
       slug: existingOrg?.slug ?? "",
       websiteUrl: "",
+      dailySummary: existingOrg?.dailySummary ?? true,
+      marketingEmails: existingOrg?.marketingEmails ?? true,
     },
     validators: {
       onSubmit: onboardingWorkspaceFormSchema,
@@ -405,6 +408,22 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
                 </div>
               </div>
             </div>
+          )}
+        </form.Field>
+
+        <form.Field name="dailySummary">
+          {(dailyField) => (
+            <form.Field name="marketingEmails">
+              {(marketingField) => (
+                <OnboardingEmailPrefs
+                  dailySummary={dailyField.state.value}
+                  disabled={isSubmitting}
+                  marketingEmails={marketingField.state.value}
+                  onDailySummaryChange={dailyField.handleChange}
+                  onMarketingEmailsChange={marketingField.handleChange}
+                />
+              )}
+            </form.Field>
           )}
         </form.Field>
 

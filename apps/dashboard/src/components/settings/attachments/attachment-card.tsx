@@ -2,10 +2,10 @@
 
 import { Delete02Icon, File02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { MIME_DISPLAY_LABELS } from "@notra/schemas/constants/dashboard/upload";
 import Image from "next/image";
 
 import { Button } from "@/components/button";
-import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
   isImageMimeType,
   isPdfMimeType,
@@ -46,7 +46,7 @@ export function AttachmentCard({
   return (
     <div
       className={cn(
-        "border-border/80 bg-background relative overflow-hidden rounded-lg border shadow-2xs",
+        "border-border/80 bg-background relative overflow-hidden rounded-lg border",
         selected && "ring-ring ring-2"
       )}
     >

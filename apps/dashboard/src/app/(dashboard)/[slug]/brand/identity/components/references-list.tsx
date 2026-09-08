@@ -2,6 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -33,7 +34,7 @@ export function ReferencesList({
   dialogOpen,
   onDialogOpenChange,
 }: ReferencesListProps) {
-  const { data } = useReferences(organizationId, voiceId);
+  const { data, isPending } = useReferences(organizationId, voiceId);
   const deleteMutation = useDeleteReference(organizationId, voiceId);
   const updateMutation = useUpdateReference(organizationId, voiceId);
   const searchParams = useSearchParams();
@@ -108,37 +109,53 @@ export function ReferencesList({
     onDialogOpenChange(open);
   };
 
+  let content = (
+    <div className="columns-1 gap-4 space-y-4 sm:columns-2">
+      {references.map((ref) => (
+        <ReferenceCard
+          isDeleting={deletingId === ref.id}
+          key={ref.id}
+          onDelete={handleDelete}
+          onUpdateApplicableTo={handleUpdateApplicableTo}
+          onUpdateNote={handleUpdateNote}
+          reference={ref}
+        />
+      ))}
+    </div>
+  );
+
+  if (isPending) {
+    content = (
+      <output>
+        <span className="sr-only">Loading references</span>
+        <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2">
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      </output>
+    );
+  } else if (references.length === 0) {
+    content = (
+      <EmptyState
+        actionIcon={<HugeiconsIcon className="size-4" icon={Add01Icon} />}
+        actionLabel="Add Reference"
+        description="Add a tweet or writing sample so the AI can match your style."
+        onActionClick={() => onDialogOpenChange(true)}
+        preview={
+          <EmptyStateCardsPreview
+            columns={2}
+            count={EMPTY_STATE_CARD_COUNT.reference}
+            variant="reference"
+          />
+        }
+        title="No references yet"
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {references.length === 0 ? (
-        <EmptyState
-          actionIcon={<HugeiconsIcon className="size-4" icon={Add01Icon} />}
-          actionLabel="Add Reference"
-          description="Add a tweet or writing sample so the AI can match your style."
-          onActionClick={() => onDialogOpenChange(true)}
-          preview={
-            <EmptyStateCardsPreview
-              columns={2}
-              count={EMPTY_STATE_CARD_COUNT.reference}
-              variant="reference"
-            />
-          }
-          title="No references yet"
-        />
-      ) : (
-        <div className="columns-1 gap-4 space-y-4 sm:columns-2">
-          {references.map((ref) => (
-            <ReferenceCard
-              isDeleting={deletingId === ref.id}
-              key={ref.id}
-              onDelete={handleDelete}
-              onUpdateApplicableTo={handleUpdateApplicableTo}
-              onUpdateNote={handleUpdateNote}
-              reference={ref}
-            />
-          ))}
-        </div>
-      )}
+      {content}
 
       <AddReferenceDialog
         initialStep={initialStep}

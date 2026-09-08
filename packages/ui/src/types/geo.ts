@@ -88,7 +88,12 @@ export interface ParsedModelId {
   slug: string;
 }
 
-export type GeoChatSkin = "claude" | "chatgpt" | "gemini" | "perplexity";
+export type GeoChatSkin =
+  | "claude"
+  | "chatgpt"
+  | "gemini"
+  | "perplexity"
+  | "opencode";
 
 export interface GeoAnswerResult {
   engine: string;

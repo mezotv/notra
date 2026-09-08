@@ -2,7 +2,7 @@
 
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
 import { SPRING } from "@notra/ui/lib/motion";
-import { AnimatePresence, m, useReducedMotion } from "motion/react";
+import { AnimatePresence, LazyMotion, m, useReducedMotion } from "motion/react";
 
 import { MessageAuthorAvatar } from "@/components/chat/message-author-avatar";
 import { Composer } from "@/components/composer/composer-shell";
@@ -26,6 +26,12 @@ interface ChatQueueProps {
 }
 
 const INSTANT = { duration: 0 } as const;
+// `m.*` components only animate once motion features are loaded. Loading
+// them here keeps the queue working in hosts without their own LazyMotion
+// boundary.
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => mod.default);
+
 export function ChatQueue({
   messages,
   onEdit,
@@ -39,52 +45,54 @@ export function ChatQueue({
   const itemTransition = reduceMotion ? INSTANT : SPRING.snappy;
 
   return (
-    <AnimatePresence initial={false}>
-      {hasMessages && (
-        <m.div
-          animate={{ height: "auto", opacity: 1, y: 0 }}
-          aria-label="Queued messages"
-          className="border-border bg-muted overflow-hidden rounded-t-[14px] border border-b-0 px-2.5 pt-1.5 pb-1"
-          exit={{ height: 0, opacity: 0, y: 12 }}
-          initial={{ height: 0, opacity: 0, y: 12 }}
-          transition={containerTransition}
-        >
-          <div className="flex flex-wrap items-center gap-1.5">
-            <AnimatePresence initial={false}>
-              {messages.map((message) => (
-                <m.div
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-full"
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  key={message.id}
-                  layout={!reduceMotion}
-                  transition={itemTransition}
-                >
-                  <Composer.Chip
-                    editLabel="Edit queued message"
-                    icon={
-                      showAuthorAvatars && message.authorUserId ? (
-                        <MessageAuthorAvatar
-                          author={
-                            authorsById?.get(message.authorUserId) ??
-                            unknownChatMessageAuthor(message.authorUserId)
-                          }
-                          size="sm"
-                        />
-                      ) : undefined
-                    }
-                    label={message.text}
-                    onEdit={() => onEdit(message)}
-                    onRemove={() => onRemove(message.id)}
-                    removeLabel="Remove from queue"
-                  />
-                </m.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        </m.div>
-      )}
-    </AnimatePresence>
+    <LazyMotion features={loadMotionFeatures} strict>
+      <AnimatePresence initial={false}>
+        {hasMessages && (
+          <m.div
+            animate={{ height: "auto", opacity: 1, y: 0 }}
+            aria-label="Queued messages"
+            className="border-border bg-muted overflow-hidden rounded-t-[14px] border border-b-0 px-2.5 pt-1.5 pb-1"
+            exit={{ height: 0, opacity: 0, y: 12 }}
+            initial={{ height: 0, opacity: 0, y: 12 }}
+            transition={containerTransition}
+          >
+            <div className="flex flex-wrap items-center gap-1.5">
+              <AnimatePresence initial={false}>
+                {messages.map((message) => (
+                  <m.div
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-full"
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    key={message.id}
+                    layout={!reduceMotion}
+                    transition={itemTransition}
+                  >
+                    <Composer.Chip
+                      editLabel="Edit queued message"
+                      icon={
+                        showAuthorAvatars && message.authorUserId ? (
+                          <MessageAuthorAvatar
+                            author={
+                              authorsById?.get(message.authorUserId) ??
+                              unknownChatMessageAuthor(message.authorUserId)
+                            }
+                            size="sm"
+                          />
+                        ) : undefined
+                      }
+                      label={message.text}
+                      onEdit={() => onEdit(message)}
+                      onRemove={() => onRemove(message.id)}
+                      removeLabel="Remove from queue"
+                    />
+                  </m.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </LazyMotion>
   );
 }

@@ -13,7 +13,8 @@
     "./csv/*": "./src/csv/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "bun test tests"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",
@@ -28,13 +29,15 @@
     "@usenotra/geo": "npm:@usenotra/geo@^0.3.0",
     "ai": "6.0.206",
     "drizzle-orm": "^0.45.2",
-    "effect": "4.0.0-beta.93",
+    "effect": "4.0.0-rc.112",
     "evlog": "2.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@notra/typescript-config": "workspace:*",
     "@types/node": "^20",
+    "drizzle-kit": "0.31.10",
     "typescript": "5.9.2"
   }
 }

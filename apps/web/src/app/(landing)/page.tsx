@@ -149,7 +149,7 @@ export default function LandingPage() {
   return (
     <div className="dark:bg-background flex w-full flex-col items-stretch justify-start overflow-x-clip bg-white">
       <LandingPageJsonLd />
-      <main className="flex w-full flex-col items-stretch justify-start">
+      <main className="landing-tables flex w-full flex-col items-stretch justify-start">
         <HeroSection />
         <p className="sr-only" id="agent-readable-summary">
           Notra is a GEO (Generative Engine Optimization) product. It asks AI

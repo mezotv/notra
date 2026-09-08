@@ -6,8 +6,10 @@ import { notFound } from "next/navigation";
 import { ViewTransition } from "react";
 import type { BlogEntryPageProps } from "~types/blog";
 
+import { blog } from "@/../.source/server";
 import { BlogArticle } from "@/components/blog-article";
 import { BlogCopyArticle } from "@/components/blog-copy-article";
+import { getBlogMDXComponents } from "@/components/blog-mdx-components";
 import { BlogPostPagination } from "@/components/blog-post-pagination";
 import { BlogPostSidebar } from "@/components/blog-post-sidebar";
 import {
@@ -20,9 +22,7 @@ import {
   buildBlogArticleJsonLd,
   buildBlogFaqJsonLd,
 } from "@/utils/blog-jsonld";
-import { extractBlogToc } from "@/utils/blog-toc";
 import { blogPostTitleTransitionName } from "@/utils/blog-view-transitions";
-import { highlightCodeBlocks } from "@/utils/highlight-code";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { getReadingTimeMinutes } from "@/utils/reading-time";
@@ -74,19 +74,18 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   const { slug } = await params;
   const post = await getNotraBlogPostBySlug(slug);
 
-  if (!post) {
+  const entry = blog.find((item) => item.info.path === `${slug}.mdx`);
+  if (!(post && entry)) {
     notFound();
   }
+  const MDX = entry.body;
 
   const url = `${SITE_URL}/blog/${slug}`;
   const markdownUrl = `${SITE_URL}/blog/${slug}.md`;
   const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
-  const { html: htmlWithIds, toc } = extractBlogToc(post.content);
+  const toc = entry.toc;
   const readingMinutes = getReadingTimeMinutes(post.markdown);
-  const [content, { previous, next }] = await Promise.all([
-    highlightCodeBlocks(htmlWithIds),
-    getNotraBlogPostPagination(slug),
-  ]);
+  const { previous, next } = await getNotraBlogPostPagination(slug);
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -153,7 +152,9 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
             />
           </div>
 
-          <BlogArticle html={content} />
+          <BlogArticle>
+            <MDX components={getBlogMDXComponents()} />
+          </BlogArticle>
 
           <BlogPostPagination next={next} previous={previous} />
         </article>

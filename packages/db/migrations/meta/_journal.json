@@ -572,8 +572,22 @@
     {
       "idx": 81,
       "version": "7",
-      "when": 1788608839444,
-      "tag": "0081_geo_personas",
+      "when": 1788610000000,
+      "tag": "0081_daily_summary",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1788693797745,
+      "tag": "0082_removed_auto_prompt_ids",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1788868082785,
+      "tag": "0083_geo_personas",
       "breakpoints": true
     }
   ]

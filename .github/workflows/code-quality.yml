@@ -1,14 +1,21 @@
 name: Code quality
 
 on:
-  push:
   pull_request:
+  push:
+    branches: ["main"]
 
 permissions:
   contents: read
+
+concurrency:
+  group: code-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -19,7 +26,13 @@ jobs:
           bun-version: 1.4.0
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Run ultracite check
         run: bun check
+
+      - name: Run unit and integration tests
+        run: bun run test --force
+
+      - name: Typecheck tested packages
+        run: bun run check-types --filter=@notra/ai --filter=@notra/geo-core --filter=dashboard

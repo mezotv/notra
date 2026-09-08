@@ -28,7 +28,6 @@ export function FamilyImproveCard({
             "shrink-0"
           )}
           href={gapsHref}
-          prefetch={true}
         >
           {GEO_FAMILY_IMPROVE_CTA_GAPS}
           <HugeiconsIcon data-icon="inline-end" icon={ArrowRight01Icon} />

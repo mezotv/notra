@@ -1,8 +1,9 @@
 export const GEO_SEARCH_LABEL = "Search";
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
+  "training-data": "In knowledge",
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
-  invisible: "Invisible",
+  invisible: "Not mentioned",
 };
 
 export const AI_TRAFFIC_PURPOSE_LABELS: Record<string, string> = {

@@ -1,5 +1,6 @@
 import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { isCustomIntervalDue } from "@notra/ai/utils/schedule-interval";
+import { scheduleWorkflowPayloadSchema } from "@notra/schemas/dashboard/workflows";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
 
@@ -10,7 +11,6 @@ import {
   SCHEDULE_RATE_LIMIT_MAX_ATTEMPTS,
 } from "@/constants/workflows";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
-import { scheduleWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { WorkflowContentBillingGate } from "@/types/workflows/content-generation-steps";
 import type { ScheduleContentWorkflowResult } from "@/types/workflows/schedule-generation";
 import { resolveContentLimitPauseReason } from "@/utils/content-billing";

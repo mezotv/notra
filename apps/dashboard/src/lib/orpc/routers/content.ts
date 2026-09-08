@@ -28,6 +28,27 @@ import {
   projectScopeFilter,
 } from "@notra/db/utils/projects";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { GITHUB_CONTENT_PATH_MAX_LENGTH } from "@notra/schemas/constants/dashboard/github";
+import { contentListQuerySchema } from "@notra/schemas/dashboard/api-params";
+import type {
+  ContentResponse,
+  PostsResponse,
+} from "@notra/schemas/dashboard/content";
+import {
+  contentInputSchema,
+  contentOrganizationIdInputSchema,
+  contentPreviewRequestSchema,
+  createPostCollectionInputSchema,
+  generateContentInputSchema,
+  postCollectionInputSchema,
+  postCollectionsListInputSchema,
+  publishContentToGitHubSchema,
+  renamePostCollectionInputSchema,
+  updateContentSchema,
+  updateExpectedPostCountInputSchema,
+} from "@notra/schemas/dashboard/content";
+import { clearCompletedGenerationSchema } from "@notra/schemas/dashboard/generations";
+import { repositoryContentDirectoryConfigSchema } from "@notra/schemas/dashboard/integrations";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
@@ -42,7 +63,6 @@ import {
 import {
   DEFAULT_GITHUB_CONTENT_DIRECTORIES,
   DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
-  GITHUB_CONTENT_PATH_MAX_LENGTH,
   GITHUB_INSTALLATION_ID_REGEX,
 } from "@/constants/github";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
@@ -79,23 +99,6 @@ import {
 } from "@/lib/integrations/github/pull-request-body";
 import { baseProcedure } from "@/lib/orpc/base";
 import { startOnDemandRun } from "@/lib/workflows/start";
-import { contentListQuerySchema } from "@/schemas/api-params";
-import type { ContentResponse, PostsResponse } from "@/schemas/content";
-import {
-  contentInputSchema,
-  contentOrganizationIdInputSchema,
-  contentPreviewRequestSchema,
-  createPostCollectionInputSchema,
-  generateContentInputSchema,
-  postCollectionInputSchema,
-  postCollectionsListInputSchema,
-  publishContentToGitHubSchema,
-  renamePostCollectionInputSchema,
-  updateContentSchema,
-  updateExpectedPostCountInputSchema,
-} from "@/schemas/content";
-import { clearCompletedGenerationSchema } from "@/schemas/generations";
-import { repositoryContentDirectoryConfigSchema } from "@/schemas/integrations";
 import type {
   CommitPreview,
   LinearIntegrationPreviewItem,

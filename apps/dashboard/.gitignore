@@ -3,3 +3,6 @@
 
 certificates
 .vercel
+
+# Generated Workflow SDK route bundles
+/src/app/.well-known/workflow/

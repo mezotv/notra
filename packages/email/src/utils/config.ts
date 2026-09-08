@@ -34,6 +34,14 @@ export const EMAIL_CONFIG = {
   },
 
   /**
+   * Horizontal mark + “Notra” lockup. PNG so email clients can render it.
+   */
+  getWordmarkUrl(): string {
+    const siteUrl = this.getSiteUrl();
+    return `${siteUrl}/brand/notra-wordmark.png`;
+  },
+
+  /**
    * Reply-to email address
    */
   replyTo: "support@usenotra.com",
@@ -45,13 +53,12 @@ export const EMAIL_CONFIG = {
   from: "Notra <notifications@notifications.usenotra.com>",
 
   /**
-   * Physical mailing address for CAN-SPAM compliance
+   * Physical mailing address (matches Legal Notice / CAN-SPAM).
    */
   physicalAddress: {
-    name: "Dominik Koch - c/o IP-Management #8532",
-    street: "Ludwig-Erhard-Str. 18",
-    city: "Hamburg",
-    zip: "20459",
-    country: "Germany",
+    name: "Notra, Inc.",
+    street: "2261 Market Street STE 98632",
+    locality: "San Francisco, CA 94114",
+    country: "United States",
   },
 } as const;

@@ -18,6 +18,7 @@ import {
 } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import type { LookbackWindow } from "@notra/schemas/dashboard/integrations";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { WORKFLOW_OUTCOMES } from "@/constants/workflow-analytics";
@@ -49,7 +50,6 @@ import {
   parseTriggerOutputConfig,
   parseTriggerTargets,
 } from "@/lib/workflows/shared/parsing";
-import type { LookbackWindow } from "@/schemas/integrations";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import type {
   AppendAutomationLogInput,

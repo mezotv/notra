@@ -7,6 +7,7 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { repositoryContentDirectorySchema } from "@notra/schemas/dashboard/integrations";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -39,7 +40,6 @@ import { type FormEvent, type ReactNode, useId, useState } from "react";
 
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import { repositoryContentDirectorySchema } from "@/schemas/integrations";
 import type {
   GitHubDirectoryChoiceProps,
   GitHubDirectoryExtraChoicesProps,

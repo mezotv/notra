@@ -4,8 +4,8 @@ import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { cn } from "@notra/ui/lib/utils";
-import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -14,11 +14,12 @@ import { toast } from "sonner";
 import { buttonVariants } from "@/components/button";
 import { CHECKOUT_SURFACES } from "@/constants/analytics-events";
 import { trackEvent } from "@/lib/analytics/posthog-client";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { planDisplayName } from "@/utils/billing-plans";
 
 function BillingSuccessPageContent() {
   const { slug } = useParams<{ slug: string }>();
-  const { openCustomerPortal, data: customer } = useCustomer({
+  const { openCustomerPortal, data: customer } = useBillingCustomer({
     expand: ["subscriptions.plan"],
   });
 
@@ -125,7 +126,20 @@ function BillingSuccessPageContent() {
 
 export default function BillingSuccessPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div
+          className="flex flex-1 flex-col items-center justify-center gap-6 px-4"
+          role="status"
+        >
+          <span className="sr-only">Loading billing confirmation</span>
+          <Skeleton aria-hidden="true" className="size-12 rounded-full" />
+          <Skeleton aria-hidden="true" className="h-10 w-full max-w-sm" />
+          <Skeleton aria-hidden="true" className="h-12 w-full max-w-md" />
+          <Skeleton aria-hidden="true" className="h-11 w-64" />
+        </div>
+      }
+    >
       <BillingSuccessPageContent />
     </Suspense>
   );

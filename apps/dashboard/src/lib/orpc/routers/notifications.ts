@@ -1,12 +1,12 @@
 import { db } from "@notra/db/drizzle";
 import { organizationNotificationSettings } from "@notra/db/schema";
+import { organizationIdInputSchema } from "@notra/schemas/dashboard/auth/organization";
+import { updateNotificationSettingsInputSchema } from "@notra/schemas/dashboard/notification-settings";
 import { eq } from "drizzle-orm";
 
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdInputSchema } from "@/schemas/auth/organization";
-import { updateNotificationSettingsInputSchema } from "@/schemas/notification-settings";
 
 import { forbidden } from "../utils/errors";
 
@@ -34,6 +34,7 @@ export const notificationsRouter = {
           scheduledContentFailed: false,
           scheduledContentSkipped: false,
           marketingEmails: true,
+          dailySummary: true,
         },
       };
     }),
@@ -45,12 +46,16 @@ export const notificationsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
-      await assertActiveSubscription(input.organizationId);
 
       if (access.membership.role !== "owner") {
         throw forbidden(
           "Only the organization owner can update notification settings"
         );
+      }
+
+      // Owners must still be able to opt out after their subscription expires.
+      if (Object.values(input).some((value) => value === true)) {
+        await assertActiveSubscription(input.organizationId);
       }
 
       const updates: Record<string, boolean | Date> = {
@@ -73,6 +78,10 @@ export const notificationsRouter = {
         updates.marketingEmails = input.marketingEmails;
       }
 
+      if (input.dailySummary !== undefined) {
+        updates.dailySummary = input.dailySummary;
+      }
+
       const [updated] = await db
         .insert(organizationNotificationSettings)
         .values({
@@ -82,6 +91,7 @@ export const notificationsRouter = {
           scheduledContentFailed: input.scheduledContentFailed ?? false,
           scheduledContentSkipped: input.scheduledContentSkipped ?? false,
           marketingEmails: input.marketingEmails ?? true,
+          dailySummary: input.dailySummary ?? true,
         })
         .onConflictDoUpdate({
           set: updates,

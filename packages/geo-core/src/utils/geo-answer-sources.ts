@@ -1,35 +1,52 @@
 import type { GeoAnswerSource } from "../types/geo";
 import { getReferenceDomain } from "./reference-display";
 
+const CITED_SOURCE_MARKDOWN_AFFIX_PATTERN = /\)\*+$/u;
+
 export interface GeoStoredAnswerSource {
   url: string;
   title: string | null;
+}
+
+function citedSourceUrl(url: string): string {
+  return url.replace(CITED_SOURCE_MARKDOWN_AFFIX_PATTERN, "");
 }
 
 export function geoAnswerSourcesFor(
   grounding: { sources: readonly GeoAnswerSource[] },
   stored: readonly GeoStoredAnswerSource[]
 ): GeoAnswerSource[] {
-  if (grounding.sources.length > 0) {
-    return grounding.sources.map((source) => ({
-      title: source.title,
-      url: source.url,
-      domain: source.domain,
-    }));
-  }
   const seen = new Set<string>();
   const sources: GeoAnswerSource[] = [];
-  for (const source of stored) {
-    const domain = getReferenceDomain(source.url);
-    if (!domain || seen.has(source.url)) {
-      continue;
+
+  const addSource = (
+    title: string | null,
+    url: string,
+    domain: string | null
+  ): void => {
+    const href = citedSourceUrl(url);
+    if (seen.has(href)) {
+      return;
     }
-    seen.add(source.url);
+    const resolvedDomain =
+      domain && domain.length > 0 ? domain : getReferenceDomain(href);
+    seen.add(href);
     sources.push({
-      title: source.title?.trim() || domain,
-      url: source.url,
-      domain,
+      title: title?.trim() || resolvedDomain || href,
+      url: href,
+      domain: resolvedDomain ?? "",
     });
+  };
+
+  if (grounding.sources.length > 0) {
+    for (const source of grounding.sources) {
+      addSource(source.title, source.url, source.domain);
+    }
+    return sources;
+  }
+
+  for (const source of stored) {
+    addSource(source.title, source.url, null);
   }
   return sources;
 }

@@ -36,7 +36,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "bun test src/router"
+    "test": "bun test src && bun test tests"
   },
   "dependencies": {
     "@ai-sdk/gateway": "3.0.132",
@@ -63,7 +63,7 @@
     "autumn-js": "^1.2.7",
     "dedent": "^1.7.1",
     "drizzle-orm": "^0.45.2",
-    "effect": "4.0.0-beta.93",
+    "effect": "4.0.0-rc.112",
     "evlog": "2.13.0",
     "gray-matter": "^4.0.3",
     "marked": "^17.0.1",
@@ -80,6 +80,7 @@
     "@notra/typescript-config": "workspace:*",
     "@types/react": "^19.2.18",
     "@types/sanitize-html": "^2.16.0",
+    "emulate": "0.10.0",
     "typescript": "5.9.2"
   }
 }

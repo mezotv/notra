@@ -195,7 +195,7 @@ function CalendarDayButton({
   const ref = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (modifiers.focused) {
-      ref.current?.focus();
+      ref.current?.focus({ preventScroll: true });
     }
   }, [modifiers.focused]);
 

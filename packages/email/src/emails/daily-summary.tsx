@@ -1,0 +1,519 @@
+import {
+  Body,
+  Column,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Row,
+  Section,
+  Tailwind,
+  Text,
+} from "react-email";
+
+import { EmailCtaButton } from "../components/cta-button";
+import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
+import { EmailTitleCard } from "../components/title-card";
+import { EMAIL_THEME } from "../constants/theme";
+import type {
+  DailySummaryChangeTone,
+  DailySummaryEmailProps,
+} from "../types/daily-summary";
+import { EMAIL_CONFIG } from "../utils/config";
+import { engineEmailLogoSrc } from "../utils/engine-logo";
+
+const PILL: Record<
+  DailySummaryChangeTone,
+  { backgroundColor: string; color: string }
+> = {
+  up: {
+    backgroundColor: EMAIL_THEME.geoUpWash,
+    color: EMAIL_THEME.geoUp,
+  },
+  down: {
+    backgroundColor: EMAIL_THEME.geoDownWash,
+    color: EMAIL_THEME.geoDown,
+  },
+  neutral: {
+    backgroundColor: EMAIL_THEME.muted,
+    color: EMAIL_THEME.mutedForeground,
+  },
+};
+
+function toneFromDelta(label: string): DailySummaryChangeTone {
+  if (label.startsWith("+")) {
+    return "up";
+  }
+  if (label.startsWith("-") || label.startsWith("−")) {
+    return "down";
+  }
+  return "neutral";
+}
+
+function toneFromNet(net: number): DailySummaryChangeTone {
+  if (net > 0) {
+    return "up";
+  }
+  if (net < 0) {
+    return "down";
+  }
+  return "neutral";
+}
+
+function splitHeadlineNumber(
+  headline: string,
+  netChange: number
+): { before: string; number: string; after: string } | null {
+  if (netChange > 0) {
+    return splitToken(headline, `+${netChange}`);
+  }
+
+  if (netChange < 0) {
+    const match = headline.match(new RegExp(`\\b${Math.abs(netChange)}\\b`));
+    if (!match || match.index === undefined) {
+      return null;
+    }
+
+    return {
+      before: headline.slice(0, match.index),
+      number: match[0],
+      after: headline.slice(match.index + match[0].length),
+    };
+  }
+
+  // Scan once: an unanchored digit regex retries long runs without a trailing %.
+  let start = 0;
+  for (let index = 0; index < headline.length; index += 1) {
+    const character = headline.charAt(index);
+    if (character >= "0" && character <= "9") {
+      continue;
+    }
+    if (character === "%" && start < index) {
+      return {
+        before: headline.slice(0, start),
+        number: headline.slice(start, index + 1),
+        after: headline.slice(index + 1),
+      };
+    }
+    start = index + 1;
+  }
+
+  return null;
+}
+
+function splitToken(headline: string, token: string) {
+  const index = headline.indexOf(token);
+  if (index === -1) {
+    return null;
+  }
+
+  return {
+    before: headline.slice(0, index),
+    number: token,
+    after: headline.slice(index + token.length),
+  };
+}
+
+function HeadlineNumber({
+  headline,
+  netChange,
+}: {
+  headline: string;
+  netChange: number;
+}) {
+  const parts = splitHeadlineNumber(headline, netChange);
+  if (!parts) {
+    return headline;
+  }
+
+  return (
+    <>
+      {parts.before}
+      <span style={{ color: PILL[toneFromNet(netChange)].color }}>
+        {parts.number}
+      </span>
+      {parts.after}
+    </>
+  );
+}
+
+function toneMark(tone: DailySummaryChangeTone): string {
+  if (tone === "up") {
+    return "+";
+  }
+  if (tone === "down") {
+    return "-";
+  }
+  return "0";
+}
+
+function dailySummarySubtext(organizationName: string, scansCompleted: number) {
+  if (scansCompleted <= 0) {
+    return `Yesterday in GEO for ${organizationName}. No full scan ran.`;
+  }
+
+  if (scansCompleted === 1) {
+    return `Yesterday in GEO for ${organizationName}. One scan ran.`;
+  }
+
+  return `Yesterday in GEO for ${organizationName}. ${scansCompleted} scans ran.`;
+}
+
+export const DailySummaryEmail = ({
+  organizationName = "Acme Inc",
+  organizationSlug = "acme",
+  dateLabel = "September 4, 2026",
+  headline = "You're +7 prompts better than yesterday.",
+  mentionRateLabel = "42%",
+  mentionRateDeltaLabel = "+3 pts",
+  scansCompleted = 1,
+  netChange = 7,
+  items = [
+    {
+      title: "What is the best changelog tool for startups?",
+      detail: "Gained mention",
+      engineLabel: "ChatGPT",
+      engineIconSrc: engineEmailLogoSrc("openai"),
+      tone: "up",
+    },
+    {
+      title: "How should small SaaS teams write release notes?",
+      detail: "Lost mention",
+      engineLabel: "Perplexity",
+      engineIconSrc: engineEmailLogoSrc("perplexity"),
+      tone: "down",
+    },
+    {
+      title: "Which AI tools generate changelogs from GitHub?",
+      detail: "Position up",
+      engineLabel: "Gemini",
+      engineIconSrc: engineEmailLogoSrc("gemini"),
+      tone: "up",
+    },
+  ],
+  remainingCount = 2,
+  dashboardLink = `${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/geo`,
+}: DailySummaryEmailProps) => {
+  const rateTone = toneFromDelta(mentionRateDeltaLabel);
+  const netLabel = netChange > 0 ? `+${netChange}` : String(netChange);
+  const subtext = dailySummarySubtext(organizationName, scansCompleted);
+
+  return (
+    <Html>
+      <Head />
+      <Preview>{headline}</Preview>
+      <Tailwind>
+        <Body className="mx-auto my-auto bg-white px-2 font-sans">
+          <Container className="mx-auto mt-[16px] mb-[40px] max-w-[465px] rounded px-[20px] pt-0 pb-[20px]">
+            <EmailLogo className="mt-0 text-center" variant="wordmark" />
+
+            <Heading className="mt-5 mb-3 text-center text-2xl font-medium text-black">
+              <HeadlineNumber headline={headline} netChange={netChange} />
+            </Heading>
+            <Text className="mt-0 mb-8 text-center text-base leading-relaxed text-[#737373]">
+              {subtext}
+            </Text>
+
+            <Section>
+              <EmailTitleCard
+                action={
+                  <Text
+                    style={{
+                      color: EMAIL_THEME.mutedForeground,
+                      fontSize: "12px",
+                      margin: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {dateLabel}
+                  </Text>
+                }
+                heading="GEO"
+              >
+                <Row>
+                  <MetricCell
+                    label="Mention rate"
+                    pill={mentionRateDeltaLabel}
+                    tone={rateTone}
+                    value={mentionRateLabel}
+                  />
+                  <MetricCell last label="Prompts" value={netLabel} />
+                </Row>
+              </EmailTitleCard>
+            </Section>
+
+            {items.length > 0 ? (
+              <Section className="mt-4">
+                <EmailTitleCard heading="What changed">
+                  {items.map((item, index) => (
+                    <ChangeRow
+                      first={index === 0}
+                      item={item}
+                      key={`${item.tone}-${item.title}`}
+                      last={index === items.length - 1}
+                    />
+                  ))}
+                  {remainingCount > 0 ? (
+                    <Text
+                      style={{
+                        color: EMAIL_THEME.mutedForeground,
+                        fontSize: "13px",
+                        margin: "12px 0 0",
+                        textAlign: "center",
+                      }}
+                    >
+                      And {remainingCount} more in GEO...
+                    </Text>
+                  ) : null}
+                </EmailTitleCard>
+              </Section>
+            ) : null}
+
+            <Section className="my-8 text-center">
+              <EmailCtaButton href={dashboardLink}>
+                Open in Notra
+              </EmailCtaButton>
+            </Section>
+
+            <Section className="mt-8">
+              <Text className="m-0 text-center text-[12px] text-[#666666] uppercase">
+                If you don't want to receive these emails, you can click{" "}
+                <Link
+                  href={`${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/settings/notifications`}
+                >
+                  here
+                </Link>{" "}
+                to update your notification settings.
+              </Text>
+            </Section>
+
+            <EmailFooter showPhysicalAddress />
+          </Container>
+        </Body>
+      </Tailwind>
+    </Html>
+  );
+};
+
+function MetricCell({
+  label,
+  last = false,
+  pill,
+  tone = "neutral",
+  value,
+}: {
+  label: string;
+  last?: boolean;
+  pill?: string;
+  tone?: DailySummaryChangeTone;
+  value: string;
+}) {
+  return (
+    <Column
+      style={{
+        borderRight: last ? undefined : `1px solid ${EMAIL_THEME.border}`,
+        paddingRight: last ? undefined : "12px",
+        paddingLeft: last ? "12px" : undefined,
+        verticalAlign: "top",
+        width: "50%",
+      }}
+    >
+      <Text
+        style={{
+          color: EMAIL_THEME.mutedForeground,
+          fontSize: "12px",
+          margin: 0,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          color: EMAIL_THEME.foreground,
+          fontSize: "22px",
+          fontVariantNumeric: "tabular-nums",
+          fontWeight: 600,
+          letterSpacing: "-0.025em",
+          lineHeight: 1.2,
+          margin: "4px 0 0",
+        }}
+      >
+        {value}
+        {pill ? (
+          <>
+            {" "}
+            <GeoPill tone={tone}>{pill}</GeoPill>
+          </>
+        ) : null}
+      </Text>
+    </Column>
+  );
+}
+
+function ChangeRow({
+  first,
+  item,
+  last,
+}: {
+  first: boolean;
+  item: DailySummaryEmailProps["items"][number];
+  last: boolean;
+}) {
+  return (
+    <Section
+      style={{
+        borderBottom: last ? undefined : `1px solid ${EMAIL_THEME.border}`,
+        paddingBottom: last ? 0 : "12px",
+        paddingTop: first ? 0 : "12px",
+      }}
+    >
+      <Text
+        style={{
+          color: EMAIL_THEME.foreground,
+          fontSize: "14px",
+          fontWeight: 500,
+          lineHeight: 1.4,
+          margin: 0,
+        }}
+      >
+        {item.title}
+      </Text>
+      <Row>
+        <Column style={{ paddingTop: "6px" }}>
+          <GeoToneMark tone={item.tone} />
+          <span
+            style={{
+              color: EMAIL_THEME.mutedForeground,
+              fontSize: "12px",
+              verticalAlign: "middle",
+            }}
+          >
+            {item.detail}
+            {item.engineLabel ? (
+              <>
+                {" · "}
+                {item.engineIconSrc ? (
+                  <Img
+                    alt=""
+                    height="14"
+                    src={item.engineIconSrc}
+                    style={{
+                      display: "inline-block",
+                      margin: "0 4px 0 0",
+                      verticalAlign: "middle",
+                    }}
+                    width="14"
+                  />
+                ) : null}
+                {item.engineLabel}
+              </>
+            ) : null}
+          </span>
+        </Column>
+      </Row>
+    </Section>
+  );
+}
+
+function GeoToneMark({ tone }: { tone: DailySummaryChangeTone }) {
+  const colors = PILL[tone];
+  const isMinus = tone === "down";
+
+  return (
+    <span
+      style={{
+        backgroundColor: colors.backgroundColor,
+        backgroundImage: isMinus
+          ? `linear-gradient(${colors.color}, ${colors.color})`
+          : undefined,
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "8px 2px",
+        borderRadius: "9999px",
+        color: colors.color,
+        display: "inline-block",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: isMinus ? 0 : "12px",
+        fontWeight: 600,
+        height: "16px",
+        lineHeight: "16px",
+        marginRight: "6px",
+        textAlign: "center",
+        verticalAlign: "middle",
+        width: "16px",
+      }}
+    >
+      {isMinus ? "\u00a0" : toneMark(tone)}
+    </span>
+  );
+}
+
+function GeoPill({
+  children,
+  tone,
+}: {
+  children: string;
+  tone: DailySummaryChangeTone;
+}) {
+  return (
+    <span
+      style={{
+        ...PILL[tone],
+        borderRadius: "9999px",
+        display: "inline-block",
+        fontSize: "11px",
+        fontVariantNumeric: "tabular-nums",
+        fontWeight: 500,
+        lineHeight: "16px",
+        padding: "2px 6px",
+        verticalAlign: "middle",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+DailySummaryEmail.PreviewProps = {
+  organizationName: "Acme Inc",
+  organizationSlug: "acme",
+  dateLabel: "September 4, 2026",
+  headline: "You're +7 prompts better than yesterday.",
+  mentionRateLabel: "42%",
+  mentionRateDeltaLabel: "+3 pts",
+  scansCompleted: 1,
+  gained: 8,
+  lost: 1,
+  netChange: 7,
+  items: [
+    {
+      title: "What is the best changelog tool for startups?",
+      detail: "Gained mention",
+      engineLabel: "ChatGPT",
+      engineIconSrc: engineEmailLogoSrc("openai"),
+      tone: "up",
+    },
+    {
+      title: "How should small SaaS teams write release notes?",
+      detail: "Lost mention",
+      engineLabel: "Perplexity",
+      engineIconSrc: engineEmailLogoSrc("perplexity"),
+      tone: "down",
+    },
+    {
+      title: "Which AI tools generate changelogs from GitHub?",
+      detail: "Position up",
+      engineLabel: "Gemini",
+      engineIconSrc: engineEmailLogoSrc("gemini"),
+      tone: "up",
+    },
+  ],
+  remainingCount: 2,
+  dashboardLink: "https://app.usenotra.com/acme/geo",
+} satisfies DailySummaryEmailProps;
+
+export default DailySummaryEmail;

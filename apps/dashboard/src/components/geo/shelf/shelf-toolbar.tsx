@@ -47,9 +47,9 @@ export function ShelfToolbar({
         />
         <Input
           aria-label="Filter shelves"
-          className="pl-9"
+          className="pl-9 placeholder:truncate"
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Filter by page, domain or brand..."
+          placeholder="Filter shelves..."
           value={filters.search}
         />
       </div>

@@ -21,7 +21,7 @@ export function ShelfDueDateField({
   onChange,
 }: GeoShelfDueDateFieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <Label htmlFor={id}>Due</Label>
       <Popover>
         <PopoverTrigger
@@ -44,7 +44,14 @@ export function ShelfDueDateField({
             <span className="text-muted-foreground">Pick a date</span>
           )}
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto overflow-hidden p-0">
+        <PopoverContent
+          align="start"
+          className="w-auto overflow-hidden p-0"
+          collisionAvoidance={{ fallbackAxisSide: "none" }}
+          initialFocus={false}
+          positionMethod="fixed"
+          side="top"
+        >
           <Calendar
             defaultMonth={dueAt ? new Date(dueAt) : undefined}
             disabled={disabled ? () => true : undefined}

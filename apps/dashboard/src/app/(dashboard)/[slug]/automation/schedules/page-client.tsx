@@ -2,9 +2,6 @@
 
 import {
   Add01Icon,
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  ArrowUpDownIcon,
   Delete02Icon,
   Edit02Icon,
   MoreVerticalIcon,
@@ -24,6 +21,7 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,14 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Kbd } from "@notra/ui/components/ui/kbd";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
 import {
   Tabs,
   TabsContent,
@@ -66,6 +56,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
+import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -75,7 +66,9 @@ import { useCreateFromSuggestion } from "@/lib/hooks/use-onboarding";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
+import { formatRelative } from "@/utils/format-relative";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
+import { tableHeightFor } from "@/utils/table";
 
 import { SchedulePageSkeleton } from "./skeleton";
 
@@ -97,14 +90,6 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   return `Daily @ ${time}`;
 }
 
-function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(dateString));
-}
-
 function normalizeIntegrationError(error: unknown): Error {
   const errorWithCode = error as Error & { code?: string };
   if (
@@ -119,16 +104,6 @@ function normalizeIntegrationError(error: unknown): Error {
     return integrationError;
   }
   return error instanceof Error ? error : new Error(String(error));
-}
-
-function getSortIcon(isSorted: false | "asc" | "desc") {
-  if (isSorted === "asc") {
-    return ArrowUp01Icon;
-  }
-  if (isSorted === "desc") {
-    return ArrowDown01Icon;
-  }
-  return ArrowUpDownIcon;
 }
 
 interface PageClientProps {
@@ -653,6 +628,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
 }
 
+const SCHEDULE_TABLE_ROW_HEIGHT = 48;
+
 function ScheduleTable({
   triggers,
   repositoryMap,
@@ -686,166 +663,176 @@ function ScheduleTable({
   updatingTriggerId?: string;
   runningTriggerId?: string;
 }) {
-  const sortedTriggers = (() => {
-    if (createdSortOrder === false) {
-      return triggers;
-    }
-    return [...triggers].sort((a, b) => {
-      const createdAtA = new Date(a.createdAt).getTime();
-      const createdAtB = new Date(b.createdAt).getTime();
+  const columns: TableColumn<Trigger>[] = [
+    {
+      key: "name",
+      header: "Name",
+      width: "1fr",
+      minWidth: "4rem",
+      cell: (trigger) => (
+        <TruncateWithTooltip className="text-sm font-medium">
+          {trigger.name ?? "Untitled Schedule"}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "schedule",
+      header: "Schedule",
+      width: "10rem",
+      cell: (trigger) => (
+        <TruncateWithTooltip className="text-muted-foreground">
+          {formatFrequency(trigger.sourceConfig.cron)}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "identity",
+      header: "Identity",
+      width: "5.5rem",
+      cell: (trigger) => {
+        const explicitBrandVoiceId = trigger.outputConfig?.brandVoiceId;
+        const brandVoice = explicitBrandVoiceId
+          ? brandVoiceMap[explicitBrandVoiceId]
+          : defaultBrandVoice;
+        return (
+          <span className="text-muted-foreground">
+            <BrandVoiceCell
+              isDefault={!explicitBrandVoiceId}
+              voice={brandVoice}
+            />
+          </span>
+        );
+      },
+    },
+    {
+      key: "output",
+      header: "Output",
+      width: "8.5rem",
+      cell: (trigger) => (
+        <span className="text-muted-foreground flex items-center gap-1.5 capitalize">
+          <OutputTypeIcon
+            className="size-3.5"
+            outputType={trigger.outputType}
+          />
+          {getOutputTypeLabel(trigger.outputType)}
+        </span>
+      ),
+    },
+    {
+      key: "sources",
+      header: "Sources",
+      width: "5.5rem",
+      cell: (trigger) => (
+        <span className="text-muted-foreground">
+          <SourcesCell
+            repositoryIds={trigger.targets.repositoryIds}
+            repositoryMap={repositoryMap}
+          />
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "5rem",
+      cell: (trigger) => <TriggerStatusBadge enabled={trigger.enabled} />,
+    },
+    {
+      key: "createdAt",
+      header: "Created",
+      sortable: true,
+      sortValue: (trigger) => new Date(trigger.createdAt).getTime(),
+      width: "6.5rem",
+      cell: (trigger) => (
+        <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+          {formatRelative(trigger.createdAt)}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      width: "3.5rem",
+      minWidth: "3.5rem",
+      cell: (trigger) => {
+        const isThisUpdating = isUpdating && updatingTriggerId === trigger.id;
+        const isThisRunning = isRunning && runningTriggerId === trigger.id;
 
-      return createdSortOrder === "desc"
-        ? createdAtB - createdAtA
-        : createdAtA - createdAtB;
-    });
-  })();
-
-  const sortIcon = getSortIcon(createdSortOrder);
-
-  if (triggers.length === 0) {
-    return (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-        No schedules in this category.
-      </div>
-    );
-  }
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  aria-label={`Actions for ${trigger.name ?? "schedule"}`}
+                  disabled={isThisUpdating || isThisRunning}
+                  size="icon"
+                  variant="ghost"
+                >
+                  {isThisUpdating || isThisRunning ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <HugeiconsIcon
+                      className="text-muted-foreground size-4"
+                      icon={MoreVerticalIcon}
+                    />
+                  )}
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(trigger)}>
+                <HugeiconsIcon className="size-4" icon={Edit02Icon} />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isRunning || !trigger.enabled}
+                onClick={() => onRunNow(trigger.id)}
+              >
+                <HugeiconsIcon className="size-4" icon={PlayCircleIcon} />
+                Run now
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isUpdating}
+                onClick={() => onToggle(trigger)}
+              >
+                <HugeiconsIcon
+                  className="size-4"
+                  icon={trigger.enabled ? PauseIcon : PlayIcon}
+                />
+                {trigger.enabled ? "Pause" : "Enable"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={isDeleting}
+                onClick={() => onDelete(trigger.id)}
+                variant="destructive"
+              >
+                <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   return (
-    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Schedule</TableHead>
-            <TableHead>Identity</TableHead>
-            <TableHead>Output</TableHead>
-            <TableHead>Sources</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>
-              <Button
-                className="-ml-4"
-                onClick={() =>
-                  onSortCreatedChange(
-                    createdSortOrder === "asc" ? "desc" : "asc"
-                  )
-                }
-                variant="ghost"
-              >
-                Created At
-                <HugeiconsIcon className="ml-2 size-4" icon={sortIcon} />
-              </Button>
-            </TableHead>
-            <TableHead className="w-12" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedTriggers.map((trigger) => {
-            const isThisUpdating =
-              isUpdating && updatingTriggerId === trigger.id;
-            const isThisRunning = isRunning && runningTriggerId === trigger.id;
-
-            const explicitBrandVoiceId = trigger.outputConfig?.brandVoiceId;
-            const hasExplicitVoice = !!explicitBrandVoiceId;
-            const brandVoice = explicitBrandVoiceId
-              ? brandVoiceMap[explicitBrandVoiceId]
-              : defaultBrandVoice;
-
-            return (
-              <TableRow key={trigger.id}>
-                <TableCell>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {trigger.name ?? "Untitled Schedule"}
-                    </p>
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatFrequency(trigger.sourceConfig.cron)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  <BrandVoiceCell
-                    isDefault={!hasExplicitVoice}
-                    voice={brandVoice}
-                  />
-                </TableCell>
-                <TableCell className="text-muted-foreground capitalize">
-                  <span className="flex items-center gap-1.5">
-                    <OutputTypeIcon
-                      className="size-3.5"
-                      outputType={trigger.outputType}
-                    />
-                    {getOutputTypeLabel(trigger.outputType)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  <SourcesCell
-                    repositoryIds={trigger.targets.repositoryIds}
-                    repositoryMap={repositoryMap}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TriggerStatusBadge enabled={trigger.enabled} />
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(trigger.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center rounded-md disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isThisUpdating || isThisRunning}
-                    >
-                      {isThisUpdating || isThisRunning ? (
-                        <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
-                      ) : (
-                        <HugeiconsIcon
-                          className="text-muted-foreground size-4"
-                          icon={MoreVerticalIcon}
-                        />
-                      )}
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(trigger)}>
-                        <HugeiconsIcon className="size-4" icon={Edit02Icon} />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={isRunning || !trigger.enabled}
-                        onClick={() => onRunNow(trigger.id)}
-                      >
-                        <HugeiconsIcon
-                          className="size-4"
-                          icon={PlayCircleIcon}
-                        />
-                        Run now
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={isUpdating}
-                        onClick={() => onToggle(trigger)}
-                      >
-                        <HugeiconsIcon
-                          className="size-4"
-                          icon={trigger.enabled ? PauseIcon : PlayIcon}
-                        />
-                        {trigger.enabled ? "Pause" : "Enable"}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled={isDeleting}
-                        onClick={() => onDelete(trigger.id)}
-                        variant="destructive"
-                      >
-                        <HugeiconsIcon className="size-4" icon={Delete02Icon} />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <Table
+      className="rounded-2xl"
+      columns={columns}
+      data={triggers}
+      emptyState="No schedules in this category."
+      getRowId={(trigger) => trigger.id}
+      height={tableHeightFor(triggers.length, SCHEDULE_TABLE_ROW_HEIGHT)}
+      onSortChange={(next) => onSortCreatedChange(next?.direction ?? false)}
+      rowHeight={SCHEDULE_TABLE_ROW_HEIGHT}
+      sort={
+        createdSortOrder
+          ? { key: "createdAt", direction: createdSortOrder }
+          : null
+      }
+    />
   );
 }

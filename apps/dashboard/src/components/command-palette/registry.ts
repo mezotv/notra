@@ -161,7 +161,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     id: "geo-settings",
-    label: "Settings",
+    label: "GEO Settings",
     keywords: [
       "geo",
       "ai",

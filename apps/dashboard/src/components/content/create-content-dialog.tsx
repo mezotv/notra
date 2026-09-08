@@ -9,6 +9,15 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import type {
+  ContentDataPointSettings,
+  OnDemandContentType,
+  SelectedItems,
+} from "@notra/schemas/dashboard/content";
+import {
+  type CreateContentFormValues,
+  createContentFormSchema,
+} from "@notra/schemas/dashboard/content/create-content-form";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -34,15 +43,6 @@ import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type {
-  ContentDataPointSettings,
-  OnDemandContentType,
-  SelectedItems,
-} from "@/schemas/content";
-import {
-  type CreateContentFormValues,
-  createContentFormSchema,
-} from "@/schemas/content/create-content-form";
 import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type {
   IntegrationOption,
@@ -774,23 +774,25 @@ export function CreateContentDialog({
     selectedLinearIds,
   ]);
 
-  submitHandlerRef.current = async (value: CreateContentFormValues) => {
-    const voiceIds =
-      value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
-    trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
-      step,
-      format_count: value.formats.length,
-      repo_count: value.repositoryIds.length,
-      lookback: value.lookbackWindow,
-      event_count: eventCounts.selected,
-      voice_count: value.brandVoiceIds.length,
-    });
-    await mutation.mutateAsync({
-      formats: value.formats,
-      voiceIds,
-      selectedItems: buildSelectedItems(),
-    });
-  };
+  useEffect(() => {
+    submitHandlerRef.current = async (value: CreateContentFormValues) => {
+      const voiceIds =
+        value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
+      trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
+        step,
+        format_count: value.formats.length,
+        repo_count: value.repositoryIds.length,
+        lookback: value.lookbackWindow,
+        event_count: eventCounts.selected,
+        voice_count: value.brandVoiceIds.length,
+      });
+      await mutation.mutateAsync({
+        formats: value.formats,
+        voiceIds,
+        selectedItems: buildSelectedItems(),
+      });
+    };
+  }, [buildSelectedItems, eventCounts.selected, mutation, step]);
 
   const handleCreate = useCallback(() => {
     setAttemptedAdvance(true);

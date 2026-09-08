@@ -1,5 +1,4 @@
 import { DatabuddyLogo } from "@/components/landing/marquee-logos/databuddy-logo";
-import { EmdashLogo } from "@/components/landing/marquee-logos/emdash-logo";
 import { InthLogo } from "@/components/landing/marquee-logos/inth-logo";
 import { StackAuthLogo } from "@/components/landing/marquee-logos/stack-auth-logo";
 import { TopGgLogo } from "@/components/landing/marquee-logos/top-gg-logo";
@@ -13,7 +12,6 @@ export const MARQUEE_EDGE_MASK =
 export const MARQUEE_LOGOS: MarqueeLogo[] = [
   { name: "inth", label: "Inth", Logo: InthLogo },
   { name: "databuddy", label: "Databuddy", Logo: DatabuddyLogo },
-  { name: "emdash", label: "Emdash", Logo: EmdashLogo },
   { name: "stack-auth", label: "Stack Auth", Logo: StackAuthLogo },
   { name: "top-gg", label: "Top.gg", Logo: TopGgLogo },
 ];

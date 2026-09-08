@@ -5,7 +5,6 @@ import { GEO_WRITER_NAV_LINK } from "@notra/geo-core/constants/geo";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/button";
@@ -20,6 +19,8 @@ import {
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { NavModePrimaryActionProps } from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
+
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 const CreateContentDialog = dynamic(
   () =>
@@ -75,9 +76,8 @@ export function NavModePrimaryAction({
                   inert={geoActive ? undefined : true}
                   nativeButton={false}
                   render={
-                    <Link
+                    <SidebarNavLink
                       href={geoNavHref(slug, GEO_WRITER_NAV_LINK, projectId)}
-                      prefetch
                     />
                   }
                   size="sm"

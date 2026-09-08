@@ -257,7 +257,7 @@ export function useGeoShelfDb(organizationId: string): GeoShelfDbApi {
     projectId,
   });
 
-  const { data } = useLiveQuery({
+  const { data, isLoading } = useLiveQuery({
     query: (q) => q.from({ shelf: definition }),
   });
 
@@ -322,6 +322,7 @@ export function useGeoShelfDb(organizationId: string): GeoShelfDbApi {
 
   return {
     sources,
+    isLoading,
     isSampleData,
     pendingSourceIds: pendingIds,
     addSource,

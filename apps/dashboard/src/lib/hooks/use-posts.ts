@@ -1,15 +1,14 @@
 "use client";
 
+import type { PostsResponse } from "@notra/schemas/dashboard/content";
 import { useQuery } from "@tanstack/react-query";
-
-import type { PostsResponse } from "@/schemas/content";
 
 import { dashboardOrpc } from "../orpc/query";
 import { useActiveProject } from "./use-active-project";
 
 const DEFAULT_PAGE_SIZE = 12;
 
-export function usePosts(organizationId: string, page: number) {
+export function usePosts(organizationId: string, page: number, enabled = true) {
   const { projectId, isResolved } = useActiveProject();
   return useQuery<PostsResponse>({
     ...dashboardOrpc.content.list.queryOptions({
@@ -20,7 +19,7 @@ export function usePosts(organizationId: string, page: number) {
         pageSize: DEFAULT_PAGE_SIZE,
       },
     }),
-    enabled: !!organizationId && isResolved,
+    enabled: enabled && !!organizationId && isResolved,
     meta: { errorMessage: "Failed to load content" },
   });
 }

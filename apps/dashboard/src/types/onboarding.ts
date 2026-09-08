@@ -4,18 +4,8 @@ import type {
   GeoDiscoveredPrompt,
   GeoWebsiteDiscovery,
 } from "@notra/geo-core/types/geo";
+import type { onboardingWorkspaceSchema } from "@notra/schemas/dashboard/onboarding/workspace";
 import type * as z from "zod";
-
-import type { ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES } from "@/constants/onboarding";
-import type { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
-
-export type OnboardingHeardAboutNotraSource =
-  (typeof ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES)[number];
-
-export interface OnboardingAttributionValue {
-  heardAboutNotraSource: OnboardingHeardAboutNotraSource | "" | null;
-  heardAboutNotraOther?: string | null;
-}
 
 export type OnboardingWorkspaceInput = z.infer<
   typeof onboardingWorkspaceSchema
@@ -32,6 +22,8 @@ export interface OnboardingExistingOrg {
   logo: string | null;
   slug: string;
   name: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
 }
 
 export interface WorkspaceFormProps {
@@ -126,6 +118,8 @@ export interface OnboardingWorkspaceFormValues {
   name: string;
   slug: string;
   websiteUrl: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
 }
 
 export interface SubmitWorkspaceFormArgs {
@@ -145,3 +139,21 @@ export type SaveOnboardingAttributionInput = Pick<
 export type SaveOnboardingAttributionResult =
   | { success: true }
   | { success: false; error: string };
+
+export type SaveOnboardingNotificationSettingsInput = {
+  organizationId: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
+};
+
+export type SaveOnboardingNotificationSettingsResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export interface OnboardingEmailPrefsProps {
+  dailySummary: boolean;
+  marketingEmails: boolean;
+  disabled: boolean;
+  onDailySummaryChange: (checked: boolean) => void;
+  onMarketingEmailsChange: (checked: boolean) => void;
+}

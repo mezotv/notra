@@ -5,6 +5,14 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
 import { warmGeoOnboardingCache } from "@notra/geo-core/geo/onboarding";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { organizationIdSchema } from "@notra/schemas/dashboard/auth/organization";
+import {
+  type OnboardingBrandAnalysisInput,
+  onboardingBrandAnalysisSchema,
+} from "@notra/schemas/dashboard/brand-analysis";
+import { onboardingNotificationPrefsSchema } from "@notra/schemas/dashboard/notification-settings";
+import { triggerOnboardingAgentSetupSchema } from "@notra/schemas/dashboard/onboarding-agent";
+import { onboardingWorkspaceAttributionSchema } from "@notra/schemas/dashboard/onboarding/workspace";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
@@ -32,16 +40,12 @@ import {
   resolveCompanyDomain,
   resolveReachableWebsiteUrl,
 } from "@/lib/onboarding/company-domain";
-import { organizationIdSchema } from "@/schemas/auth/organization";
-import {
-  type OnboardingBrandAnalysisInput,
-  onboardingBrandAnalysisSchema,
-} from "@/schemas/brand-analysis";
-import { triggerOnboardingAgentSetupSchema } from "@/schemas/onboarding-agent";
-import { onboardingWorkspaceAttributionSchema } from "@/schemas/onboarding/workspace";
+import { upsertOnboardingNotificationSettings } from "@/lib/onboarding/notification-settings";
 import type {
   SaveOnboardingAttributionInput,
   SaveOnboardingAttributionResult,
+  SaveOnboardingNotificationSettingsInput,
+  SaveOnboardingNotificationSettingsResult,
 } from "@/types/onboarding";
 import type {
   OnboardingAgentSetupTaskInput,
@@ -356,6 +360,60 @@ export async function saveOnboardingAttribution(
   setPersonProperties({
     userId,
     setOnce: { heard_about_notra: heardAbout },
+  });
+
+  return { success: true };
+}
+
+const saveOnboardingNotificationSettingsSchema = z
+  .object({
+    organizationId: organizationIdSchema,
+  })
+  .and(onboardingNotificationPrefsSchema);
+
+export async function saveOnboardingNotificationSettings(
+  rawInput: SaveOnboardingNotificationSettingsInput
+): Promise<SaveOnboardingNotificationSettingsResult> {
+  const parsed = saveOnboardingNotificationSettingsSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error:
+        parsed.error.issues[0]?.message ?? "Invalid notification preferences",
+    };
+  }
+
+  let membershipRole: string;
+
+  try {
+    const access = await assertOrganizationAccess({
+      headers: await headers(),
+      organizationId: parsed.data.organizationId,
+    });
+    membershipRole = access.membership.role;
+  } catch (error) {
+    if (error instanceof ORPCError) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    throw error;
+  }
+
+  if (membershipRole !== "owner") {
+    return {
+      success: false,
+      error: "Only the organization owner can set this",
+    };
+  }
+
+  await upsertOnboardingNotificationSettings({
+    organizationId: parsed.data.organizationId,
+    dailySummary: parsed.data.dailySummary,
+    marketingEmails: parsed.data.marketingEmails,
   });
 
   return { success: true };

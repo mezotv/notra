@@ -94,6 +94,18 @@ export interface GeoCheckPromptHistoryQuery {
   limit: number;
 }
 
+export type GeoCheckPromptSummaryRow = Pick<
+  GeoCheckPromptResultRow,
+  | "promptId"
+  | "engine"
+  | "prompt"
+  | "mentioned"
+  | "position"
+  | "sentiment"
+  | "competitors"
+  | "lastCheckedAt"
+> & { checkId: string };
+
 export interface GeoCheckPromptHistoryRow {
   id: string;
   scanId: string;
@@ -231,4 +243,9 @@ export interface GeoCheckScanComparison {
   currentScan: GeoCheckScanRow | null;
   previous: GeoCheckScanComparisonRow[];
   current: GeoCheckScanComparisonRow[];
+}
+
+export interface GeoCheckScanComparisonInput {
+  projectId: string;
+  window?: { from: Date; toExclusive: Date };
 }

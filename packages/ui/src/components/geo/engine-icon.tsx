@@ -5,6 +5,7 @@ import {
   Robot01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { IconSvgElement } from "@hugeicons/react";
 import { Amazon } from "@notra/ui/components/ui/svgs/amazon";
 import { Apple } from "@notra/ui/components/ui/svgs/apple";
 import { AppleDark } from "@notra/ui/components/ui/svgs/appleDark";
@@ -40,8 +41,8 @@ import { OpencodeDark } from "@notra/ui/components/ui/svgs/opencodeDark";
 import { Perplexity } from "@notra/ui/components/ui/svgs/perplexity";
 import { Qwen } from "@notra/ui/components/ui/svgs/qwen";
 import { QwenDark } from "@notra/ui/components/ui/svgs/qwenDark";
-import { SpaceXai } from "@notra/ui/components/ui/svgs/spacexai";
-import { SpaceXaiDark } from "@notra/ui/components/ui/svgs/spacexaiDark";
+import { Grok } from "@notra/ui/components/ui/svgs/grok";
+import { GrokDark } from "@notra/ui/components/ui/svgs/grokDark";
 import { Tavily } from "@notra/ui/components/ui/svgs/tavily";
 import { Tencent } from "@notra/ui/components/ui/svgs/tencent";
 import { TikTok } from "@notra/ui/components/ui/svgs/tikTok";
@@ -78,105 +79,36 @@ function EngineIconGraphic({ engine, className }: EngineIconProps) {
   }
 
   const iconClass = cn("size-4 shrink-0", className);
-
-  if (key === "openai") {
-    return (
-      <>
-        <Openai className={cn(iconClass, "block dark:hidden")} />
-        <OpenaiDark className={cn(iconClass, "hidden dark:block")} />
-      </>
-    );
+  const themed = THEMED_ICONS[key];
+  if (themed) {
+    return themedIcon(themed[0], themed[1], iconClass);
   }
-  if (key === "grok") {
-    return themedIcon(SpaceXai, SpaceXaiDark, iconClass);
+  const hugeicon = HUGEICON_ICONS[key];
+  if (hugeicon) {
+    return <HugeiconsIcon className={iconClass} icon={hugeicon} />;
   }
-  if (key === "qwen") {
-    return (
-      <>
-        <Qwen className={cn(iconClass, "block dark:hidden")} />
-        <QwenDark className={cn(iconClass, "hidden dark:block")} />
-      </>
-    );
-  }
-  if (key === "claude") {
-    return <ClaudeAiIcon className={iconClass} />;
-  }
-  if (key === "gemini") {
-    return <Gemini className={cn(iconClass, "overflow-visible")} />;
-  }
-  if (key === "perplexity") {
-    return <Perplexity className={iconClass} />;
-  }
-  if (key === "mistral") {
-    return <Mistral className={iconClass} />;
-  }
-  if (key === "deepseek") {
-    return <Deepseek className={iconClass} />;
-  }
-  if (key === "meta") {
-    return <Meta className={iconClass} />;
-  }
-  if (key === "tencent") {
-    return <Tencent className={iconClass} />;
-  }
-  if (key === "xiaomi") {
-    return <Xiaomi className={iconClass} />;
-  }
-  if (key === "cursor") {
-    return <Cursor className={iconClass} />;
-  }
-  if (key === "google") {
-    return <Google className={iconClass} />;
-  }
-  if (key === "duckduckgo") {
-    return <DuckDuckGo className={iconClass} />;
-  }
-  if (key === "cloudflare") {
-    return <Cloudflare className={iconClass} />;
-  }
-  if (key === "mozilla") {
-    return <Firefox className={iconClass} />;
-  }
-  if (key === "cohere") {
-    return <Cohere className={iconClass} />;
-  }
-  if (key === "kimi") {
-    return <Kimi className={iconClass} />;
-  }
-  if (key === "apple") {
-    return themedIcon(Apple, AppleDark, iconClass);
-  }
-  if (key === "tiktok") {
-    return themedIcon(TikTok, TikTokDark, iconClass);
-  }
-  if (key === "manus") {
-    return themedIcon(Manus, ManusDark, iconClass);
-  }
-  if (key === "firecrawl") {
-    return themedIcon(Firecrawl, FirecrawlDark, iconClass);
-  }
-  if (key === "opencode") {
-    return themedIcon(Opencode, OpencodeDark, iconClass);
-  }
-  const simple = SIMPLE_ICONS[key];
-  if (simple) {
-    const Icon = simple;
-    return <Icon className={iconClass} />;
-  }
-  if (key === "agent") {
-    return <HugeiconsIcon className={iconClass} icon={Robot01Icon} />;
-  }
-  if (key === "cli") {
-    return (
-      <HugeiconsIcon className={iconClass} icon={ComputerTerminal01Icon} />
-    );
-  }
-  return <MicrosoftCopilot className={iconClass} />;
+  const Icon = SIMPLE_ICONS[key] ?? MicrosoftCopilot;
+  return <Icon className={cn(iconClass, SIMPLE_ICON_CLASSES[key])} />;
 }
 
-const SIMPLE_ICONS: Partial<
-  Record<EngineIconKey, ComponentType<SVGProps<SVGSVGElement>>>
-> = {
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+
+const SIMPLE_ICONS: Partial<Record<EngineIconKey, IconComponent>> = {
+  claude: ClaudeAiIcon,
+  gemini: Gemini,
+  perplexity: Perplexity,
+  mistral: Mistral,
+  deepseek: Deepseek,
+  meta: Meta,
+  tencent: Tencent,
+  xiaomi: Xiaomi,
+  cursor: Cursor,
+  google: Google,
+  duckduckgo: DuckDuckGo,
+  cloudflare: Cloudflare,
+  mozilla: Firefox,
+  cohere: Cohere,
+  kimi: Kimi,
   amazon: Amazon,
   exa: Exa,
   commoncrawl: CommonCrawl,
@@ -192,11 +124,29 @@ const SIMPLE_ICONS: Partial<
   zai: Zai,
 };
 
-function themedIcon(
-  Light: ComponentType<SVGProps<SVGSVGElement>>,
-  Dark: ComponentType<SVGProps<SVGSVGElement>>,
-  iconClass: string
-) {
+const SIMPLE_ICON_CLASSES: Partial<Record<EngineIconKey, string>> = {
+  gemini: "overflow-visible",
+};
+
+const THEMED_ICONS: Partial<
+  Record<EngineIconKey, readonly [IconComponent, IconComponent]>
+> = {
+  openai: [Openai, OpenaiDark],
+  grok: [Grok, GrokDark],
+  qwen: [Qwen, QwenDark],
+  apple: [Apple, AppleDark],
+  tiktok: [TikTok, TikTokDark],
+  manus: [Manus, ManusDark],
+  firecrawl: [Firecrawl, FirecrawlDark],
+  opencode: [Opencode, OpencodeDark],
+};
+
+const HUGEICON_ICONS: Partial<Record<EngineIconKey, IconSvgElement>> = {
+  agent: Robot01Icon,
+  cli: ComputerTerminal01Icon,
+};
+
+function themedIcon(Light: IconComponent, Dark: IconComponent, iconClass: string) {
   return (
     <>
       <Light className={cn(iconClass, "block dark:hidden")} />

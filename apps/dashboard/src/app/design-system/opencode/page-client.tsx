@@ -5,6 +5,7 @@ import { OpencodeComposer } from "@notra/ui/components/brainless/opencode/openco
 import { OpencodeLogo } from "@notra/ui/components/brainless/opencode/opencode-logo";
 import { OpencodeMessage } from "@notra/ui/components/brainless/opencode/opencode-message";
 import { OpencodeSidebar } from "@notra/ui/components/brainless/opencode/opencode-sidebar";
+import { OpencodeSources } from "@notra/ui/components/brainless/opencode/opencode-sources";
 import { OPENCODE_COLORS } from "@notra/ui/constants/brainless-opencode";
 import { cn } from "@notra/ui/lib/utils";
 import type { ReactNode } from "react";
@@ -13,6 +14,7 @@ import { DesignSystemSectionHeader } from "@/components/design-system/design-sys
 import {
   OPENCODE_STORY_ACTIVITIES,
   OPENCODE_STORY_SESSION,
+  OPENCODE_STORY_SOURCES,
 } from "@/constants/design-system-opencode";
 
 function OpencodeSurface({
@@ -65,6 +67,7 @@ export function DesignSystemOpencodeCatalog() {
                     <OpencodeActivity key={activity.id} {...activity} />
                   ))}
                 </div>
+                <OpencodeSources sources={OPENCODE_STORY_SOURCES} />
                 <OpencodeMessage>{session.resultMessage}</OpencodeMessage>
               </div>
               <OpencodeComposer
@@ -129,14 +132,18 @@ export function DesignSystemOpencodeCatalog() {
 
       <section className="scroll-mt-10 space-y-6" id="opencode-activity">
         <DesignSystemSectionHeader
-          description="User and assistant turns plus orange reasoning and muted tool activity."
+          description="User and assistant turns plus orange reasoning, muted tool activity, and cited sources."
           id="opencode-activity"
           title="Messages & activity"
         />
         <OpencodeSurface className="p-5 sm:p-6">
           <div className="space-y-5">
             <OpencodeMessage from="user">{session.userMessage}</OpencodeMessage>
-            <OpencodeMessage>{session.assistantMessage}</OpencodeMessage>
+            <OpencodeMessage
+              search={<OpencodeSources sources={OPENCODE_STORY_SOURCES} />}
+            >
+              {session.assistantMessage}
+            </OpencodeMessage>
             {OPENCODE_STORY_ACTIVITIES.map((activity) => (
               <OpencodeActivity key={activity.id} {...activity} />
             ))}

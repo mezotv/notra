@@ -22,6 +22,7 @@ COPY packages/geo/package.json ./packages/geo/package.json
 COPY packages/geo-core/package.json ./packages/geo-core/package.json
 COPY packages/kiwi/package.json ./packages/kiwi/package.json
 COPY packages/posthog/package.json ./packages/posthog/package.json
+COPY packages/schemas/package.json ./packages/schemas/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/utils/package.json ./packages/utils/package.json
@@ -40,6 +41,7 @@ COPY packages/typescript-config ./packages/typescript-config
 COPY packages/db ./packages/db
 COPY packages/geo-core ./packages/geo-core
 COPY packages/posthog ./packages/posthog
+COPY packages/schemas ./packages/schemas
 COPY packages/utils ./packages/utils
 COPY apps/api ./apps/api
 

@@ -1,5 +1,8 @@
+import { onboardingWorkspaceSchema } from "@notra/schemas/dashboard/onboarding/workspace";
+
 import {
   saveOnboardingAttribution,
+  saveOnboardingNotificationSettings,
   triggerOnboardingAgentSetup,
   triggerOnboardingBrandAnalysis,
 } from "@/app/onboarding/workspace/actions";
@@ -7,7 +10,6 @@ import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { uploadFile } from "@/lib/upload/client";
 import { generateOrganizationAvatar } from "@/lib/utils";
-import { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
 import type { SubmitWorkspaceFormArgs } from "@/types/onboarding";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 
@@ -92,6 +94,16 @@ export async function submitWorkspaceForm({
         error,
       });
     }
+  }
+
+  const notificationResult = await saveOnboardingNotificationSettings({
+    organizationId,
+    dailySummary: parsed.data.dailySummary,
+    marketingEmails: parsed.data.marketingEmails,
+  });
+
+  if (!notificationResult.success) {
+    throw new Error(notificationResult.error);
   }
 
   const hasAttribution = Boolean(
