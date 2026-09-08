@@ -13,12 +13,7 @@ import {
   GEO_CHECK_GROUNDING_MAX_SOURCES,
 } from "@notra/db/constants/geo-checks";
 import { db } from "@notra/db/drizzle";
-import {
-  brandSettings,
-  geoPromptSequences,
-  geoPrompts,
-  geoSettings,
-} from "@notra/db/schema";
+import { geoPromptSequences, geoPrompts, geoSettings } from "@notra/db/schema";
 import type {
   GeoCheckSourceItem,
   GeoCheckWrite,
@@ -127,6 +122,7 @@ import {
 import { extractGrounding } from "./grounding";
 import { toGeoSettings } from "./mappers";
 import { loadGeoModelCatalog } from "./model-catalog";
+import { loadGeoProjectBrand } from "./project-brand";
 import { requireGeoProject } from "./projects";
 import {
   buildGeoPrompts,
@@ -1022,17 +1018,9 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
     const catalog = yield* loadGeoModelCatalog(organizationId);
     const settings = toGeoSettings(settingsRow, catalog);
 
-    const brand = yield* Effect.tryPromise({
-      try: () =>
-        db.query.brandSettings.findFirst({
-          columns: { companyDescription: true, audience: true },
-          where: and(
-            eq(brandSettings.organizationId, organizationId),
-            eq(brandSettings.isDefault, true)
-          ),
-        }),
-      catch: (cause) =>
-        new GeoScanError({ message: "Failed to load brand settings", cause }),
+    const brand = yield* loadGeoProjectBrand({
+      organizationId,
+      projectId: settingsRow.projectId,
     });
 
     const customRows = yield* Effect.tryPromise({
