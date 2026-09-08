@@ -172,7 +172,6 @@ export function PromptReceiptHistory({
   onSelect,
 }: PromptReceiptHistoryProps) {
   const [requestedPage, setPage] = useState(1);
-  const selectable = Boolean(onSelect);
 
   const totalItems = entries.length;
   const pageCount = Math.max(1, Math.ceil(totalItems / HISTORY_PAGE_SIZE));
@@ -302,7 +301,6 @@ export function PromptReceiptHistory({
         72
       )}
       loading={isLoading}
-      onRowClick={selectable ? (entry) => onSelect?.(entry.check) : undefined}
       rowHeight={72}
       skeletonRows={GEO_PROMPT_HISTORY_SKELETON_ROWS}
     />
