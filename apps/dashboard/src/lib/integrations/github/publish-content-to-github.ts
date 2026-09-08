@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 
+import { GitHubAppRequiredForPublishError } from "@notra/ai/integrations/github-publish-auth";
 import { slugify } from "@notra/utils/slugify";
 
 import {
@@ -125,6 +126,10 @@ function getHeaderCaseInsensitive(
 export function classifyGitHubPublishFailure(
   error: unknown
 ): GitHubPublishFailureKind {
+  if (error instanceof GitHubAppRequiredForPublishError) {
+    return "app_required";
+  }
+
   if (
     hasGitHubStatus(error, 401) ||
     hasGitHubGraphQLErrorType(error, "UNAUTHORIZED")

@@ -155,48 +155,35 @@ function buildManagedContent(params: BuildContentPullRequestBodyParams) {
   return joinParagraphs([renderOpenInNotraLink(params), article]);
 }
 
-function clampWrappedManaged(wrapped: string, maxLength: number) {
+function clampManagedSection(wrapped: string, maxLength: number) {
   if (wrapped.length <= maxLength) {
     return wrapped;
   }
 
   const endMarker = `\n${GITHUB_PULL_REQUEST_BODY_SECTION_END}`;
   const notice = `\n\n${PULL_REQUEST_BODY_TRUNCATION_NOTICE}`;
-  const reserved = notice.length + endMarker.length;
-  const minimum = wrapManagedSection("");
+  const maxPrefixLength = maxLength - notice.length - endMarker.length;
 
-  if (maxLength < reserved) {
-    return minimum.length <= maxLength
-      ? minimum
-      : GITHUB_PULL_REQUEST_BODY_SECTION_END;
-  }
-
-  const maxPrefixLength = maxLength - reserved;
   if (maxPrefixLength <= GITHUB_PULL_REQUEST_BODY_SECTION_START.length) {
-    return minimum.length <= maxLength
-      ? minimum
-      : GITHUB_PULL_REQUEST_BODY_SECTION_END;
+    return wrapManagedSection("");
   }
 
   return `${wrapped.slice(0, maxPrefixLength).trimEnd()}${notice}${endMarker}`;
 }
 
-function fitUserTextAroundManaged(
+function assemblePullRequestBody(
   prefix: string,
   managed: string,
   suffix: string
 ) {
   const maxLength = GITHUB_PULL_REQUEST_BODY_MAX_LENGTH;
-  const minimumManagedLength = wrapManagedSection("").length;
-
-  if (minimumManagedLength > maxLength) {
-    return clampWrappedManaged(managed, maxLength);
-  }
-
   let keptPrefix = prefix;
   let keptSuffix = suffix;
   const overflow =
-    keptPrefix.length + minimumManagedLength + keptSuffix.length - maxLength;
+    keptPrefix.length +
+    wrapManagedSection("").length +
+    keptSuffix.length -
+    maxLength;
 
   if (overflow > 0) {
     if (keptPrefix.length >= overflow) {
@@ -211,44 +198,86 @@ function fitUserTextAroundManaged(
     }
   }
 
-  return `${keptPrefix}${clampWrappedManaged(
+  return `${keptPrefix}${clampManagedSection(
     managed,
     maxLength - keptPrefix.length - keptSuffix.length
   )}${keptSuffix}`;
 }
 
-function clampPullRequestBody(body: string) {
-  if (body.length <= GITHUB_PULL_REQUEST_BODY_MAX_LENGTH) {
-    return body;
+function markedSectionRange(body: string) {
+  const start = body.indexOf(GITHUB_PULL_REQUEST_BODY_SECTION_START);
+  if (start < 0) {
+    return null;
   }
 
-  const sectionStart = body.indexOf(GITHUB_PULL_REQUEST_BODY_SECTION_START);
-  const sectionEnd =
-    sectionStart >= 0
-      ? body.indexOf(
-          GITHUB_PULL_REQUEST_BODY_SECTION_END,
-          sectionStart + GITHUB_PULL_REQUEST_BODY_SECTION_START.length
-        )
-      : -1;
-
-  if (sectionStart >= 0 && sectionEnd >= sectionStart) {
-    return fitUserTextAroundManaged(
-      body.slice(0, sectionStart),
-      body.slice(
-        sectionStart,
-        sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
-      ),
-      body.slice(sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length)
-    );
+  const markerEnd = body.indexOf(
+    GITHUB_PULL_REQUEST_BODY_SECTION_END,
+    start + GITHUB_PULL_REQUEST_BODY_SECTION_START.length
+  );
+  if (markerEnd < start) {
+    return null;
   }
 
-  return clampWrappedManaged(body, GITHUB_PULL_REQUEST_BODY_MAX_LENGTH);
+  return {
+    start,
+    end: markerEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length,
+  };
+}
+
+function isParagraphBounded(body: string, start: number, end: number) {
+  return (
+    (start === 0 || body[start - 1] === "\n") &&
+    (end === body.length || body[end] === "\n")
+  );
+}
+
+function legacyManagedBodies(params: BuildContentPullRequestBodyParams) {
+  const summary = draftSummary(params.contentType);
+  const intro = buildManagedIntro(params);
+  const bodies = [intro];
+
+  if (params.contentUrl && params.badgeUrls) {
+    bodies.push(buildManagedIntro({ ...params, badgeUrls: undefined }));
+  }
+  if (intro !== summary) {
+    bodies.push(summary);
+  }
+
+  return bodies;
+}
+
+function findReplacementRange(
+  body: string,
+  params: BuildContentPullRequestBodyParams
+) {
+  const marked = markedSectionRange(body);
+  if (marked) {
+    return marked;
+  }
+
+  for (const candidate of legacyManagedBodies(params)) {
+    const start = body.indexOf(candidate);
+    if (start < 0) {
+      continue;
+    }
+
+    const end = start + candidate.length;
+    if (isParagraphBounded(body, start, end)) {
+      return { start, end };
+    }
+  }
+
+  return null;
 }
 
 export function buildContentPullRequestBody(
   params: BuildContentPullRequestBodyParams
 ) {
-  return clampPullRequestBody(wrapManagedSection(buildManagedContent(params)));
+  return assemblePullRequestBody(
+    "",
+    wrapManagedSection(buildManagedContent(params)),
+    ""
+  );
 }
 
 export function mergeContentPullRequestBody(
@@ -256,66 +285,21 @@ export function mergeContentPullRequestBody(
   params: BuildContentPullRequestBodyParams
 ) {
   const existingBody = currentBody ?? "";
-  const managedBody = buildContentPullRequestBody(params);
-  const sectionStart = existingBody.indexOf(
-    GITHUB_PULL_REQUEST_BODY_SECTION_START
-  );
-  const sectionEnd = existingBody.indexOf(
-    GITHUB_PULL_REQUEST_BODY_SECTION_END,
-    sectionStart + GITHUB_PULL_REQUEST_BODY_SECTION_START.length
-  );
+  const managed = wrapManagedSection(buildManagedContent(params));
+  const trimmed = existingBody.trim();
 
-  if (sectionStart >= 0 && sectionEnd >= sectionStart) {
-    return clampPullRequestBody(
-      `${existingBody.slice(0, sectionStart)}${managedBody}${existingBody.slice(
-        sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
-      )}`
+  if (!trimmed || legacyManagedBodies(params).includes(trimmed)) {
+    return assemblePullRequestBody("", managed, "");
+  }
+
+  const range = findReplacementRange(existingBody, params);
+  if (range) {
+    return assemblePullRequestBody(
+      existingBody.slice(0, range.start),
+      managed,
+      existingBody.slice(range.end)
     );
   }
 
-  const legacySummary = draftSummary(params.contentType);
-  const legacyManagedContents = [buildManagedIntro(params)];
-  if (params.contentUrl && params.badgeUrls) {
-    legacyManagedContents.push(
-      buildManagedIntro({ ...params, badgeUrls: undefined })
-    );
-  }
-  if (!legacyManagedContents.includes(legacySummary)) {
-    legacyManagedContents.push(legacySummary);
-  }
-
-  for (const legacyManagedContent of legacyManagedContents) {
-    const legacySectionStart = existingBody.indexOf(legacyManagedContent);
-    if (legacySectionStart < 0) {
-      continue;
-    }
-
-    const legacySectionEnd = legacySectionStart + legacyManagedContent.length;
-    const startsAtParagraphBoundary =
-      legacySectionStart === 0 || existingBody[legacySectionStart - 1] === "\n";
-    const endsAtParagraphBoundary =
-      legacySectionEnd === existingBody.length ||
-      existingBody[legacySectionEnd] === "\n";
-
-    if (startsAtParagraphBoundary && endsAtParagraphBoundary) {
-      return clampPullRequestBody(
-        `${existingBody.slice(0, legacySectionStart)}${managedBody}${existingBody.slice(
-          legacySectionEnd
-        )}`
-      );
-    }
-  }
-
-  if (
-    existingBody.trim() === legacySummary ||
-    legacyManagedContents.includes(existingBody.trim())
-  ) {
-    return managedBody;
-  }
-
-  if (!existingBody.trim()) {
-    return managedBody;
-  }
-
-  return clampPullRequestBody(`${existingBody.trimEnd()}\n\n${managedBody}`);
+  return assemblePullRequestBody(`${existingBody.trimEnd()}\n\n`, managed, "");
 }

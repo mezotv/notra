@@ -2,11 +2,8 @@ import {
   checkContentBilling,
   describeContentBillingDenial,
 } from "@notra/ai/billing/content-billing";
-import {
-  getGitHubPublishToken,
-  getTokenForIntegrationId,
-  GitHubAppRequiredForPublishError,
-} from "@notra/ai/integrations/github";
+import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
+import { getGitHubPublishToken } from "@notra/ai/integrations/github-publish-auth";
 import {
   getDecryptedLinearToken,
   getLinearIntegrationsByOrganization,
@@ -956,20 +953,10 @@ export const contentRouter = {
             "Initialize the GitHub repository with a first commit before publishing"
           );
         }
-        if (
-          error instanceof GitHubAppRequiredForPublishError ||
-          (error instanceof GitHubContentPublishError &&
-            error.cause instanceof GitHubAppRequiredForPublishError)
-        ) {
-          throw forbidden(
-            "Connect the GitHub App so Notra can open pull requests as a bot.",
-            { code: "github_authentication_required" }
-          );
-        }
         if (error instanceof GitHubContentPublishError) {
           const failureKind = classifyGitHubPublishFailure(error.cause);
           let publishingPaused = false;
-          if (failureKind !== "rate_limit") {
+          if (failureKind !== "rate_limit" && failureKind !== "app_required") {
             try {
               const pauseResult = await recordGitHubPublishFailure({
                 organizationId: input.organizationId,
@@ -988,12 +975,19 @@ export const contentRouter = {
           }
           if (
             publishingPaused &&
+            failureKind !== "app_required" &&
             failureKind !== "authentication" &&
             failureKind !== "permissions"
           ) {
             throw forbidden(
               "GitHub content publishing was paused after repeated failures",
               { code: "github_content_publishing_paused" }
+            );
+          }
+          if (failureKind === "app_required") {
+            throw forbidden(
+              "Connect the GitHub App so Notra can open pull requests as a bot.",
+              { code: "github_authentication_required" }
             );
           }
           if (failureKind === "authentication") {

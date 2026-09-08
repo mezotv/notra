@@ -36,7 +36,6 @@ import { createOctokit } from "../utils/octokit";
 import { hasOrganizationAccess } from "../utils/organization-access";
 import { redis } from "../utils/redis";
 import { getConfiguredAppUrl } from "../utils/url";
-import { selectGitHubAppInstallationForOwner } from "./github-app-installation";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const GITHUB_SCOPE_SEPARATOR_PATTERN = /[,\s]+/;
@@ -73,15 +72,6 @@ export class GitHubInstallationAccessDeniedError extends Error {
   constructor() {
     super("You must administer the GitHub account that owns this installation");
     this.name = "GitHubInstallationAccessDeniedError";
-  }
-}
-
-export class GitHubAppRequiredForPublishError extends Error {
-  readonly status = 401;
-
-  constructor() {
-    super("Connect the GitHub App so Notra can open pull requests as a bot");
-    this.name = "GitHubAppRequiredForPublishError";
   }
 }
 
@@ -126,7 +116,7 @@ function readGitHubAppConfig() {
   };
 }
 
-function isGitHubAppConfigured() {
+export function isGitHubAppConfigured() {
   const { appId, privateKey, slug } = readGitHubAppConfig();
   return Boolean(appId && privateKey && slug);
 }
@@ -178,7 +168,7 @@ async function createGitHubAppInstallationToken(installationId: string) {
   return data.token;
 }
 
-async function createGitHubAppInstallationTokenForRecord(
+export async function createGitHubAppInstallationTokenForRecord(
   recordId: string,
   options?: { organizationId?: string }
 ) {
@@ -1577,57 +1567,6 @@ export async function getTokenForIntegrationId(
   }
 
   return decryptToken(integration.encryptedToken);
-}
-
-/**
- * Content publishing must authenticate as the GitHub App installation so
- * commits and pull requests are authored by `{slug}[bot]`, not the person
- * who clicked publish. Personal access tokens stay available for read paths
- * and for environments where the GitHub App is not configured.
- */
-export async function getGitHubPublishToken(
-  integrationId: string,
-  options?: { organizationId?: string }
-) {
-  if (!isGitHubAppConfigured()) {
-    return getTokenForIntegrationId(integrationId, options);
-  }
-
-  const integration = await db.query.githubIntegrations.findFirst({
-    where: options?.organizationId
-      ? and(
-          eq(githubIntegrations.id, integrationId),
-          eq(githubIntegrations.organizationId, options.organizationId)
-        )
-      : eq(githubIntegrations.id, integrationId),
-    columns: {
-      githubAppInstallationId: true,
-      organizationId: true,
-      owner: true,
-    },
-  });
-
-  if (!integration) {
-    return null;
-  }
-
-  if (integration.githubAppInstallationId) {
-    return createGitHubAppInstallationTokenForRecord(
-      integration.githubAppInstallationId,
-      options
-    );
-  }
-
-  const installation = selectGitHubAppInstallationForOwner(
-    await listGitHubAppInstallationsByOrganization(integration.organizationId),
-    integration.owner
-  );
-
-  if (!installation) {
-    throw new GitHubAppRequiredForPublishError();
-  }
-
-  return createGitHubAppInstallationToken(installation.installationId);
 }
 
 export async function getGitHubToolRepositoryContextByIntegrationId(

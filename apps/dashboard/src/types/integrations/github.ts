@@ -273,6 +273,7 @@ export interface GitHubPullRequestSummary {
 export type GitHubErrorHeaders = Record<string, string | number | undefined>;
 
 export type GitHubPublishFailureKind =
+  | "app_required"
   | "authentication"
   | "forbidden"
   | "permissions"
