@@ -31,33 +31,25 @@ function brandSearchKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
-/** Prefer an exact hit, then a prefix, then context.dev's own ranking. */
+/** Exact name or domain only — prefix/rank fallbacks misidentify brands. */
 export function pickBrandSearchResult(
   results: readonly ContextDevBrandSearchResult[],
   query: string
 ): ContextDevBrandSearchResult | null {
-  if (results.length === 0) {
+  const key = brandSearchKey(query);
+  if (key.length === 0) {
     return null;
   }
 
-  const key = brandSearchKey(query);
   const exactName = results.find(
     (result) => brandSearchKey(result.name) === key
   );
   if (exactName) {
     return exactName;
   }
-  const exactDomain = results.find(
-    (result) => brandSearchKey(result.domain) === key
+  return (
+    results.find((result) => brandSearchKey(result.domain) === key) ?? null
   );
-  if (exactDomain) {
-    return exactDomain;
-  }
-  const prefix = results.find((result) => {
-    const name = brandSearchKey(result.name);
-    return name.startsWith(key) || key.startsWith(name);
-  });
-  return prefix ?? results[0] ?? null;
 }
 
 export function extractDomain(input: string): string | null {
