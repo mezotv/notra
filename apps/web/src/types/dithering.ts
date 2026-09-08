@@ -3,7 +3,15 @@ import type { RefObject } from "react";
 
 export type DeferredDitheringProps = Pick<
   DitheringProps,
-  "colorBack" | "colorFront" | "scale" | "shape" | "size" | "speed" | "type"
+  | "colorBack"
+  | "colorFront"
+  | "scale"
+  | "shape"
+  | "size"
+  | "speed"
+  | "type"
+  | "frame"
+  | "fit"
 > & {
   className?: string;
 };
