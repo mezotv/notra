@@ -333,6 +333,17 @@ export function Navbar({ variant }: NavbarProps = {}) {
 
   const { isAuthenticated, isResolved } = useDashboardSession();
   useNavbarAuthHotkeys({ isAuthenticated, isResolved });
+
+  useEffect(() => {
+    if (pathname === "/" && isResolved && isAuthenticated) {
+      window.location.replace(
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/callback"
+          : AUTH_DASHBOARD_URL
+      );
+    }
+  }, [pathname, isResolved, isAuthenticated]);
+
   const reduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
