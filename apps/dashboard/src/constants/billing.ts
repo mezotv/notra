@@ -78,8 +78,6 @@ export const INVOICE_PRODUCT_NAME_FALLBACKS: Record<string, string> = {
   ai_credits_top_up: "AI Credits Top-up",
 };
 
-export const INVOICE_TABLE_COLUMN_COUNT = 4;
-
 export const GEO_PLAN_REQUIRED_MESSAGE =
   "GEO requires a Starter, Growth, or Scale plan";
 

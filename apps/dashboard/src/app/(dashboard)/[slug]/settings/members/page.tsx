@@ -16,11 +16,13 @@ import { Suspense, use, useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { memberColumns } from "@/components/members/columns";
-import { DataTable } from "@/components/members/data-table";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
+import { Table } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { authClient } from "@/lib/auth/client";
+import { tableHeightFor } from "@/utils/table";
 
 import { DashboardPageSkeleton } from "../../skeleton";
 
@@ -139,21 +141,30 @@ function MembersPageContent({ params }: PageProps) {
           </TabsList>
 
           <TabsContent className="mt-4" value="members">
-            <DataTable
+            <Table
               columns={memberColumns}
               data={members ?? []}
+              emptyState="No members found."
               getRowId={(member) => member.id}
-              isLoading={membersLoading}
+              height={tableHeightFor(
+                membersLoading ? 3 : (members?.length ?? 0)
+              )}
+              loading={membersLoading}
+              rowHeight={TABLE_ROW_HEIGHT}
             />
           </TabsContent>
 
           <TabsContent className="mt-4" value="pending">
-            <DataTable
+            <Table
               columns={invitationColumns}
               data={pendingInvitations ?? []}
-              emptyMessage="No pending invitations."
+              emptyState="No pending invitations."
               getRowId={(invitation) => invitation.id}
-              isLoading={invitationsLoading}
+              height={tableHeightFor(
+                invitationsLoading ? 3 : (pendingInvitations?.length ?? 0)
+              )}
+              loading={invitationsLoading}
+              rowHeight={TABLE_ROW_HEIGHT}
             />
           </TabsContent>
         </Tabs>

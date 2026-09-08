@@ -1,18 +1,8 @@
 "use client";
 
-import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
 import {
   Tabs,
   TabsContent,
@@ -21,9 +11,10 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { Suspense, useEffect, useId, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { InvoicesTable } from "@/components/billing/invoices-table";
 import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSection } from "@/components/billing/usage-section";
 import { ZdrAddonCard } from "@/components/billing/zdr-addon-card";
@@ -34,7 +25,6 @@ import { PLAN_SURFACES } from "@/constants/analytics-events";
 import {
   BILLING_SECTION_VALUES,
   FEATURED_PLAN_TIER,
-  INVOICE_TABLE_COLUMN_COUNT,
   PLANS_ANCHOR,
 } from "@/constants/billing";
 import {
@@ -48,7 +38,6 @@ import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
 import {
   findZdrAddonPlan,
-  getInvoiceDescription,
   getPricingButtonText,
   getProductFeatures,
   getProductPrice,
@@ -86,19 +75,9 @@ function BillingPageContent() {
   const [isYearly, setIsYearly] = useState(false);
   const [includeZdr, setIncludeZdr] = useState(false);
   const { hasZdr } = useHasZdrEntitlement();
-  const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
   const [now] = useState(() => Date.now());
-  const invoiceListId = useId();
 
   const invoices = customer?.invoices;
-
-  const sortedInvoices = useMemo(() => {
-    return [...(invoices ?? [])].sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateSortOrder === "desc" ? dateB - dateA : dateA - dateB;
-    });
-  }, [invoices, dateSortOrder]);
 
   const activeSubscription = customer?.subscriptions.find(
     (subscription) => !subscription.addOn && subscription.status === "active"
@@ -353,98 +332,7 @@ function BillingPageContent() {
 
                 <div className="space-y-3">
                   <h2 className="text-lg font-semibold">Invoices</h2>
-                  <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead
-                            className="hover:text-foreground w-[140px] cursor-pointer transition-colors select-none"
-                            onClick={() =>
-                              setDateSortOrder(
-                                dateSortOrder === "desc" ? "asc" : "desc"
-                              )
-                            }
-                          >
-                            <span className="inline-flex items-center gap-1">
-                              Date
-                              <HugeiconsIcon
-                                className="size-3.5"
-                                icon={
-                                  dateSortOrder === "desc"
-                                    ? ArrowDown01Icon
-                                    : ArrowUp01Icon
-                                }
-                              />
-                            </span>
-                          </TableHead>
-                          <TableHead className="w-[40%]">Description</TableHead>
-                          <TableHead className="w-[120px]">Amount</TableHead>
-                          <TableHead className="w-[120px]">Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sortedInvoices.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              className="text-muted-foreground h-24 text-center"
-                              colSpan={INVOICE_TABLE_COLUMN_COUNT}
-                            >
-                              No invoices yet
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          sortedInvoices.map((invoice) => (
-                            <TableRow
-                              className={
-                                invoice.hostedInvoiceUrl
-                                  ? "cursor-pointer"
-                                  : undefined
-                              }
-                              key={`${invoiceListId}-${invoice.createdAt}-${invoice.total}`}
-                              onClick={() => {
-                                if (invoice.hostedInvoiceUrl) {
-                                  window.open(
-                                    invoice.hostedInvoiceUrl,
-                                    "_blank"
-                                  );
-                                }
-                              }}
-                            >
-                              <TableCell className="w-[140px]">
-                                {invoice.createdAt
-                                  ? new Date(
-                                      invoice.createdAt
-                                    ).toLocaleDateString()
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="wrap-break-word whitespace-normal">
-                                {getInvoiceDescription(invoice.planIds, plans)}
-                              </TableCell>
-                              <TableCell className="w-[120px] tabular-nums">
-                                {invoice.total !== undefined
-                                  ? `$${invoice.total.toFixed(2)}`
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="w-[120px]">
-                                <Badge
-                                  variant={
-                                    invoice.status === "paid"
-                                      ? "success"
-                                      : "secondary"
-                                  }
-                                >
-                                  {(invoice.status ?? "pending")
-                                    .charAt(0)
-                                    .toUpperCase() +
-                                    (invoice.status ?? "pending").slice(1)}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <InvoicesTable invoices={invoices ?? []} plans={plans} />
                 </div>
               </div>
             )}
