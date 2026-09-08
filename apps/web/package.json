@@ -8,7 +8,7 @@
     "styles:generate": "bun scripts/generate-ui-sources.mjs",
     "styles:check": "bun scripts/generate-ui-sources.mjs --check",
     "start": "next start",
-    "knip": "knip",
+    "knip": "fumadocs-mdx && knip",
     "remotion:studio": "remotion studio src/remotion/index.ts",
     "remotion:render": "remotion render src/remotion/index.ts StarVideo out/star-video.mp4"
   },
