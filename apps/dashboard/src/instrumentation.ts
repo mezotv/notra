@@ -1,8 +1,13 @@
 import { defineNodeInstrumentation } from "evlog/next/instrumentation";
 
-const evlogInstrumentation = defineNodeInstrumentation(
-  () => import("@notra/ai/evlog")
-);
+const evlogInstrumentation = defineNodeInstrumentation(async () => {
+  const [evlog, { after }] = await Promise.all([
+    import("@notra/ai/evlog"),
+    import("next/server"),
+  ]);
+  evlog.setLogFlushScheduler((flush) => after(flush));
+  return evlog;
+});
 
 export async function register() {
   await evlogInstrumentation.register();
@@ -48,5 +53,6 @@ export const onRequestError: typeof evlogInstrumentation.onRequestError =
         route_type: context.routeType,
       },
     });
-    await flushPostHogServer();
+    const { flushLogs } = await import("@notra/ai/evlog");
+    await Promise.all([flushPostHogServer(), flushLogs()]);
   };
