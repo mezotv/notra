@@ -8,10 +8,6 @@ import {
   contentTriggers,
   githubIntegrations,
 } from "@notra/db/schema";
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
-
 import {
   createScheduleRequestSchema,
   scheduleTargetsRepositoryIdsSchema,
@@ -24,7 +20,11 @@ import {
   scheduleResponseSchema,
   scheduleSourceConfigSchema,
   scheduleTargetsSchema,
-} from "../schemas/schedules";
+} from "@notra/schemas/api/schedules";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
+
 import type {
   ScheduleTriggerRow,
   ScheduleTriggerWithLookbackWindow,

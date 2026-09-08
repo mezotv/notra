@@ -22,7 +22,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useCustomer } from "autumn-js/react";
 import {
   parseAsInteger,
   parseAsString,
@@ -40,6 +39,7 @@ import {
   STATUS_LABELS,
   STATUS_VALUES,
 } from "@/constants/logs";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 import { getSourceLabel, getStatusLabel } from "@/utils/logs";
@@ -58,7 +58,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id;
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer } = useBillingCustomer();
 
   const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1));
   const [search, setSearch] = useQueryState("q", parseAsString.withDefault(""));
@@ -126,18 +126,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const logs = data?.logs ?? [];
-  const contentKey = JSON.stringify(
-    logs.map((log) => [
-      log.id,
-      log.title,
-      log.integrationType,
-      log.status,
-      log.statusCode,
-      log.errorMessage,
-      log.createdAt,
-      log.referenceId,
-    ])
-  );
 
   const filtersActive =
     source !== "all" || status !== "all" || search.length > 0;
@@ -264,7 +252,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         ) : (
           <DataTable
             columns={columns}
-            contentKey={contentKey}
             data={logs}
             emptyState={
               filtersActive
@@ -280,6 +267,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                       "Activity from your integrations and automations will show up here.",
                   }
             }
+            getRowId={(log) => log.id}
             onPageChange={setPage}
             onRowClick={setSelectedLog}
             page={page}

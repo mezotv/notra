@@ -26,6 +26,7 @@ import type {
   GeoPromptHistoryCheck,
   GeoPromptIntent,
   GeoPromptReceiptView,
+  GeoPromptResultSummary,
   GeoPromptResult,
   GeoPromptSequence,
   GeoPromptSource,
@@ -181,7 +182,7 @@ export interface GeoPromptTableRow {
   total: number;
   bestPosition: number | null;
   presence: GeoPresenceStatus | null;
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
 }
 
 export type GeoPromptIntentFilter = GeoPromptIntent | "all";
@@ -586,13 +587,13 @@ export interface MentionRateCardProps extends EngineFamilyBrandScope {
   settings?: GeoSettings;
   trackedEngines?: readonly string[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
-  promptResults?: readonly GeoPromptResult[];
+  promptResults?: readonly GeoPromptResultSummary[];
   isScanning?: boolean;
   organizationSlug?: string;
 }
 
 export interface PromptResultsPreviewProps {
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
   limit?: number;
   isScanning?: boolean;
   variant?: "all" | "unseen";
@@ -600,7 +601,7 @@ export interface PromptResultsPreviewProps {
 }
 
 export interface GeoPromptsPanelProps {
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
   isScanning?: boolean;
   gapsHref?: string;
 }
@@ -620,7 +621,7 @@ export interface EngineFamilyBrandScope {
 export interface EngineRateTableProps extends EngineFamilyBrandScope {
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
-  promptResults?: readonly GeoPromptResult[];
+  promptResults?: readonly GeoPromptResultSummary[];
   isScanning?: boolean;
   organizationSlug?: string;
 }
@@ -660,7 +661,7 @@ export interface FamilyImproveCardProps {
 export interface EngineFamilySheetProps extends EngineFamilyBrandScope {
   family: GeoEngineFamily | null;
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
-  promptResults?: readonly GeoPromptResult[];
+  promptResults?: readonly GeoPromptResultSummary[];
   organizationSlug?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -678,7 +679,7 @@ export interface GeoTabsProps {
   competitorShareTimeseries?: readonly GeoCompetitorShareTimeseriesPoint[];
   competitors: GeoCompetitor[];
   languagePoints: GeoLanguageSharePoint[];
-  promptResults: GeoPromptResult[];
+  promptResults: GeoPromptResultSummary[];
   promptCount: number;
   isScanning: boolean;
   journeys: GeoJourney[];
@@ -698,6 +699,11 @@ export interface GeoRangeState {
 export interface GeoRangeQuery {
   from: string;
   to: string;
+}
+
+export interface GeoQueryScope {
+  organizationId: string;
+  projectId: string | undefined;
 }
 
 export interface GeoRangeControl extends GeoRangeState {
@@ -1010,7 +1016,7 @@ export interface CompetitorsTableProps {
 export interface PromptsTableProps {
   organizationId: string;
   prompts: GeoTrackedPrompt[];
-  results: GeoPromptResult[];
+  results: GeoPromptResultSummary[];
   isScanning?: boolean;
 }
 
@@ -1063,6 +1069,7 @@ export interface PromptDetailDialogProps {
 
 export interface PromptAnswerPageProps {
   row: GeoPromptTableRow;
+  open: boolean;
   organizationId: string;
   isScanning?: boolean;
   initialEngine?: string | null;
@@ -1309,7 +1316,7 @@ export interface TrafficMarkdownCellProps {
 export interface WhatChangedCardProps {
   organizationId: string;
   organizationSlug: string;
-  promptResults?: readonly GeoPromptResult[];
+  promptResults?: readonly GeoPromptResultSummary[];
   competitors?: readonly GeoCompetitor[];
   isScanning?: boolean;
 }

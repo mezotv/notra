@@ -3,12 +3,6 @@ import type {
   GitHubPublishRecovery,
 } from "@/types/integrations/github";
 
-export const GITHUB_URL_PATTERNS = [
-  /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
-  /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i,
-  /^([^/]+)\/([^/]+)$/,
-] as const;
-
 export const GITHUB_INSTALL_STATE_TTL_SECONDS = 1800;
 
 export const GITHUB_PULL_REQUEST_CLOSED_ACTION = "closed";
@@ -37,8 +31,6 @@ export const GITHUB_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
     "Too many GitHub connection attempts. Please wait a moment and try again.",
 };
 
-export const GITHUB_PUBLISH_CONTENT_TYPES = ["changelog", "blog_post"] as const;
-
 export const DEFAULT_GITHUB_CONTENT_DIRECTORIES = {
   changelog: "changelogs",
   blog_post: "blog",
@@ -52,8 +44,6 @@ export const DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED = {
 export const GITHUB_API_VERSION_HEADERS = {
   "X-GitHub-Api-Version": "2022-11-28",
 } as const;
-
-export const GITHUB_CONTENT_PATH_MAX_LENGTH = 1024;
 
 export const GITHUB_PULL_REQUEST_BODY_SECTION_START =
   "<!-- notra:content:start -->";
@@ -70,7 +60,6 @@ export const GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION = `
   }
 `;
 
-export const GITHUB_PATH_INVALID_CHARACTERS_REGEX = /[?#]/;
 export const GITHUB_INSTALLATION_ID_REGEX = /^\d+$/;
 
 export const GITHUB_RECOVERY_COPY = {

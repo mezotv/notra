@@ -19,7 +19,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
-import { useCustomer, useListPlans } from "autumn-js/react";
+import { useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ import {
 } from "@/lib/analytics/billing-events";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
+import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
 import {
@@ -73,7 +74,7 @@ function BillingPageContent() {
     data: customer,
     isLoading: customerLoading,
     refetch,
-  } = useCustomer({
+  } = useBillingCustomer({
     expand: ["invoices", "subscriptions.plan"],
   });
   const [activeSection, setActiveSection] = useQueryState(

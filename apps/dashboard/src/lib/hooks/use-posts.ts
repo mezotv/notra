@@ -1,8 +1,7 @@
 "use client";
 
+import type { PostsResponse } from "@notra/schemas/dashboard/content";
 import { useQuery } from "@tanstack/react-query";
-
-import type { PostsResponse } from "@/schemas/content";
 
 import { dashboardOrpc } from "../orpc/query";
 import { useActiveProject } from "./use-active-project";

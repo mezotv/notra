@@ -2,10 +2,10 @@
 
 import { Delete02Icon, File02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { MIME_DISPLAY_LABELS } from "@notra/schemas/constants/dashboard/upload";
 import Image from "next/image";
 
 import { Button } from "@/components/button";
-import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
   isImageMimeType,
   isPdfMimeType,

@@ -12,7 +12,7 @@ import type {
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoCompetitorTypeFilter,
-  GeoPromptResult,
+  GeoPromptResultSummary,
   GeoSparklinePoint,
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
@@ -138,7 +138,7 @@ export function competitorPromptSummary(
  */
 export function engineFamilyBrandRows(
   family: string,
-  results: readonly GeoPromptResult[],
+  results: readonly GeoPromptResultSummary[],
   scope: EngineFamilyBrandScope = {},
   limit = GEO_FAMILY_BRANDS_LIMIT
 ): EngineFamilyBrandRow[] {

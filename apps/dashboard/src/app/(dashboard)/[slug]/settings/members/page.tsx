@@ -15,7 +15,7 @@ import { Suspense, use, useState } from "react";
 
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
-import { columns } from "@/components/members/columns";
+import { memberColumns } from "@/components/members/columns";
 import { DataTable } from "@/components/members/data-table";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
@@ -140,8 +140,9 @@ function MembersPageContent({ params }: PageProps) {
 
           <TabsContent className="mt-4" value="members">
             <DataTable
-              columns={columns}
+              columns={memberColumns}
               data={members ?? []}
+              getRowId={(member) => member.id}
               isLoading={membersLoading}
             />
           </TabsContent>
@@ -151,6 +152,7 @@ function MembersPageContent({ params }: PageProps) {
               columns={invitationColumns}
               data={pendingInvitations ?? []}
               emptyMessage="No pending invitations."
+              getRowId={(invitation) => invitation.id}
               isLoading={invitationsLoading}
             />
           </TabsContent>

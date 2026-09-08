@@ -1,7 +1,8 @@
 import type {
   ContentDataPointSettings,
   OnDemandContentType,
-} from "@/schemas/content";
+} from "@notra/schemas/dashboard/content";
+
 import type { EventType } from "@/types/content/preview";
 
 export const GITHUB_API_PAGE_SIZE = 100;
