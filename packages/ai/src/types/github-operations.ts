@@ -96,13 +96,20 @@ export type GitHubTokenError =
   | GitHubCredentialsMissingError
   | GitHubCredentialDecryptionError;
 
-export interface GitHubTokenDependencies {
+export interface GitHubStoredCredentials extends GitHubConnectionCredentials {
+  organizationId: string;
+}
+
+export interface GitHubTokenDependencies extends GitHubCredentialDependencies {
   findIntegration: (
     params: ResolveGitHubTokenParams
   ) => Effect.Effect<
-    (GitHubConnectionCredentials & { organizationId: string }) | undefined,
+    GitHubStoredCredentials | undefined,
     GitHubPersistenceError
   >;
+}
+
+export interface GitHubCredentialDependencies {
   findInstallation: (
     recordId: string,
     organizationId: string

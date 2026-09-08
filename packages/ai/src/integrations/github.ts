@@ -30,6 +30,7 @@ import {
 } from "../schemas/github-operations";
 import type {
   GitHubInstallationReference,
+  GitHubCredentialDependencies,
   SelectGitHubRepositoriesParams,
 } from "../types/github-operations";
 import type {
@@ -51,7 +52,7 @@ import { runGitHubEffect } from "../utils/run-github-effect";
 import { saveGitHubRepositorySelection } from "../utils/save-github-repository-selection";
 import { getConfiguredAppUrl } from "../utils/url";
 import { selectGitHubRepositories } from "./github-selection";
-import { resolveGitHubToken } from "./github-token";
+import { resolveGitHubCredentials, resolveGitHubToken } from "./github-token";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const GITHUB_SCOPE_SEPARATOR_PATTERN = /[,\s]+/;
@@ -1374,23 +1375,62 @@ export async function getTokenForRepository(
     .select({
       id: githubIntegrations.id,
       organizationId: githubIntegrations.organizationId,
+      encryptedToken: githubIntegrations.encryptedToken,
+      githubAppInstallationId: githubIntegrations.githubAppInstallationId,
       integrationEnabled: githubIntegrations.enabled,
       repositoryEnabled: githubIntegrations.repositoryEnabled,
     })
     .from(githubIntegrations)
     .where(and(...whereClauses))
-    .limit(1);
+    .limit(1)
+    .$withCache(false);
 
   if (!(integration?.integrationEnabled && integration.repositoryEnabled)) {
     return undefined;
   }
 
-  return (
-    (await getTokenForIntegrationId(integration.id, {
-      organizationId: integration.organizationId,
-    })) ?? undefined
+  return runGitHubEffect(
+    resolveGitHubCredentials(
+      integration.id,
+      integration,
+      githubCredentialDependencies
+    ).pipe(
+      Effect.catchTag("GitHubCredentialsMissingError", () =>
+        Effect.succeed(undefined)
+      ),
+      Effect.catchTag("GitHubRequestError", (error) => Effect.fail(error.cause))
+    )
   );
 }
+
+const githubCredentialDependencies: GitHubCredentialDependencies = {
+  findInstallation: (recordId, organizationId) =>
+    Effect.tryPromise({
+      try: () =>
+        db
+          .select({ installationId: githubAppInstallations.installationId })
+          .from(githubAppInstallations)
+          .where(
+            and(
+              eq(githubAppInstallations.id, recordId),
+              eq(githubAppInstallations.organizationId, organizationId),
+              eq(githubAppInstallations.enabled, true)
+            )
+          )
+          .limit(1)
+          .$withCache(false)
+          .then(([installation]) => installation),
+      catch: (cause) =>
+        new GitHubPersistenceError({ operation: "findInstallation", cause }),
+    }),
+  createInstallationToken: createGitHubAppInstallationTokenEffect,
+  decryptToken: (encryptedToken, integrationId) =>
+    Effect.try({
+      try: () => decryptToken(encryptedToken),
+      catch: (cause) =>
+        new GitHubCredentialDecryptionError({ integrationId, cause }),
+    }),
+};
 
 export function getTokenForIntegrationIdEffect(
   integrationId: string,
@@ -1399,6 +1439,7 @@ export function getTokenForIntegrationIdEffect(
   return resolveGitHubToken(
     { integrationId, organizationId: options?.organizationId },
     {
+      ...githubCredentialDependencies,
       findIntegration: (params) =>
         Effect.tryPromise({
           try: () =>
@@ -1426,35 +1467,6 @@ export function getTokenForIntegrationIdEffect(
               .then(([integration]) => integration),
           catch: (cause) =>
             new GitHubPersistenceError({ operation: "findIntegration", cause }),
-        }),
-      findInstallation: (recordId, organizationId) =>
-        Effect.tryPromise({
-          try: () =>
-            db
-              .select({ installationId: githubAppInstallations.installationId })
-              .from(githubAppInstallations)
-              .where(
-                and(
-                  eq(githubAppInstallations.id, recordId),
-                  eq(githubAppInstallations.organizationId, organizationId),
-                  eq(githubAppInstallations.enabled, true)
-                )
-              )
-              .limit(1)
-              .$withCache(false)
-              .then(([installation]) => installation),
-          catch: (cause) =>
-            new GitHubPersistenceError({
-              operation: "findInstallation",
-              cause,
-            }),
-        }),
-      createInstallationToken: createGitHubAppInstallationTokenEffect,
-      decryptToken: (encryptedToken, id) =>
-        Effect.try({
-          try: () => decryptToken(encryptedToken),
-          catch: (cause) =>
-            new GitHubCredentialDecryptionError({ integrationId: id, cause }),
         }),
     }
   );
