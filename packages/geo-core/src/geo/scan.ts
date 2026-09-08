@@ -15,6 +15,7 @@ import {
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
+  geoPersonas,
   geoPromptSequences,
   geoPrompts,
   geoSettings,
@@ -55,6 +56,7 @@ import {
   GEO_TRANSLATION_MAX_TOKENS,
 } from "../constants/geo";
 import { GEO_AI_OVERVIEW_ABSENT_ANSWER } from "../constants/geo-ai-overview";
+import { GEO_PERSONA_MAX_COUNT } from "../constants/geo-personas";
 import { GeoContentBillingService } from "../deps";
 import {
   geoJudgeResultSchema,
@@ -70,6 +72,7 @@ import type {
   GeoModelGateway,
   GeoPromptDefinition,
   GeoScanBatchOutcome,
+  GeoScanPlannedPersona,
   GeoScanPlannedSequence,
   GeoScanPlannedTask,
   GeoScanProjectContext,
@@ -146,7 +149,7 @@ import {
 } from "./scan-status";
 import { resolveScanZdrPolicy } from "./zdr-policy";
 
-const MAX_JUDGE_COMPETITORS = 10;
+export const MAX_JUDGE_COMPETITORS = 10;
 const GROUNDED_MAX_STEPS = 4;
 
 function sequencePromptId(sequenceId: string): string {
@@ -207,7 +210,7 @@ function droppedCheckOutcome(
   };
 }
 
-function normalizePosition(position: number | null): number | null {
+export function normalizePosition(position: number | null): number | null {
   if (position === null || !Number.isFinite(position)) {
     return null;
   }
@@ -474,7 +477,7 @@ function collectGroundedSources(
   return collected;
 }
 
-const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
+export const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
   function* (
     organizationId: string,
     engine: GeoGroundedEngine,
@@ -533,7 +536,7 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
   }
 );
 
-const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
+export const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   context: GeoCheckContext,
   promptText: string,
   answer: string
@@ -623,7 +626,7 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
   }));
 });
 
-const requireAnswerText = Effect.fn("geo.requireAnswerText")(function* (
+export const requireAnswerText = Effect.fn("geo.requireAnswerText")(function* (
   engine: string,
   promptId: string,
   language: string,
@@ -743,7 +746,7 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   return outcome;
 });
 
-function parseGeoClaimToken(
+export function parseGeoClaimToken(
   claimedAt: string
 ): Effect.Effect<Date, GeoScanError> {
   return Effect.suspend(() => {
@@ -1277,6 +1280,31 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
         ])
       : [];
 
+    const personaRows = yield* Effect.tryPromise({
+      try: () =>
+        db.query.geoPersonas.findMany({
+          columns: { id: true },
+          where: and(
+            eq(geoPersonas.projectId, settingsRow.projectId),
+            eq(geoPersonas.enabled, true)
+          ),
+          orderBy: [asc(geoPersonas.createdAt)],
+          limit: GEO_PERSONA_MAX_COUNT,
+        }),
+      catch: (cause) =>
+        new GeoScanError({ message: "Failed to load GEO personas", cause }),
+    });
+    const personas: GeoScanPlannedPersona[] = scanEnglish
+      ? personaRows.flatMap((persona) =>
+          groundedEngines.map(({ grounded, zdr }) => ({
+            personaId: persona.id,
+            engine: grounded.key,
+            groundedKey: grounded.key,
+            zdr,
+          }))
+        )
+      : [];
+
     const engines = [
       ...trackedEngines.map((entry) => entry.engine),
       ...groundedEngines.map((entry) => entry.grounded.key),
@@ -1296,6 +1324,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       promptCount: prompts.length,
       languages: settings.languages,
       tasks: tasks.length,
+      personas: personas.length,
     });
 
     const plan: GeoScanProjectPlan = {
@@ -1312,6 +1341,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       claimedAt: claimedAt.toISOString(),
       tasks: interleaveGeoScanItemsByKey(tasks, (task) => task.engine),
       sequences,
+      personas,
       promptCount: prompts.length,
       languages: settings.languages,
       engines,
@@ -1321,7 +1351,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
   }
 );
 
-const buildGeoScanCheckContext = Effect.fn("geo.buildScanCheckContext")(
+export const buildGeoScanCheckContext = Effect.fn("geo.buildScanCheckContext")(
   function* (context: GeoScanProjectContext) {
     const catalog = yield* loadGeoModelCatalog(context.organizationId);
     const checkContext: GeoCheckContext = {
@@ -1671,7 +1701,7 @@ export const finalizeGeoScanProject = Effect.fn("geo.finalizeScanProject")(
   }
 );
 
-function addTokenUsage(
+export function addTokenUsage(
   total: AgentTokenUsage,
   usage: {
     inputTokens?: number;
@@ -1688,7 +1718,7 @@ function addTokenUsage(
   };
 }
 
-const EMPTY_TOKEN_USAGE: AgentTokenUsage = {
+export const EMPTY_TOKEN_USAGE: AgentTokenUsage = {
   inputTokens: 0,
   outputTokens: 0,
   totalTokens: 0,
@@ -1696,7 +1726,7 @@ const EMPTY_TOKEN_USAGE: AgentTokenUsage = {
   cacheWriteTokens: 0,
 };
 
-function logGeoBillingFailure(
+export function logGeoBillingFailure(
   action: "release" | "confirm",
   projectId: string,
   runId: string,
