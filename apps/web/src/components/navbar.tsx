@@ -684,7 +684,10 @@ export function Navbar({ variant }: NavbarProps = {}) {
 
               <div className="flex flex-1 items-center justify-end gap-2 lg:gap-3">
                 <ThemeToggle />
-                <DesktopAuthActions isAuthenticated={isAuthenticated} />
+                <DesktopAuthActions
+                  isAuthenticated={isAuthenticated}
+                  isResolved={isResolved}
+                />
                 <button
                   aria-controls="mobile-navigation"
                   aria-expanded={isOpen}
@@ -723,7 +726,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
 }
 
 function MobileNav({ onNavigate }: { onNavigate: () => void }) {
-  const { isAuthenticated } = useDashboardSession();
+  const { isAuthenticated, isResolved } = useDashboardSession();
 
   return (
     <div className="flex flex-col gap-3">
@@ -774,7 +777,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
         })}
       </nav>
       <div className="flex flex-col gap-2 border-t border-[#1E1E1E14] pt-3 dark:border-white/10">
-        {isAuthenticated ? (
+        {isResolved && isAuthenticated ? (
           <Link
             className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
             href={AUTH_DASHBOARD_URL}
@@ -782,7 +785,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           >
             Dashboard
           </Link>
-        ) : (
+        ) : isResolved ? (
           <>
             <Link
               className="font-display rounded-md px-3 py-2 text-center text-sm tracking-[-0.015em] text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
@@ -808,7 +811,14 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
 const SIGNUP_BUTTON_CLASS =
   "corner-squircle inline-flex h-8 items-center gap-1.5 rounded-[1rem] bg-white ps-2.5 pe-1.5 font-display text-sm leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] shadow-[0_0_0_1px_#ececec,0_1px_2px_#28282814] outline-none transition-[opacity,transform,box-shadow] duration-fast ease-out hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.96] supports-[corner-shape:round]:rounded-[1.25rem] dark:bg-white";
 
-function DesktopAuthActions({ isAuthenticated }: NavbarAuthActionsProps) {
+function DesktopAuthActions({
+  isAuthenticated,
+  isResolved,
+}: NavbarAuthActionsProps) {
+  if (!isResolved) {
+    return <div aria-hidden="true" className="hidden h-8 lg:block" />;
+  }
+
   if (isAuthenticated) {
     return (
       <div className="hidden items-center gap-3 lg:flex">
