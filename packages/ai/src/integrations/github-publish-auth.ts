@@ -1,22 +1,21 @@
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
 
 import {
-  createGitHubAppInstallationTokenForRecord,
-  getTokenForIntegrationId,
+  GitHubAppRequiredForPublishError,
+  GitHubCredentialsMissingError,
+  GitHubPersistenceError,
+} from "../schemas/github-operations";
+import type { ResolveGitHubTokenParams } from "../types/github-operations";
+import { runGitHubEffect } from "../utils/run-github-effect";
+import {
+  createGitHubAppInstallationTokenForRecordEffect,
+  getTokenForIntegrationIdEffect,
   isGitHubAppConfigured,
   listGitHubAppInstallationsByOrganization,
 } from "./github";
-
-export class GitHubAppRequiredForPublishError extends Error {
-  readonly status = 401;
-
-  constructor() {
-    super("Connect the GitHub App so Notra can open pull requests as a bot");
-    this.name = "GitHubAppRequiredForPublishError";
-  }
-}
 
 function selectGitHubAppInstallationForOwner<
   T extends { accountLogin: string },
@@ -37,47 +36,94 @@ function selectGitHubAppInstallationForOwner<
  * commits and pull requests are authored by `{slug}[bot]`. Personal access
  * tokens stay available when the GitHub App is not configured.
  */
-export async function getGitHubPublishToken(
+export const getGitHubPublishTokenEffect = Effect.fn(
+  "GitHub.resolvePublishToken"
+)(function* (
   integrationId: string,
-  options?: { organizationId?: string }
+  options?: Pick<ResolveGitHubTokenParams, "organizationId">
 ) {
   if (!isGitHubAppConfigured()) {
-    return getTokenForIntegrationId(integrationId, options);
+    return yield* getTokenForIntegrationIdEffect(integrationId, options);
   }
 
-  const integration = await db.query.githubIntegrations.findFirst({
-    where: options?.organizationId
-      ? and(
-          eq(githubIntegrations.id, integrationId),
-          eq(githubIntegrations.organizationId, options.organizationId)
+  const integration = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({
+          githubAppInstallationId: githubIntegrations.githubAppInstallationId,
+          organizationId: githubIntegrations.organizationId,
+          owner: githubIntegrations.owner,
+        })
+        .from(githubIntegrations)
+        .where(
+          options?.organizationId
+            ? and(
+                eq(githubIntegrations.id, integrationId),
+                eq(githubIntegrations.organizationId, options.organizationId)
+              )
+            : eq(githubIntegrations.id, integrationId)
         )
-      : eq(githubIntegrations.id, integrationId),
-    columns: {
-      githubAppInstallationId: true,
-      organizationId: true,
-      owner: true,
-    },
+        .limit(1)
+        .$withCache(false)
+        .then(([record]) => record),
+    catch: (cause) =>
+      new GitHubPersistenceError({
+        operation: "findPublishIntegration",
+        cause,
+      }),
   });
 
   if (!integration) {
-    return null;
-  }
-
-  if (integration.githubAppInstallationId) {
-    return createGitHubAppInstallationTokenForRecord(
-      integration.githubAppInstallationId,
-      options
+    return yield* Effect.fail(
+      new GitHubCredentialsMissingError({ integrationId })
     );
   }
 
+  if (integration.githubAppInstallationId) {
+    return yield* createGitHubAppInstallationTokenForRecordEffect(
+      integration.githubAppInstallationId,
+      integration.organizationId
+    );
+  }
+
+  const installations = yield* Effect.tryPromise({
+    try: () =>
+      listGitHubAppInstallationsByOrganization(integration.organizationId),
+    catch: (cause) =>
+      new GitHubPersistenceError({
+        operation: "listPublishInstallations",
+        cause,
+      }),
+  });
   const installation = selectGitHubAppInstallationForOwner(
-    await listGitHubAppInstallationsByOrganization(integration.organizationId),
+    installations,
     integration.owner
   );
 
   if (!installation) {
-    throw new GitHubAppRequiredForPublishError();
+    return yield* Effect.fail(
+      new GitHubAppRequiredForPublishError({
+        organizationId: integration.organizationId,
+      })
+    );
   }
 
-  return createGitHubAppInstallationTokenForRecord(installation.id, options);
+  return yield* createGitHubAppInstallationTokenForRecordEffect(
+    installation.id,
+    integration.organizationId
+  );
+});
+
+export function getGitHubPublishToken(
+  integrationId: string,
+  options?: Pick<ResolveGitHubTokenParams, "organizationId">
+) {
+  return runGitHubEffect(
+    getGitHubPublishTokenEffect(integrationId, options).pipe(
+      Effect.catchTag("GitHubCredentialsMissingError", () =>
+        Effect.succeed(null)
+      ),
+      Effect.catchTag("GitHubRequestError", (error) => Effect.fail(error.cause))
+    )
+  );
 }

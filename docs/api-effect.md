@@ -82,6 +82,49 @@ The existing API service and GEO suites are not live provider or production
 end-to-end tests. The additional tests written during this Effect adoption
 are not included in the repository.
 
+## GitHub repository selection and token resolution
+
+The dashboard's repository-selection and publishing-authentication boundaries
+now use `runOrpcEffect`. Their programs live in
+`packages/ai/src/integrations/github-selection.ts` and `github-token.ts`, with
+explicit Effect dependencies and shared tagged errors in
+`packages/ai/src/schemas/github-operations.ts`. Token consumers retain their
+Promise entry points; repository listing and selection use the Effect entry
+points directly.
+
+Repository discovery completes before persistence. Selection changes, migration
+of existing records, and default output creation share one database transaction.
+Organization and repository row locks serialize selection updates, and installation
+rows are rechecked inside the transaction. These authoritative reads and token
+lookups bypass Drizzle's query cache. Repository-list cache invalidation happens
+after commit and is best-effort; it cannot report a saved selection as failed.
+
+Token resolution scopes installation access to the repository's organization and
+keeps missing credentials, missing installations, provider failures, persistence
+failures, and configuration/decryption errors distinct. Only transport boundaries
+choose the public error message. Neither database writes nor token creation are
+automatically retried. The PR branch/commit/reconciliation workflow remains
+Promise-based.
+
+Publishing prefers the configured GitHub App so commits and pull requests are
+authored by the bot. It uses the linked installation, or an enabled installation
+matching the repository owner in the same organization. A configured App with
+no matching installation prompts the user to connect it; PAT fallback is only
+available when the App is not configured. Publishing authentication uses the
+same typed credential resolver and uncached installation checks.
+
+Clone, repository and tool-context token entry points delegate to the same
+integration token resolver after their caller-specific access checks. Repository
+discovery is shared by the listing and selection programs; cache I/O, response
+decoding and GitHub requests have separate typed failures. Cache reads and writes
+remain required, while post-commit invalidation remains best-effort.
+
+`planGitHubRepositorySelection` computes identity matches and deselections from
+the rows locked by the transaction. Publishing recovery and pause eligibility
+live in `github-publish-policy.ts`; its oRPC adapter owns failure tracking and
+transport responses. Both repository-selection UI entry points use
+`useGitHubRepositorySelection` for fetching, account filtering and saving.
+
 ## Daily GEO scan reliability
 
 Durable scheduling and batch orchestration remain in the Workflow SDK; Effect
