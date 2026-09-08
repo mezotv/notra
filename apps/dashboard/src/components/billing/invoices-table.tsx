@@ -67,6 +67,7 @@ export function InvoicesTable({ invoices, plans }: InvoicesTableProps) {
         `${invoice.createdAt}-${invoice.total}-${index}`
       }
       height={invoices.length > 0 ? TABLE_MAX_HEIGHT : tableHeightFor(0)}
+      isRowClickable={(invoice) => Boolean(invoice.hostedInvoiceUrl)}
       onRowClick={(invoice) => {
         if (invoice.hostedInvoiceUrl) {
           window.open(

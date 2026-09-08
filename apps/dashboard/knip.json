@@ -5,7 +5,6 @@
     "@/*": ["./src/*"]
   },
   "ignore": ["src/**/*.test.ts"],
-  "ignoreDependencies": ["@tanstack/react-table"],
   "ignoreIssues": {
     "src/app/(dashboard)/**/constants/**/*.ts": ["exports"],
     "src/components/**/*.tsx": ["types"],

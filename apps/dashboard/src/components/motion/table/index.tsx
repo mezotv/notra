@@ -68,6 +68,7 @@ export function Table<T>({
   skeletonRows = 3,
   emptyState = "No data",
   onRowClick,
+  isRowClickable,
   renderRowContextMenu,
   onRowPointerEnter,
   isRowPinned,
@@ -452,7 +453,11 @@ export function Table<T>({
                       onActivate={activateRow}
                       onCellEdit={onCellEdit}
                       onDeactivate={deactivateRow}
-                      onRowClick={onRowClick}
+                      onRowClick={
+                        !isRowClickable || isRowClickable(entry.row)
+                          ? onRowClick
+                          : undefined
+                      }
                       onRowPointerEnter={onRowPointerEnter}
                       onToggleRow={toggleRow}
                       renderRowContextMenu={renderRowContextMenu}
