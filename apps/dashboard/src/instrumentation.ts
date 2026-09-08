@@ -32,9 +32,11 @@ export const onRequestError: typeof evlogInstrumentation.onRequestError =
     const [
       { captureServerException, flushPostHogServer },
       { getPostHogRequestContext },
+      { scheduleRequestErrorTelemetry },
     ] = await Promise.all([
       import("@notra/posthog/server"),
       import("@notra/posthog/request"),
+      import("@/utils/request-error-telemetry"),
     ]);
 
     const requestContext = getPostHogRequestContext({
@@ -54,5 +56,7 @@ export const onRequestError: typeof evlogInstrumentation.onRequestError =
       },
     });
     const { flushLogs } = await import("@notra/ai/evlog");
-    await Promise.all([flushPostHogServer(), flushLogs()]);
+    scheduleRequestErrorTelemetry(() =>
+      Promise.allSettled([flushPostHogServer(), flushLogs()])
+    );
   };
