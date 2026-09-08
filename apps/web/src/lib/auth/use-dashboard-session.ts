@@ -8,6 +8,7 @@ const SESSION_ENDPOINT =
   process.env.NODE_ENV === "development"
     ? "http://localhost:3000/api/session"
     : `${APP_URL}/api/session`;
+const SESSION_PROBE_TIMEOUT_MS = 4_000;
 
 export interface DashboardSessionState {
   isAuthenticated: boolean;
@@ -22,20 +23,27 @@ export function useDashboardSession(): DashboardSessionState {
 
   useEffect(() => {
     const controller = new AbortController();
+    let cancelled = false;
 
     fetch(SESSION_ENDPOINT, {
       credentials: "include",
-      signal: controller.signal,
+      signal: AbortSignal.any([
+        controller.signal,
+        AbortSignal.timeout(SESSION_PROBE_TIMEOUT_MS),
+      ]),
     })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
+        if (cancelled) {
+          return;
+        }
         setState({
           isAuthenticated: Boolean(data),
           isResolved: true,
         });
       })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+      .catch(() => {
+        if (cancelled) {
           return;
         }
         setState({
@@ -44,7 +52,10 @@ export function useDashboardSession(): DashboardSessionState {
         });
       });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   return state;
