@@ -12,8 +12,10 @@ export type DeferredDitheringProps = Pick<
   | "type"
   | "frame"
   | "fit"
+  | "maxPixelCount"
 > & {
   className?: string;
+  unmountOffscreen?: boolean;
 };
 
 export interface DitherVisibilityState {

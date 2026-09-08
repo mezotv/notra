@@ -8,6 +8,7 @@ import { ViewTransition } from "react";
 import type { BlogPostCardProps } from "~types/blog";
 
 import { DeferredDithering } from "@/components/deferred-dithering";
+import { BLOG_CARD_DITHER_MAX_PIXELS } from "@/constants/dithering";
 import { formatBlogDate } from "@/utils/blog";
 import { getBlogCardDither } from "@/utils/blog-card-dither";
 import { blogPostTitleTransitionName } from "@/utils/blog-view-transitions";
@@ -21,9 +22,11 @@ export function BlogPostCard({ item }: BlogPostCardProps) {
         colorBack="#00000000"
         colorFront="#9B7ACC33"
         fit="cover"
+        maxPixelCount={BLOG_CARD_DITHER_MAX_PIXELS}
         shape="wave"
         size={3}
         type="4x4"
+        unmountOffscreen
       />
       <Link className="relative z-10 flex flex-col gap-3" href={item.href}>
         <ViewTransition name={blogPostTitleTransitionName(item.slug)}>
