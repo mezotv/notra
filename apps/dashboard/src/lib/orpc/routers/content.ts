@@ -3,6 +3,7 @@ import {
   describeContentBillingDenial,
 } from "@notra/ai/billing/content-billing";
 import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
+import { getGitHubPublishToken } from "@notra/ai/integrations/github-publish-auth";
 import {
   getDecryptedLinearToken,
   getLinearIntegrationsByOrganization,
@@ -911,7 +912,7 @@ export const contentRouter = {
 
       try {
         const token = await authenticateGitHubPublish(() =>
-          getTokenForIntegrationId(integration.id, {
+          getGitHubPublishToken(integration.id, {
             organizationId: input.organizationId,
           })
         );
@@ -955,7 +956,7 @@ export const contentRouter = {
         if (error instanceof GitHubContentPublishError) {
           const failureKind = classifyGitHubPublishFailure(error.cause);
           let publishingPaused = false;
-          if (failureKind !== "rate_limit") {
+          if (failureKind !== "rate_limit" && failureKind !== "app_required") {
             try {
               const pauseResult = await recordGitHubPublishFailure({
                 organizationId: input.organizationId,
@@ -974,12 +975,19 @@ export const contentRouter = {
           }
           if (
             publishingPaused &&
+            failureKind !== "app_required" &&
             failureKind !== "authentication" &&
             failureKind !== "permissions"
           ) {
             throw forbidden(
               "GitHub content publishing was paused after repeated failures",
               { code: "github_content_publishing_paused" }
+            );
+          }
+          if (failureKind === "app_required") {
+            throw forbidden(
+              "Connect the GitHub App so Notra can open pull requests as a bot.",
+              { code: "github_authentication_required" }
             );
           }
           if (failureKind === "authentication") {

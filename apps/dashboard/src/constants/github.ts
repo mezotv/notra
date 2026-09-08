@@ -50,6 +50,10 @@ export const GITHUB_PULL_REQUEST_BODY_SECTION_START =
 export const GITHUB_PULL_REQUEST_BODY_SECTION_END =
   "<!-- notra:content:end -->";
 
+/** GitHub rejects issue and pull request bodies longer than this. */
+export const GITHUB_PULL_REQUEST_BODY_MAX_LENGTH = 65_536;
+
+/** GitHub App installation tokens author this commit as `{slug}[bot]`. */
 export const GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION = `
   mutation CreateCommitOnBranch($input: CreateCommitOnBranchInput!) {
     createCommitOnBranch(input: $input) {
