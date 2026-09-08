@@ -1,6 +1,13 @@
+import type { Effect } from "effect";
 import type { getWorld } from "workflow/runtime";
 
 export type MonitoringWorld = Awaited<ReturnType<typeof getWorld>>;
+
+export type CollectWorkflowMonitoring = (
+  world: MonitoringWorld,
+  budgetMs?: number,
+  sweepId?: string
+) => Effect.Effect<WorkflowMonitoringSummary>;
 
 export interface WorkflowTelemetryEvent extends Record<string, unknown> {
   event:

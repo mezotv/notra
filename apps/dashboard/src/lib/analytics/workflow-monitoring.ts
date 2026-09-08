@@ -7,13 +7,14 @@ import {
   WORKFLOW_MONITORING,
 } from "@/constants/workflow-monitoring";
 import type {
+  CollectWorkflowMonitoring,
   MonitoringWorld,
   WorkflowMonitoringSummary,
 } from "@/types/workflow-monitoring";
 import { readMonitoringOperation } from "@/utils/monitoring-operation";
 import { logWorkflowTelemetry } from "@/utils/workflow-telemetry";
 
-export const collectWorkflowMonitoring = Effect.fn(
+export const collectWorkflowMonitoring: CollectWorkflowMonitoring = Effect.fn(
   "monitoring.collectWorkflows"
 )(function* (
   world: MonitoringWorld,
