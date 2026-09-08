@@ -925,7 +925,7 @@ export interface TrackBrandButtonProps {
   className?: string;
 }
 
-export interface ShareOfVoiceOtherSheetProps {
+export interface ShareOfVoiceBrandsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   other: ShareOfVoiceRow;
@@ -938,7 +938,18 @@ export interface ShareOfVoiceOtherSheetProps {
   onTrackBrand?: (brand: string) => void;
 }
 
-export interface ShareOfVoiceDonutProps {
+export type ShareOfVoiceBrandFilter = "all" | "tracked" | "discovered";
+
+export interface ShareOfVoiceBrandRowProps {
+  row: ShareOfVoiceRow;
+  own: boolean;
+  competitors?: GeoCompetitor[];
+  onOpen?: (row: ShareOfVoiceRow) => void;
+  onPrefetch?: (row: ShareOfVoiceRow) => void;
+  onTrack?: (brand: string) => void;
+}
+
+export interface ShareOfVoiceChartProps {
   points: GeoCompetitorSharePoint[];
   competitors?: GeoCompetitor[];
   limit?: number;
@@ -948,6 +959,19 @@ export interface ShareOfVoiceDonutProps {
   companyName?: string | null;
   aliases?: readonly string[];
   organizationId?: string;
+}
+
+export interface ShareOfVoiceRankingRow extends ShareOfVoiceRow {
+  rank: number | null;
+  own: boolean;
+}
+
+export interface ShareOfVoiceRankingRowProps {
+  row: ShareOfVoiceRankingRow;
+  competitors?: GeoCompetitor[];
+  onOpen?: (row: ShareOfVoiceRow) => void;
+  onPrefetch?: (row: ShareOfVoiceRow) => void;
+  onTrack?: (brand: string) => void;
 }
 
 export interface CompetitorShareCardProps {

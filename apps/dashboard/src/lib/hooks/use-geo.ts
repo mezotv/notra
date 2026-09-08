@@ -71,7 +71,6 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { localStorageKeys } from "@/constants/storage";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
@@ -430,9 +429,10 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
 function geoCompetitorRowHref(
   organizationSlug: string,
   brand: string,
-  projectId?: string
+  projectId?: string,
+  aggregate = false
 ): string {
-  if (brand === CHART_OTHER_SLICE_LABEL) {
+  if (aggregate) {
     return withGeoProject(`/${organizationSlug}/geo/competitors`, projectId);
   }
   return withGeoProject(
@@ -454,19 +454,23 @@ export function useGeoCompetitorRowNavigation(
   const { projectId } = useGeoProjectScope();
   const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
 
-  const openRow = (brand: string) => {
+  const openRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.push(geoCompetitorRowHref(organizationSlug, brand, projectId));
+    router.push(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
   };
 
-  const prefetchRow = (brand: string) => {
+  const prefetchRow = (brand: string, aggregate = false) => {
     if (!organizationSlug) {
       return;
     }
-    router.prefetch(geoCompetitorRowHref(organizationSlug, brand, projectId));
-    if (brand !== CHART_OTHER_SLICE_LABEL) {
+    router.prefetch(
+      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
+    );
+    if (!aggregate) {
       prefetchDetail(brand);
     }
   };

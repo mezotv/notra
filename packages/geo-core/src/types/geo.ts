@@ -1214,6 +1214,8 @@ export type GeoZdrMode = "required" | "preferred" | "none";
 export type GeoZdrEntitlement = "entitled" | "not_entitled" | "unknown";
 
 export interface ShareOfVoiceRow {
+  id: string;
+  kind: "brand" | "aggregate";
   brand: string;
   mentions: number;
   share: number;
