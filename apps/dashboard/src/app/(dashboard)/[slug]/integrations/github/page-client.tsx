@@ -30,6 +30,7 @@ import {
 } from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
+import type { GitHubAccountsSectionProps } from "@/types/integrations/github";
 
 import {
   GitHubIntegrationSkeleton,
@@ -200,6 +201,67 @@ function LegacyGitHubIntegrationsSection({
   );
 }
 
+function GitHubAccountsSection({
+  accounts,
+  repositories,
+  selectedRepositoryIds,
+  isLoading,
+  isError,
+  onConnect,
+  onRetry,
+  onOpenRepositories,
+  onDisconnect,
+}: GitHubAccountsSectionProps) {
+  if (isLoading) {
+    return <GitHubIntegrationSkeleton />;
+  }
+  if (isError) {
+    return (
+      <EmptyState
+        title="Unable to load the GitHub connection"
+        description="Retry to load your GitHub App installation and repositories."
+        action={
+          <Button onClick={onRetry} variant="outline">
+            Retry
+          </Button>
+        }
+      />
+    );
+  }
+  if (accounts.length === 0) {
+    return (
+      <EmptyState
+        action={
+          <Button onClick={onConnect} variant="outline">
+            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+            Connect GitHub
+          </Button>
+        }
+        description="Install the Notra GitHub App to get started."
+        preview={<EmptyStateCardsPreview count={2} variant="integration" />}
+        title="No GitHub account connected"
+      />
+    );
+  }
+  return (
+    <div className="grid gap-4">
+      {accounts.map((account) => (
+        <GitHubAccountCard
+          account={account}
+          key={account.id}
+          onAddRepositories={() => onOpenRepositories(account.id)}
+          onDisconnect={() => onDisconnect(account.id)}
+          repositories={repositories.filter(
+            (repository) =>
+              repository.owner.toLowerCase() === account.login.toLowerCase()
+          )}
+          selectedRepositoryIds={selectedRepositoryIds}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, isLoading: isLoadingOrganizations } =
     useOrganizationsContext();
@@ -337,54 +399,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     saveRepositoriesMutation.mutate(repositoryIds);
   };
 
-  let githubAppContent = (
-    <EmptyState
-      action={
-        <Button onClick={handleOpenConnect} variant="outline">
-          <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-          Connect GitHub
-        </Button>
-      }
-      description="Install the Notra GitHub App to get started."
-      preview={<EmptyStateCardsPreview count={2} variant="integration" />}
-      title="No GitHub account connected"
-    />
-  );
-
-  if (isLoading) {
-    githubAppContent = <GitHubIntegrationSkeleton />;
-  } else if (githubAppQuery.isError) {
-    githubAppContent = (
-      <EmptyState
-        title="Unable to load the GitHub connection"
-        description="Retry to load your GitHub App installation and repositories."
-        action={
-          <Button onClick={() => githubAppQuery.refetch()} variant="outline">
-            Retry
-          </Button>
-        }
-      />
-    );
-  } else if (isConnected) {
-    githubAppContent = (
-      <div className="grid gap-4">
-        {accounts.map((account) => (
-          <GitHubAccountCard
-            account={account}
-            key={account.id}
-            onAddRepositories={() => handleOpenRepositories(account.id)}
-            onDisconnect={() => disconnectMutation.mutate(account.id)}
-            repositories={repositories.filter(
-              (repository) =>
-                repository.owner.toLowerCase() === account.login.toLowerCase()
-            )}
-            selectedRepositoryIds={selectedRepositoryIds}
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -408,7 +422,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </Button>
         </div>
 
-        {githubAppContent}
+        <GitHubAccountsSection
+          accounts={accounts}
+          repositories={repositories}
+          selectedRepositoryIds={selectedRepositoryIds}
+          isLoading={isLoading}
+          isError={githubAppQuery.isError}
+          onRetry={() => githubAppQuery.refetch()}
+          onConnect={handleOpenConnect}
+          onOpenRepositories={handleOpenRepositories}
+          onDisconnect={disconnectMutation.mutate}
+        />
 
         <LegacyGitHubIntegrationsSection
           integrations={legacyIntegrations}

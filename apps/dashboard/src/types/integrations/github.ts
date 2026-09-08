@@ -40,6 +40,18 @@ export interface GitHubAppRepository {
   defaultBranch: string;
 }
 
+export interface GitHubAccountsSectionProps {
+  accounts: GitHubAppAccount[];
+  repositories: GitHubAppRepository[];
+  selectedRepositoryIds: string[];
+  isLoading: boolean;
+  isError: boolean;
+  onConnect: () => void;
+  onRetry: () => void;
+  onOpenRepositories: (accountId: string) => void;
+  onDisconnect: (accountId: string) => void;
+}
+
 export type GitHubInstallFailureReason =
   | "account-connection-incomplete"
   | "install-start-failed";

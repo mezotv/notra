@@ -7,7 +7,7 @@ import {
   organizations,
   repositoryOutputs,
 } from "@notra/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import { customAlphabet } from "nanoid";
 
@@ -92,12 +92,18 @@ export const saveGitHubRepositorySelection = Effect.fn(
             );
         }
 
-        for (const {
-          repository,
-          installationRecordId,
-          integrationId,
-        } of selections) {
-          const values = {
+        if (selections.length === 0) {
+          return;
+        }
+        const prepared = selections.map((selection) => ({
+          ...selection,
+          id: selection.integrationId ?? nanoid(),
+        }));
+        const rows = prepared.map(
+          ({ repository, installationRecordId, integrationId, id }) => ({
+            id,
+            organizationId: params.organizationId,
+            createdByUserId: params.userId,
             displayName: repository.fullName,
             owner: repository.owner,
             repo: repository.name,
@@ -108,53 +114,62 @@ export const saveGitHubRepositorySelection = Effect.fn(
             githubRepositoryPrivate: repository.private,
             repositoryEnabled: true,
             enabled: true,
-          };
-          if (integrationId) {
-            await tx
-              .update(githubIntegrations)
-              .set(values)
-              .where(
-                and(
-                  eq(githubIntegrations.organizationId, params.organizationId),
-                  eq(githubIntegrations.id, integrationId)
-                )
-              );
-            continue;
-          }
-
-          const id = nanoid();
-          await tx.insert(githubIntegrations).values({
-            ...values,
-            id,
-            organizationId: params.organizationId,
-            createdByUserId: params.userId,
-            encryptedWebhookSecret: encryptToken(
-              randomBytes(32).toString("hex")
+            encryptedWebhookSecret: integrationId
+              ? null
+              : encryptToken(randomBytes(32).toString("hex")),
+          })
+        );
+        await tx
+          .insert(githubIntegrations)
+          .values(rows)
+          .onConflictDoUpdate({
+            target: githubIntegrations.id,
+            set: {
+              displayName: sql`excluded.display_name`,
+              owner: sql`excluded.owner`,
+              repo: sql`excluded.repo`,
+              defaultBranch: sql`excluded.default_branch`,
+              encryptedToken: null,
+              githubAppInstallationId: sql`excluded.github_app_installation_id`,
+              githubRepositoryId: sql`excluded.github_repository_id`,
+              githubRepositoryPrivate: sql`excluded.github_repository_private`,
+              repositoryEnabled: true,
+              enabled: true,
+            },
+            setWhere: eq(
+              githubIntegrations.organizationId,
+              params.organizationId
             ),
           });
-          await tx.insert(repositoryOutputs).values([
-            {
-              id: nanoid(),
-              repositoryId: id,
-              outputType: "changelog",
-              enabled: true,
-              config: null,
-            },
-            {
-              id: nanoid(),
-              repositoryId: id,
-              outputType: "blog_post",
-              enabled: false,
-              config: null,
-            },
-            {
-              id: nanoid(),
-              repositoryId: id,
-              outputType: "twitter_post",
-              enabled: false,
-              config: null,
-            },
-          ]);
+        const outputs = prepared.flatMap(({ id, integrationId }) =>
+          integrationId
+            ? []
+            : [
+                {
+                  id: nanoid(),
+                  repositoryId: id,
+                  outputType: "changelog",
+                  enabled: true,
+                  config: null,
+                },
+                {
+                  id: nanoid(),
+                  repositoryId: id,
+                  outputType: "blog_post",
+                  enabled: false,
+                  config: null,
+                },
+                {
+                  id: nanoid(),
+                  repositoryId: id,
+                  outputType: "twitter_post",
+                  enabled: false,
+                  config: null,
+                },
+              ]
+        );
+        if (outputs.length > 0) {
+          await tx.insert(repositoryOutputs).values(outputs);
         }
       }),
     catch: (cause) =>
