@@ -24,7 +24,6 @@ import {
   geoAgentReadinessReports,
   geoPromptSuggestions,
   geoPrompts,
-  projects,
 } from "@notra/db/schema";
 import { GEO_SAMPLE_DATA_ENABLED } from "@notra/geo-core/constants/geo";
 import {
@@ -600,20 +599,6 @@ function getGscScheduleIdsForDisconnect(
       ].filter((scheduleId): scheduleId is string => scheduleId !== null)
     ),
   ];
-}
-
-async function requireDefaultProjectId(
-  organizationId: string
-): Promise<string> {
-  const row = await db.query.projects.findFirst({
-    columns: { id: true },
-    where: eq(projects.organizationId, organizationId),
-    orderBy: [asc(projects.createdAt)],
-  });
-  if (!row) {
-    throw badRequest("Configure your brand tracking settings first");
-  }
-  return row.id;
 }
 
 async function acceptSuggestionInTx(
@@ -1915,7 +1900,10 @@ export const geoRouter = {
         throw notFound("Suggestion not found");
       }
 
-      const projectId = await requireDefaultProjectId(input.organizationId);
+      const { projectId } = await runOrpcEffect(
+        requireGeoProject(input),
+        toGeoOrpcError
+      );
       const accepted = await db.transaction((tx) =>
         acceptSuggestionInTx(tx, input.organizationId, projectId, suggestion)
       );
@@ -1967,7 +1955,10 @@ export const geoRouter = {
         return { accepted: 0 };
       }
 
-      const projectId = await requireDefaultProjectId(input.organizationId);
+      const { projectId } = await runOrpcEffect(
+        requireGeoProject(input),
+        toGeoOrpcError
+      );
       await db.transaction(async (tx) => {
         for (const row of rows) {
           await acceptSuggestionInTx(tx, input.organizationId, projectId, row);

@@ -1113,10 +1113,15 @@ function useInvalidateSuggestionQueries(organizationId: string) {
 }
 
 export function useGeoSuggestionAccept(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const invalidate = useInvalidateSuggestionQueries(organizationId);
   return useMutation({
     mutationFn: (input: GeoSuggestionIdInput) =>
-      dashboardOrpc.geo.suggestionAccept.call({ ...input, organizationId }),
+      dashboardOrpc.geo.suggestionAccept.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
       await invalidate();
       toast.success("Prompt added to tracking");
@@ -1128,10 +1133,14 @@ export function useGeoSuggestionAccept(organizationId: string) {
 }
 
 export function useGeoSuggestionsAcceptAll(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const invalidate = useInvalidateSuggestionQueries(organizationId);
   return useMutation({
     mutationFn: () =>
-      dashboardOrpc.geo.suggestionsAcceptAll.call({ organizationId }),
+      dashboardOrpc.geo.suggestionsAcceptAll.call({
+        organizationId,
+        projectId,
+      }),
     onSuccess: async (result) => {
       await invalidate();
       toast.success(
