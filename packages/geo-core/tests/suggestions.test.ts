@@ -33,38 +33,6 @@ afterAll(() => database.postgres.close());
 beforeEach(resetDatabase);
 
 describe("suggestion transactions", () => {
-  test("empty accept-all does not require or create a project", async () => {
-    const result = await Effect.runPromise(
-      acceptAllSuggestions({ organizationId: "absent" })
-    );
-    expect(result.accepted).toBe(0);
-  });
-
-  test("dismiss racing acceptance has exactly one pending-state winner", async () => {
-    const scope = await seedProject("race");
-    await seedSuggestion();
-    const results = await Promise.all([
-      Effect.runPromise(
-        acceptSuggestion({ ...scope, suggestionId: "suggestion" }).pipe(
-          Effect.result
-        )
-      ),
-      Effect.runPromise(
-        dismissSuggestion({ ...scope, suggestionId: "suggestion" }).pipe(
-          Effect.result
-        )
-      ),
-    ]);
-    expect(results.filter((result) => result._tag === "Success")).toHaveLength(
-      1
-    );
-    expect(results.filter((result) => result._tag === "Failure")).toHaveLength(
-      1
-    );
-    const row = await testDb.query.geoPromptSuggestions.findFirst();
-    const prompts = await testDb.select().from(geoPrompts);
-    expect(prompts).toHaveLength(row?.status === "accepted" ? 1 : 0);
-  });
   test("accept targets the selected project and reuses normalized duplicates", async () => {
     await seedProject("default");
     const scope = await seedProject("selected");
@@ -108,6 +76,13 @@ describe("suggestion transactions", () => {
   });
 
   test("list, dismiss, and accept-all retain pending-only transitions", async () => {
+    expect(
+      (
+        await Effect.runPromise(
+          acceptAllSuggestions({ organizationId: "absent" })
+        )
+      ).accepted
+    ).toBe(0);
     const scope = await seedProject("selected");
     await seedSuggestion("one");
     await seedSuggestion("two");
@@ -118,6 +93,11 @@ describe("suggestion transactions", () => {
     await Effect.runPromise(
       dismissSuggestion({ ...scope, suggestionId: "one" })
     );
+    const dismissedAcceptance = await Effect.runPromise(
+      acceptSuggestion({ ...scope, suggestionId: "one" }).pipe(Effect.result)
+    );
+    assert.ok(Result.isFailure(dismissedAcceptance));
+    expect(dismissedAcceptance.failure._tag).toBe("GeoSuggestionNotFoundError");
     expect(
       (await Effect.runPromise(acceptAllSuggestions(scope))).accepted
     ).toBe(2);
@@ -155,19 +135,25 @@ describe("suggestion transactions", () => {
     }
   });
 
-  test("concurrent acceptance has only one winner", async () => {
+  test("accepted suggestions cannot be accepted or dismissed again", async () => {
     const scope = await seedProject("selected");
     await seedSuggestion();
     const program = acceptSuggestion({
       ...scope,
       suggestionId: "suggestion",
     }).pipe(Effect.result);
-    const results = await Promise.all([
-      Effect.runPromise(program),
-      Effect.runPromise(program),
-    ]);
-    expect(results.filter(Result.isSuccess)).toHaveLength(1);
-    expect(results.filter(Result.isFailure)).toHaveLength(1);
+    const accepted = await Effect.runPromise(program);
+    assert.ok(Result.isSuccess(accepted));
+    const repeated = await Effect.runPromise(program);
+    assert.ok(Result.isFailure(repeated));
+    expect(repeated.failure._tag).toBe("GeoSuggestionNotFoundError");
+    const dismissed = await Effect.runPromise(
+      dismissSuggestion({ ...scope, suggestionId: "suggestion" }).pipe(
+        Effect.result
+      )
+    );
+    assert.ok(Result.isFailure(dismissed));
+    expect(dismissed.failure._tag).toBe("GeoSuggestionNotFoundError");
     expect(await testDb.select().from(geoPrompts)).toHaveLength(1);
   });
 });

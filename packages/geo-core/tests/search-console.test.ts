@@ -40,19 +40,6 @@ afterAll(() => database.postgres.close());
 beforeEach(resetDatabase);
 
 describe("Search Console Effect sync", () => {
-  test("site selection commits the chosen site only after successful generation", async () => {
-    const integration = await seedGsc();
-    const result = await Effect.runPromise(
-      withGscServices(
-        selectGscSiteAndSyncSuggestions(integration, "https://new.example")
-      )
-    );
-    expect(result.status).toBe("completed");
-    expect(
-      (await testDb.query.googleSearchConsoleIntegrations.findFirst())?.siteUrl
-    ).toBe("https://new.example");
-  });
-
   test("disconnecting and unselected integrations skip generation", async () => {
     await seedGsc();
     const models = {
@@ -119,10 +106,12 @@ describe("Search Console Effect sync", () => {
     ).toEqual({ status: "skipped", reason: "reauth_required" });
   });
 
-  test("success atomically replaces pending suggestions and stamps sync", async () => {
-    await seedGsc();
+  test("site selection replaces pending suggestions and saves the site and sync time", async () => {
+    const integration = await seedGsc();
     const outcome = await Effect.runPromise(
-      withGscServices(syncGscSuggestions("org-test"))
+      withGscServices(
+        selectGscSiteAndSyncSuggestions(integration, "https://new.example")
+      )
     );
     expect(outcome).toEqual({
       status: "completed",
@@ -136,6 +125,9 @@ describe("Search Console Effect sync", () => {
       (await testDb.query.googleSearchConsoleIntegrations.findFirst())
         ?.lastSyncedAt
     ).not.toBeNull();
+    expect(
+      (await testDb.query.googleSearchConsoleIntegrations.findFirst())?.siteUrl
+    ).toBe("https://new.example");
   });
 
   test("integration changed during generation cannot replace pending rows", async () => {

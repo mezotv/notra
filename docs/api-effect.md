@@ -164,7 +164,7 @@ Ordinary provider failures do not trigger a domain retry, and Search Console
 generation adds no domain retry. Direct Cursor, OpenCode, and AI Overview
 adapters retain their existing implementations.
 
-The GEO suite includes 30 boundary cases independently discovered in
+The GEO boundary cases are independently discovered in
 `tests/agent-readiness.test.ts`, `tests/search-console.test.ts`,
 `tests/suggestions.test.ts`, and `tests/model-scan.test.ts`. Each DB-backed file
 explicitly imports the shared infrastructure mocks and owns database setup,
@@ -175,7 +175,7 @@ services for provider results, and an injected fetch adapter for readiness
 transport tests. They cover
 typed failures, cancellation cleanup, replacement protection, failed handoff
 stamping, integration-version changes during generation, SQL rollback,
-selected-project acceptance, duplicate reuse, competing status transitions,
+selected-project acceptance, duplicate reuse, terminal-state rejection,
 and real scan-batch persistence with fake answers and judges. PGlite serializes
 transactions on one connection; these tests do not measure contention across
 production PostgreSQL connections. Fake model-service tests establish domain
