@@ -10,11 +10,20 @@ export interface WorkflowTelemetryEvent extends Record<string, unknown> {
     | "job.snapshot"
     | "job.step.snapshot"
     | "monitoring.sweep.completed"
+    | "monitoring.operation.failed"
     | "backend.dependency.checked";
   outcome?: "success" | "error";
   runId?: string;
   organizationId?: string | null;
   projectId?: string | null;
+}
+
+export interface MonitoringOperationInput {
+  operation: "workflow.world" | "workflow.runs.list" | "workflow.steps.list";
+  timeoutMs: number;
+  sweepId?: string;
+  runId?: string;
+  jobStatus?: string;
 }
 
 export interface WorkflowMonitoringSummary {

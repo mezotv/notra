@@ -1,38 +1,47 @@
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { sql } from "drizzle-orm";
+import { Effect } from "effect";
 
-import { withMonitoringTimeout } from "@/utils/monitoring-timeout";
+import { WORKFLOW_MONITORING } from "@/constants/workflow-monitoring";
 import { logWorkflowTelemetry } from "@/utils/workflow-telemetry";
 
-async function checkDependency(
+const checkDependency = Effect.fn("monitoring.checkDependency")(function* (
   dependency: string,
   check: () => Promise<unknown>
-): Promise<void> {
+) {
   const startedAt = performance.now();
-  try {
-    await withMonitoringTimeout(check());
-    logWorkflowTelemetry({
-      event: "backend.dependency.checked",
-      dependency,
-      outcome: "success",
-      durationMs: Math.round(performance.now() - startedAt),
-    });
-  } catch (error) {
-    logWorkflowTelemetry({
-      event: "backend.dependency.checked",
-      dependency,
-      outcome: "error",
-      errorName: error instanceof Error ? error.name : "UnknownError",
-      durationMs: Math.round(performance.now() - startedAt),
-    });
-  }
-}
+  yield* Effect.tryPromise({ try: check, catch: (error) => error }).pipe(
+    Effect.timeout(WORKFLOW_MONITORING.operationTimeoutMs),
+    Effect.match({
+      onSuccess: () =>
+        logWorkflowTelemetry({
+          event: "backend.dependency.checked",
+          dependency,
+          outcome: "success",
+          durationMs: Math.round(performance.now() - startedAt),
+        }),
+      onFailure: (error) =>
+        logWorkflowTelemetry({
+          event: "backend.dependency.checked",
+          dependency,
+          outcome: "error",
+          errorName: error instanceof Error ? error.name : "UnknownError",
+          durationMs: Math.round(performance.now() - startedAt),
+        }),
+    })
+  );
+});
 
-export async function checkBackendHealth(): Promise<void> {
-  const client = redis;
-  await Promise.all([
-    checkDependency("postgres", async () => db.execute(sql`select 1`)),
-    ...(client ? [checkDependency("redis", () => client.ping())] : []),
-  ]);
-}
+export const checkBackendHealth = Effect.fn("monitoring.checkBackendHealth")(
+  function* () {
+    const client = redis;
+    yield* Effect.all(
+      [
+        checkDependency("postgres", async () => db.execute(sql`select 1`)),
+        ...(client ? [checkDependency("redis", () => client.ping())] : []),
+      ],
+      { concurrency: "unbounded", discard: true }
+    );
+  }
+);
