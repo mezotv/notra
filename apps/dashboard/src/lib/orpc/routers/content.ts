@@ -2,7 +2,11 @@ import {
   checkContentBilling,
   describeContentBillingDenial,
 } from "@notra/ai/billing/content-billing";
-import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
+import {
+  getGitHubPublishToken,
+  getTokenForIntegrationId,
+  GitHubAppRequiredForPublishError,
+} from "@notra/ai/integrations/github";
 import {
   getDecryptedLinearToken,
   getLinearIntegrationsByOrganization,
@@ -911,7 +915,7 @@ export const contentRouter = {
 
       try {
         const token = await authenticateGitHubPublish(() =>
-          getTokenForIntegrationId(integration.id, {
+          getGitHubPublishToken(integration.id, {
             organizationId: input.organizationId,
           })
         );
@@ -950,6 +954,16 @@ export const contentRouter = {
         if (error instanceof GitHubRepositoryEmptyError) {
           throw badRequest(
             "Initialize the GitHub repository with a first commit before publishing"
+          );
+        }
+        if (
+          error instanceof GitHubAppRequiredForPublishError ||
+          (error instanceof GitHubContentPublishError &&
+            error.cause instanceof GitHubAppRequiredForPublishError)
+        ) {
+          throw forbidden(
+            "Connect the GitHub App so Notra can open pull requests as a bot.",
+            { code: "github_authentication_required" }
           );
         }
         if (error instanceof GitHubContentPublishError) {

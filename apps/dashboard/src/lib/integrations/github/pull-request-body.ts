@@ -1,4 +1,5 @@
 import {
+  GITHUB_PULL_REQUEST_BODY_MAX_LENGTH,
   GITHUB_PULL_REQUEST_BODY_SECTION_END,
   GITHUB_PULL_REQUEST_BODY_SECTION_START,
 } from "@/constants/github";
@@ -13,6 +14,11 @@ const OPEN_IN_NOTRA_BADGE_PATHS = {
   light: "/badges/open-in-notra-light.svg",
 } as const;
 
+const PULL_REQUEST_BODY_TRUNCATION_NOTICE =
+  "_Truncated to fit GitHub's pull request description limit. The full draft is in the committed file._";
+
+const LEADING_HEADING_REGEX = /^#\s+\S/;
+
 export type { OpenInNotraBadgeUrls };
 
 export interface BuildContentPullRequestBodyParams {
@@ -21,6 +27,10 @@ export interface BuildContentPullRequestBodyParams {
   contentUrl?: string;
   /** Absolute URLs of the "Open in Notra" badge images per color scheme. */
   badgeUrls?: OpenInNotraBadgeUrls;
+  /** Draft markdown committed to the pull request. */
+  markdown?: string;
+  /** Content title, used as an H1 when the markdown body has none. */
+  title?: string;
 }
 
 function trimTrailingSlash(url: string) {
@@ -68,34 +78,104 @@ function renderOpenInNotraButton(
   ].join("");
 }
 
-function buildManagedContent({
-  contentType,
-  contentUrl,
-  badgeUrls,
-}: BuildContentPullRequestBodyParams) {
+function draftSummary(contentType: GitHubPublishContentType) {
   const label = contentType === "changelog" ? "changelog" : "blog post";
-  const summary = `Draft ${label} generated and published with Notra.`;
-
-  if (!contentUrl) {
-    return summary;
-  }
-
-  const button = badgeUrls
-    ? renderOpenInNotraButton(contentUrl, badgeUrls)
-    : `[Open in Notra](${contentUrl})`;
-
-  return `${summary}\n\n${button}`;
+  return `Draft ${label} generated and published with Notra.`;
 }
 
-export function buildContentPullRequestBody(
+function renderOpenInNotraLink(params: BuildContentPullRequestBodyParams) {
+  if (!params.contentUrl) {
+    return "";
+  }
+
+  return params.badgeUrls
+    ? renderOpenInNotraButton(params.contentUrl, params.badgeUrls)
+    : `[Open in Notra](${params.contentUrl})`;
+}
+
+function joinParagraphs(parts: string[]) {
+  return parts.filter((part) => part.length > 0).join("\n\n");
+}
+
+/**
+ * Older pull requests only had this summary (and later the Open in Notra
+ * button). Keep generating it so republishing can still find and replace
+ * unmarked legacy bodies.
+ */
+function buildManagedIntro(params: BuildContentPullRequestBodyParams) {
+  return joinParagraphs([
+    draftSummary(params.contentType),
+    renderOpenInNotraLink(params),
+  ]);
+}
+
+function neutralizeManagedSectionMarkers(markdown: string) {
+  return markdown
+    .replaceAll(
+      GITHUB_PULL_REQUEST_BODY_SECTION_START,
+      "<!-- notra-content:start -->"
+    )
+    .replaceAll(
+      GITHUB_PULL_REQUEST_BODY_SECTION_END,
+      "<!-- notra-content:end -->"
+    );
+}
+
+function formatContentForPullRequest(
   params: BuildContentPullRequestBodyParams
 ) {
-  const managedContent = buildManagedContent(params);
+  const body = neutralizeManagedSectionMarkers(params.markdown?.trim() ?? "");
+  if (!body) {
+    return "";
+  }
+
+  const title = params.title?.replace(/\s+/g, " ").trim() ?? "";
+  const firstLine = body.split(/\r?\n/, 1)[0] ?? "";
+  if (!title || LEADING_HEADING_REGEX.test(firstLine)) {
+    return body;
+  }
+
+  return `# ${title}\n\n${body}`;
+}
+
+function wrapManagedSection(managedContent: string) {
   return [
     GITHUB_PULL_REQUEST_BODY_SECTION_START,
     managedContent,
     GITHUB_PULL_REQUEST_BODY_SECTION_END,
   ].join("\n");
+}
+
+function buildManagedContent(params: BuildContentPullRequestBodyParams) {
+  const article = formatContentForPullRequest(params);
+  if (!article) {
+    return buildManagedIntro(params);
+  }
+
+  return joinParagraphs([renderOpenInNotraLink(params), article]);
+}
+
+function clampPullRequestBody(body: string) {
+  if (body.length <= GITHUB_PULL_REQUEST_BODY_MAX_LENGTH) {
+    return body;
+  }
+
+  const endMarker = `\n${GITHUB_PULL_REQUEST_BODY_SECTION_END}`;
+  const notice = `\n\n${PULL_REQUEST_BODY_TRUNCATION_NOTICE}`;
+  const maxPrefixLength =
+    GITHUB_PULL_REQUEST_BODY_MAX_LENGTH - notice.length - endMarker.length;
+
+  if (maxPrefixLength <= GITHUB_PULL_REQUEST_BODY_SECTION_START.length) {
+    return body.slice(0, GITHUB_PULL_REQUEST_BODY_MAX_LENGTH);
+  }
+
+  return `${body.slice(0, maxPrefixLength).trimEnd()}${notice}${endMarker}`;
+}
+
+export function buildContentPullRequestBody(
+  params: BuildContentPullRequestBodyParams
+) {
+  return clampPullRequestBody(wrapManagedSection(buildManagedContent(params)));
 }
 
 export function mergeContentPullRequestBody(
@@ -118,15 +198,14 @@ export function mergeContentPullRequestBody(
     )}`;
   }
 
-  const legacyManagedContents = [buildManagedContent(params)];
+  const legacyManagedContents = [buildManagedIntro(params)];
   if (params.contentUrl && params.badgeUrls) {
     legacyManagedContents.push(
-      buildManagedContent({ ...params, badgeUrls: undefined })
+      buildManagedIntro({ ...params, badgeUrls: undefined })
     );
   }
 
-  const label = params.contentType === "changelog" ? "changelog" : "blog post";
-  const legacySummary = `Draft ${label} generated and published with Notra.`;
+  const legacySummary = draftSummary(params.contentType);
 
   for (const legacyManagedContent of legacyManagedContents) {
     if (legacyManagedContent === legacySummary) {
