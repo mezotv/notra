@@ -606,7 +606,7 @@ export async function createGitHubIntegration(
       id: nanoid(),
       repositoryId: integration.id,
       outputType: "blog_post",
-      enabled: false,
+      enabled: true,
       config: null,
     },
     {
@@ -1153,7 +1153,8 @@ export async function setRepositoryOutputDirectory(
       id: nanoid(),
       repositoryId: params.repositoryId,
       outputType: params.outputType,
-      enabled: params.outputType === "changelog",
+      enabled:
+        params.outputType === "changelog" || params.outputType === "blog_post",
       config: { directory: params.directory },
     })
     .onConflictDoUpdate({
@@ -1182,6 +1183,7 @@ export async function updateGitHubIntegration(
   integrationId: string,
   data: {
     enabled?: boolean;
+    repositoryEnabled?: boolean;
     displayName?: string;
     owner?: string;
     repo?: string;

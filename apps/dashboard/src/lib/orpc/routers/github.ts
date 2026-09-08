@@ -236,6 +236,7 @@ export const githubRouter = {
             organizationId: input.organizationId,
             userId: auth.user.id,
             repositoryIds: input.repositoryIds,
+            preserveExisting: input.preserveExisting,
           }),
           toGitHubOperationOrpcError
         );
