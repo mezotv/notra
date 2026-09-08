@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/monitoring",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/geo-scan",
       "schedule": "*/10 * * * *"
     },
