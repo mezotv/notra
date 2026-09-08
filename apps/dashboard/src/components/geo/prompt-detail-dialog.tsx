@@ -131,7 +131,7 @@ function PromptAnswerHeader({
         <SheetTitle className="min-w-0 text-sm leading-5 font-medium">
           <button
             aria-label={`Copy prompt: ${row.prompt}`}
-            className="bg-background hover:bg-muted/50 focus-visible:ring-ring cursor-pointer rounded-lg border px-3 py-2 text-left wrap-anywhere shadow-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            className="bg-background hover:bg-muted/50 focus-visible:ring-ring inline-flex max-w-full cursor-pointer items-center rounded-md border px-2 py-1 text-left wrap-anywhere shadow-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
             onClick={() => copyTextToClipboard(row.prompt, "Copied prompt")}
             title="Copy prompt"
             type="button"

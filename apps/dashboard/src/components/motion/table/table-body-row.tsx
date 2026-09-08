@@ -106,7 +106,11 @@ export function TableBodyRow<T>({
       }
       onPointerLeave={hasRowMenu ? onDeactivate : undefined}
       ref={rowRef}
-      style={{ height: rowHeight }}
+      style={
+        rowSizing === "content"
+          ? { minHeight: rowHeight }
+          : { height: rowHeight }
+      }
       tabIndex={onRowClick ? 0 : undefined}
     >
       {selectable ? (
@@ -125,7 +129,6 @@ export function TableBodyRow<T>({
         <td
           className={cn(
             "text-foreground max-w-0 overflow-hidden px-4",
-            rowSizing === "content" && "align-top",
             cellBorder,
             alignText(column.align)
           )}

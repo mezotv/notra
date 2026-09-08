@@ -55,6 +55,7 @@ describe("shared dashboard table", () => {
     for (const row of data) {
       expect(html).toContain(row.description);
     }
+    expect(html).toContain("min-height:52px");
     expect(html).toContain("max-height:104px");
     expect(html).toContain("whitespace-normal");
   });
