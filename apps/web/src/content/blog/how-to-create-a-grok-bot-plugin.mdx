@@ -16,7 +16,7 @@ That's useful if you are building a developer product. The same plugin gives peo
 
 Plugins connect those agents to services. A user adds a plugin, authorizes their account and can ask the bot to work with that service in chat. Cursor documents that flow in its [Grok Bot plugin guide](https://cursor.com/help/grok-bot/connect-plugins).
 
-> Image placeholder: Grok Bot's Plugins directory. Show where a user searches for and adds a plugin.
+<figure data-width="100" data-align="center"><picture><source media="(prefers-color-scheme: dark)" srcSet="/blog/grok-bot-marketplace-dark.png" /><img src="/blog/grok-bot-marketplace-light.png" alt="Grok Bot's plugin marketplace showing featured plugins, team plugins and add buttons." /></picture><figcaption>Grok Bot's marketplace installs the same plugins you build for Cursor.</figcaption></figure>
 
 ## Why you should build one [#why-you-should-build-one]
 
@@ -41,8 +41,6 @@ I would start by reading these files:
 That last distinction is useful. If someone already gave the agent a page to read, searching the web again adds work. The skill gives the agent enough product knowledge to choose the right tool.
 
 That's the part I would copy: make the first useful action obvious, then explain how to do it well. For a web research product, that could be finding a company's recent announcements and returning the source links.
-
-> Image placeholder: Context.dev's Cursor marketplace listing with its skills and MCP connection visible. Pair it with the plugin's GitHub folder structure.
 
 ## What it takes [#what-it-takes]
 
@@ -165,7 +163,5 @@ Those are Cursor development checks. Once your listing is available in Grok Bot,
 Push the plugin to a public Git repository and submit its link at [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish). The Cursor team reviews plugins before listing them. This is the submission route for the Grok Bot plugin too.
 
 Before submitting, check that the manifest paths resolve and the README explains any configuration. If you include a logo, commit it to the repository and reference it with a relative path. Cursor's [submission checklist](https://cursor.com/docs/reference/plugins#submission-checklist) covers the requirements.
-
-> Image placeholder: Cursor's marketplace submission page with the plugin repository ready to submit. Keep this visibly marked as a submission screenshot, not an approved listing.
 
 After approval, check the actual install experience in Grok Bot. Search for your plugin, connect a test account and run the example from your README. Then use that working flow in your announcement so people can see exactly what they can do with it.
