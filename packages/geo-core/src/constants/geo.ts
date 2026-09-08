@@ -100,7 +100,7 @@ export const GEO_GAPS_METER_TONE_CLASS = {
 } as const;
 export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 export const GEO_GAPS_WRITE_LABELS = {
-  write: "Write from gap",
+  write: "Write",
   review: "Review",
   writing: "Writing",
   open: "Open post",
@@ -212,7 +212,7 @@ export const GEO_SEARCH_GAP_ACTION_CLASS: Record<GeoSearchGapAction, string> = {
   ignore: "border-border bg-muted/70 text-muted-foreground",
 };
 export const GEO_SEARCH_GAP_WRITE_LABELS = {
-  create: "Write from gap",
+  create: "Write",
   update: "Update page",
   merge: "Merge into page",
   ignore: "Write",
