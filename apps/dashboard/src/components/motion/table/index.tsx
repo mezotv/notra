@@ -2,7 +2,7 @@
 // beui.dev/components/motion/table
 
 import { useReducedMotion } from "motion/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { useTableViewport } from "@/lib/hooks/use-table-viewport";
 import { cn } from "@/lib/utils";
@@ -66,19 +66,14 @@ export function Table<T>({
   overlapTop = false,
   className,
 }: TableProps<T>) {
-  "use no memo";
   const reduce = useReducedMotion();
   const thRefs: HeaderCellRefs = useRef<
     Record<string, HTMLTableCellElement | null>
   >({});
-  const rows = useMemo(
-    () =>
-      data.map((row, index) => ({
-        row,
-        id: getRowId ? getRowId(row, index) : String(index),
-      })),
-    [data, getRowId]
-  );
+  const rows = data.map((row, index) => ({
+    row,
+    id: getRowId ? getRowId(row, index) : String(index),
+  }));
   const {
     orderedColumns,
     dragKey,
@@ -107,19 +102,26 @@ export function Table<T>({
       defaultSelectedRowIds,
       onSelectionChange,
     });
-  const displayRows = useMemo(
-    () => pinRowsFirst(sortedRows, isRowPinned),
-    [sortedRows, isRowPinned]
-  );
-  const pagedRows = useMemo(() => {
-    if (pageSize == null) {
-      return displayRows;
-    }
-    const start = Math.max(0, page - 1) * pageSize;
-    return displayRows.slice(start, start + pageSize);
-  }, [displayRows, page, pageSize]);
+  const displayRows = pinRowsFirst(sortedRows, isRowPinned);
+  const pageStart = Math.max(0, page - 1) * (pageSize ?? 0);
+  const pagedRows =
+    pageSize == null
+      ? displayRows
+      : displayRows.slice(pageStart, pageStart + pageSize);
 
-  const viewport = useTableViewport({
+  const {
+    headerScrollRef,
+    scrollRef,
+    headerStyle,
+    bodyStyle,
+    overflowClass,
+    handleScroll,
+    renderedRows,
+    bodyHeight,
+    scrolls,
+    paddingTop,
+    paddingBottom,
+  } = useTableViewport({
     rows: pagedRows,
     rowHeight,
     rowSizing,
@@ -153,41 +155,42 @@ export function Table<T>({
   const [activeColumn, setActiveColumn] = useState<string | null>(null);
   // Let the pointer cross the gap to the portal handle before deactivating.
   const deactivateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activateColumn = useCallback((key: string) => {
+  const activateColumn = (key: string) => {
     if (deactivateTimer.current) {
       clearTimeout(deactivateTimer.current);
     }
     deactivateTimer.current = null;
     setActiveColumn(key);
-  }, []);
-  const deactivateColumn = useCallback(() => {
+  };
+  const deactivateColumn = () => {
     if (deactivateTimer.current) {
       clearTimeout(deactivateTimer.current);
     }
     deactivateTimer.current = setTimeout(() => setActiveColumn(null), 100);
-  }, []);
+  };
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const [activeRowEl, setActiveRowEl] = useState<HTMLTableRowElement | null>(
+    null
+  );
   const [activeRow, setActiveRow] = useState<{
     id: string;
     index: number;
   } | null>(null);
   const rowTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const activateRow = useCallback((id: string, index: number) => {
+  const activateRow = (id: string, index: number) => {
     if (rowTimer.current) {
       clearTimeout(rowTimer.current);
     }
     rowTimer.current = null;
+    setActiveRowEl(rowRefs.current[id] ?? null);
     setActiveRow({ id, index });
-  }, []);
-  const deactivateRow = useCallback(() => {
+  };
+  const deactivateRow = () => {
     if (rowTimer.current) {
       clearTimeout(rowTimer.current);
     }
     rowTimer.current = setTimeout(() => setActiveRow(null), 100);
-  }, []);
-  const activeRowEl = activeRow
-    ? (rowRefs.current[activeRow.id] ?? null)
-    : null;
+  };
   const columnMenuProps = hasColumnMenu
     ? {
         activeColumn,
@@ -209,8 +212,8 @@ export function Table<T>({
       >
         <div
           className="overflow-hidden"
-          ref={viewport.headerScrollRef}
-          style={viewport.headerStyle}
+          ref={headerScrollRef}
+          style={headerStyle}
         >
           <table className={tableClassName} style={{ tableLayout: "fixed" }}>
             {columnGroup}
@@ -247,30 +250,30 @@ export function Table<T>({
       <div
         className={cn(
           "scrollbar-floating border-border bg-background relative -mt-5 box-content rounded-2xl border outline-none",
-          isEmpty ? "overflow-hidden" : viewport.overflowClass,
+          isEmpty ? "overflow-hidden" : overflowClass,
           flushBottom && !footer && "rounded-b-none"
         )}
-        onScroll={viewport.handleScroll}
-        ref={viewport.scrollRef}
-        style={viewport.bodyStyle}
+        onScroll={handleScroll}
+        ref={scrollRef}
+        style={bodyStyle}
       >
         <table className={tableClassName} style={{ tableLayout: "fixed" }}>
           {columnGroup}
           <TableBody
             columns={orderedColumns}
-            renderedRows={viewport.renderedRows}
+            renderedRows={renderedRows}
             rowCount={pagedRows.length}
             rowHeight={rowHeight}
             rowSizing={rowSizing}
-            bodyHeight={viewport.bodyHeight}
+            bodyHeight={bodyHeight}
             loading={loading}
             skeletonRows={skeletonRows}
             emptyState={emptyState}
             selectable={selectable}
             selected={selected}
-            scrolls={viewport.scrolls}
-            paddingTop={viewport.paddingTop}
-            paddingBottom={viewport.paddingBottom}
+            scrolls={scrolls}
+            paddingTop={paddingTop}
+            paddingBottom={paddingBottom}
             hasRowMenu={hasRowMenu}
             onActivate={activateRow}
             onDeactivate={deactivateRow}
