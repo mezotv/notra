@@ -1,6 +1,6 @@
 import type {
   GitHubRepositorySelectionError,
-  GitHubTokenError,
+  GitHubPublishTokenError,
 } from "@notra/ai/types/github-operations";
 
 import {
@@ -15,9 +15,14 @@ import {
 import { classifyGitHubPublishFailure } from "./github-publish-failure";
 
 export function toGitHubOperationOrpcError(
-  error: GitHubRepositorySelectionError | GitHubTokenError
+  error: GitHubRepositorySelectionError | GitHubPublishTokenError
 ) {
   switch (error._tag) {
+    case "GitHubAppRequiredForPublishError":
+      return forbidden(
+        "Connect the GitHub App so Notra can open pull requests as a bot.",
+        { code: "github_authentication_required" }
+      );
     case "GitHubCredentialsMissingError":
       return forbidden(
         "Connect this repository through the GitHub App before publishing.",

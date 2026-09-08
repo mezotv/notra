@@ -125,10 +125,21 @@ function base64url(value: string) {
     .replace(/\//g, "_");
 }
 
+function readGitHubAppConfig() {
+  return {
+    appId: process.env.GITHUB_APP_ID,
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    slug: process.env.GITHUB_APP_SLUG ?? process.env.GITHUB_APP_NAME,
+  };
+}
+
+export function isGitHubAppConfigured() {
+  const { appId, privateKey, slug } = readGitHubAppConfig();
+  return Boolean(appId && privateKey && slug);
+}
+
 function getGitHubAppConfig() {
-  const appId = process.env.GITHUB_APP_ID;
-  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  const slug = process.env.GITHUB_APP_SLUG ?? process.env.GITHUB_APP_NAME;
+  const { appId, privateKey, slug } = readGitHubAppConfig();
 
   if (!(appId && privateKey && slug)) {
     throw new GitHubAppNotConfiguredError();
@@ -1431,6 +1442,21 @@ const githubCredentialDependencies: GitHubCredentialDependencies = {
         new GitHubCredentialDecryptionError({ integrationId, cause }),
     }),
 };
+
+export function createGitHubAppInstallationTokenForRecordEffect(
+  recordId: string,
+  organizationId: string
+) {
+  return resolveGitHubCredentials(
+    recordId,
+    {
+      organizationId,
+      githubAppInstallationId: recordId,
+      encryptedToken: null,
+    },
+    githubCredentialDependencies
+  );
+}
 
 export function getTokenForIntegrationIdEffect(
   integrationId: string,

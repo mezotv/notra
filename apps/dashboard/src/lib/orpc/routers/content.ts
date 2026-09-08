@@ -4,8 +4,9 @@ import {
 } from "@notra/ai/billing/content-billing";
 import {
   getTokenForIntegrationId,
-  getTokenForIntegrationIdEffect,
+  isGitHubAppConfigured,
 } from "@notra/ai/integrations/github";
+import { getGitHubPublishTokenEffect } from "@notra/ai/integrations/github-publish-auth";
 import {
   getDecryptedLinearToken,
   getLinearIntegrationsByOrganization,
@@ -839,7 +840,9 @@ export const contentRouter = {
           "Selected GitHub repository does not have a default branch"
         );
       }
-      const connectionMethod = getGitHubConnectionMethod(integration);
+      const connectionMethod = isGitHubAppConfigured()
+        ? "github-app"
+        : getGitHubConnectionMethod(integration);
       if (connectionMethod === "unauthenticated") {
         throw forbidden(
           "Connect this repository through the GitHub App before publishing.",
@@ -913,7 +916,7 @@ export const contentRouter = {
 
       const notraBaseUrl = resolveNotraBaseUrl();
       const token = await runOrpcEffect(
-        getTokenForIntegrationIdEffect(integration.id, {
+        getGitHubPublishTokenEffect(integration.id, {
           organizationId: input.organizationId,
         }),
         toGitHubOperationOrpcError

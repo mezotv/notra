@@ -3,6 +3,7 @@ import type { Effect } from "effect";
 import type { GitHubAppRepository } from "../schemas/github-app";
 import type {
   GitHubAppConfigurationError,
+  GitHubAppRequiredForPublishError,
   GitHubCredentialDecryptionError,
   GitHubCredentialsMissingError,
   GitHubInstallationMissingError,
@@ -95,6 +96,10 @@ export type GitHubTokenError =
   | GitHubInstallationMissingError
   | GitHubCredentialsMissingError
   | GitHubCredentialDecryptionError;
+
+export type GitHubPublishTokenError =
+  | GitHubTokenError
+  | GitHubAppRequiredForPublishError;
 
 export interface GitHubStoredCredentials extends GitHubConnectionCredentials {
   organizationId: string;

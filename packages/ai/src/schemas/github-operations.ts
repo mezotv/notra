@@ -1,5 +1,16 @@
 import { Schema } from "effect";
 
+export class GitHubAppRequiredForPublishError extends Schema.TaggedError<GitHubAppRequiredForPublishError>()(
+  "GitHubAppRequiredForPublishError",
+  { organizationId: Schema.String }
+) {
+  readonly status = 401;
+
+  override get message() {
+    return "Connect the GitHub App so Notra can open pull requests as a bot";
+  }
+}
+
 export class GitHubPersistenceError extends Schema.TaggedError<GitHubPersistenceError>()(
   "GitHubPersistenceError",
   { operation: Schema.String, cause: Schema.Defect() }

@@ -191,9 +191,10 @@ async function getPullRequestAfterCommit(params: {
 }
 
 /**
- * Older pull requests were created before the "Open in Notra" button existed.
- * When republishing to an open pull request, refresh its body so it picks up
- * the button. Failures are non-fatal: the content commit already landed.
+ * Older pull requests were created before the article and "Open in Notra"
+ * button were part of the description. When republishing to an open pull
+ * request, refresh its body so it picks up the latest draft. Failures are
+ * non-fatal: the content commit already landed.
  */
 async function ensurePullRequestBody(params: {
   currentBody: string | null | undefined;
@@ -207,6 +208,8 @@ async function ensurePullRequestBody(params: {
     badgeUrls: params.publishParams.badgeUrls,
     contentType: params.publishParams.contentType,
     contentUrl: params.publishParams.contentUrl,
+    markdown: params.publishParams.markdown,
+    title: params.publishParams.title,
   });
   if ((params.currentBody ?? "") === body) {
     return;
@@ -327,6 +330,7 @@ async function commitContentToBranch(
   branchName: string,
   branchHeadSha: string
 ) {
+  // Authored by the GitHub App bot when the caller uses an installation token.
   try {
     const result = await octokit.graphql<GitHubCreateCommitOnBranchResult>(
       GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION,
@@ -687,6 +691,8 @@ export async function publishContentDraftPullRequest(
           badgeUrls: params.badgeUrls,
           contentType: params.contentType,
           contentUrl: params.contentUrl,
+          markdown: params.markdown,
+          title: params.title,
         }),
         draft: true,
         headers: GITHUB_API_VERSION_HEADERS,

@@ -106,6 +106,13 @@ choose the public error message. Neither database writes nor token creation are
 automatically retried. The PR branch/commit/reconciliation workflow remains
 Promise-based.
 
+Publishing prefers the configured GitHub App so commits and pull requests are
+authored by the bot. It uses the linked installation, or an enabled installation
+matching the repository owner in the same organization. A configured App with
+no matching installation prompts the user to connect it; PAT fallback is only
+available when the App is not configured. Publishing authentication uses the
+same typed credential resolver and uncached installation checks.
+
 Clone, repository and tool-context token entry points delegate to the same
 integration token resolver after their caller-specific access checks. Repository
 discovery is shared by the listing and selection programs; cache I/O, response
