@@ -27,7 +27,7 @@ export function BlogPostAuthorCard({ authors }: BlogPostAuthorCardProps) {
         {authors.map((author) => (
           <li key={author.id}>
             <Link
-              className="group flex items-center gap-3"
+              className="group/author hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:outline-primary -mx-2 -my-2 flex items-center gap-3 rounded-xl p-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
               href={getAuthorHref(author.slug)}
             >
               <ViewTransition
@@ -44,7 +44,7 @@ export function BlogPostAuthorCard({ authors }: BlogPostAuthorCardProps) {
                 <ViewTransition
                   name={blogAuthorNameTransitionName(author.slug)}
                 >
-                  <span className="group-hover:text-foreground font-sans text-sm leading-tight font-medium text-neutral-700 transition-colors dark:text-neutral-200">
+                  <span className="font-sans text-sm leading-tight font-medium text-neutral-700 transition-colors dark:text-neutral-200">
                     {author.name}
                   </span>
                 </ViewTransition>

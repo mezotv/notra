@@ -132,7 +132,7 @@ export interface BlogJsonLdInput {
 }
 
 export interface BlogArticleProps {
-  html: string;
+  children: ReactNode;
 }
 
 export interface BlogPostAuthorCardProps {
