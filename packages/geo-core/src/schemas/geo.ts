@@ -515,7 +515,6 @@ export const geoWriterWorkflowPayloadSchema = object({
   runId: string().min(1),
 });
 
-export const geoSuggestionIdInputSchema = object({
-  organizationId: string().min(1),
+export const geoSuggestionIdInputSchema = geoOrganizationInputSchema.extend({
   suggestionId: string().min(1),
 });

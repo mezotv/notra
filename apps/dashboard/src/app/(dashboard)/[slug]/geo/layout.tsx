@@ -5,6 +5,8 @@ import { GeoUpgradeGate } from "@/components/geo/geo-upgrade-gate";
 import { GeoProjectQueryProvider } from "@/components/providers/geo-project-provider";
 import type { GeoLayoutProps } from "@/types/geo";
 
+import { GeoPageSkeleton } from "./skeleton";
+
 export default async function GeoLayout({
   children,
   modal,
@@ -14,8 +16,8 @@ export default async function GeoLayout({
   return (
     <>
       <GeoCatalogWarmer organizationSlug={slug} />
-      <Suspense fallback={children}>
-        <GeoProjectQueryProvider>
+      <Suspense fallback={<GeoPageSkeleton />}>
+        <GeoProjectQueryProvider key={slug}>
           <GeoUpgradeGate slug={slug}>
             {children}
             {modal}
