@@ -11,14 +11,9 @@ import {
   GEO_SCAN_PREFLIGHT_PROMPTS_LABEL,
   GEO_SCAN_PREFLIGHT_SELECT_ALL,
   GEO_SCAN_PREFLIGHT_TITLE,
-  GEO_SCAN_SIZE_DANGER,
   GEO_SCAN_SIZE_LABEL,
-  GEO_SCAN_SIZE_WARN,
+  GEO_SCAN_SIZE_MESSAGES,
 } from "@notra/geo-core/constants/geo";
-import {
-  calcGeoScanSize,
-  geoScanSizeSeverity,
-} from "@notra/geo-core/utils/geo-scan";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -39,7 +34,7 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { Twemoji } from "@/components/geo/twemoji";
 import { Checkbox } from "@/components/motion/checkbox";
 import { LANGUAGE_FLAGS } from "@/constants/language-flags";
-import { useAnswersBalance } from "@/lib/hooks/use-answers-balance";
+import { useGeoScanEstimate } from "@/lib/hooks/use-geo-scan-estimate";
 import { cn } from "@/lib/utils";
 import type { ScanPreflightDialogProps } from "@/types/geo";
 import { engineAnswerMode, formatEngineFamily } from "@/utils/geo-charts";
@@ -110,6 +105,7 @@ function ScanPreflightEngineRow({
 }
 
 export function ScanPreflightDialog({
+  organizationId,
   open,
   onOpenChange,
   onConfirm,
@@ -125,21 +121,12 @@ export function ScanPreflightDialog({
   const selectedCount = selected.length;
   const canRun = selectedCount > 0;
 
-  const { balance: answersBalance, isLoading: answersLoading } =
-    useAnswersBalance();
-  const scanSize = calcGeoScanSize({
+  const { scanSize, warningSeverity } = useGeoScanEstimate({
+    organizationId,
     promptCount,
-    engineCount: selectedCount,
-    languageCount: languages.length,
+    engines: selected,
+    languages,
   });
-  const scanSizeSeverity = geoScanSizeSeverity(scanSize);
-  const sizeWarningMessage =
-    scanSizeSeverity === "danger" ? GEO_SCAN_SIZE_DANGER : GEO_SCAN_SIZE_WARN;
-  // Only warn when the scan costs more answers than remain. An unknown
-  // balance (loading or missing) keeps the warning visible.
-  const showSizeWarning =
-    scanSizeSeverity !== "ok" &&
-    (answersLoading || answersBalance === null || scanSize > answersBalance);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -162,24 +149,25 @@ export function ScanPreflightDialog({
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle className="flex items-center gap-2">
             {GEO_SCAN_PREFLIGHT_TITLE}
-            {showSizeWarning ? (
+            {warningSeverity ? (
               <Tooltip>
                 <TooltipTrigger
                   render={
                     <span
-                      aria-label={sizeWarningMessage}
-                      className={
-                        scanSizeSeverity === "danger"
-                          ? "bg-destructive text-destructive-foreground inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-[10px] leading-none font-bold"
-                          : "bg-warning text-warning-foreground inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-[10px] leading-none font-bold"
-                      }
+                      aria-label={GEO_SCAN_SIZE_MESSAGES[warningSeverity]}
+                      className={cn(
+                        "inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-[10px] leading-none font-bold",
+                        warningSeverity === "danger"
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-warning text-warning-foreground"
+                      )}
                     />
                   }
                 >
                   !
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  {sizeWarningMessage}
+                  {GEO_SCAN_SIZE_MESSAGES[warningSeverity]}
                 </TooltipContent>
               </Tooltip>
             ) : null}
@@ -208,7 +196,9 @@ export function ScanPreflightDialog({
             </span>
           ))}
           <span className="bg-muted text-muted-foreground inline-flex items-center rounded-lg px-2 py-1 text-xs tabular-nums">
-            {scanSize.toLocaleString()} {GEO_SCAN_SIZE_LABEL}
+            {scanSize === null
+              ? "Calculating checks…"
+              : `${scanSize.toLocaleString()} ${GEO_SCAN_SIZE_LABEL}`}
           </span>
         </div>
         <p className="text-muted-foreground text-xs">

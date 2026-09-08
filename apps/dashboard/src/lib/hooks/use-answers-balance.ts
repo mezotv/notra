@@ -7,8 +7,8 @@ import { useBillingCustomer } from "@/lib/hooks/use-billing-customer";
 
 /**
  * Reads the remaining AI answers (GEO scan quota) from Autumn.
- * `balance` is null while loading or when unknown; check `isLoading`
- * before treating it as a final answer.
+ * Check `isUnlimited` before comparing the numeric balance.
+ * `balance` is null while loading or when no numeric balance is available.
  */
 export function useAnswersBalance() {
   const {
@@ -25,5 +25,5 @@ export function useAnswersBalance() {
   const balance =
     typeof answers?.remaining === "number" ? answers.remaining : null;
 
-  return { isLoading, balance };
+  return { isLoading, balance, isUnlimited: answers?.unlimited === true };
 }

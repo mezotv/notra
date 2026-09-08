@@ -1043,7 +1043,7 @@ export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
   "Tags apply to custom prompts. Auto-generated prompts were skipped.";
 export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";
 export const GEO_SCAN_PREFLIGHT_BODY =
-  "This run only — tracked engines stay as they are.";
+  "Your selection applies only to this scan and won't change your tracked engines.";
 export const GEO_SCAN_PREFLIGHT_CONFIRM = "Run scan";
 export const GEO_SCAN_PREFLIGHT_CANCEL = "Cancel";
 export const GEO_SCAN_PREFLIGHT_PENDING = "Starting…";
@@ -1059,6 +1059,10 @@ export const GEO_SCAN_SIZE_WARN =
   "Large scan. It takes longer and costs more. Use fewer engines, prompts, or languages.";
 export const GEO_SCAN_SIZE_DANGER =
   "Very large scan. It will likely take a long time. Use fewer engines, prompts, or languages.";
+export const GEO_SCAN_SIZE_MESSAGES = {
+  warn: GEO_SCAN_SIZE_WARN,
+  danger: GEO_SCAN_SIZE_DANGER,
+};
 export const GEO_SCAN_PREFLIGHT_SELECT_ALL = "Select all";
 export const GEO_SCAN_PREFLIGHT_NEED_ENGINE = "Pick at least one engine.";
 export const GEO_RANGE_PRESETS = [

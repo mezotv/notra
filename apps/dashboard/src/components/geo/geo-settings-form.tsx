@@ -7,19 +7,13 @@ import {
   GEO_MAX_ALIASES,
   GEO_MAX_CONVERSION_PATHS,
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
-  GEO_SCAN_SIZE_DANGER,
-  GEO_SCAN_SIZE_WARN,
+  GEO_SCAN_SIZE_MESSAGES,
   GEO_SETTINGS_AUTO_SAVE_MS,
 } from "@notra/geo-core/constants/geo";
 import type { GeoSettingsUpsertInput } from "@notra/geo-core/types/geo";
 import { normalizeConversionPaths } from "@notra/geo-core/utils/geo-conversion-paths";
 import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
 import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
-import {
-  calcGeoScanSize,
-  type GeoScanSizeSeverity,
-  geoScanSizeSeverity,
-} from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
@@ -33,9 +27,10 @@ import {
   GeoScanSchedule,
 } from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
-import { useAnswersBalance } from "@/lib/hooks/use-answers-balance";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
+import { useGeoScanEstimate } from "@/lib/hooks/use-geo-scan-estimate";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
+import { cn } from "@/lib/utils";
 import type {
   GeoBrandSectionProps,
   GeoLanguagesSectionProps,
@@ -43,26 +38,6 @@ import type {
   GeoSettingsAutosaveInput,
   GeoSettingsFormProps,
 } from "@/types/geo";
-
-function scanSizeNoteClassName(severity: GeoScanSizeSeverity): string {
-  if (severity === "danger") {
-    return "text-destructive text-xs tabular-nums";
-  }
-  if (severity === "warn") {
-    return "text-warning text-xs tabular-nums";
-  }
-  return "text-muted-foreground text-xs tabular-nums";
-}
-
-function scanSizeWarningSuffix(severity: GeoScanSizeSeverity): string {
-  if (severity === "danger") {
-    return ` ${GEO_SCAN_SIZE_DANGER}`;
-  }
-  if (severity === "warn") {
-    return ` ${GEO_SCAN_SIZE_WARN}`;
-  }
-  return "";
-}
 
 export function GeoSettingsForm({
   organizationId,
@@ -120,27 +95,22 @@ export function GeoSettingsForm({
 
   const saveStatus = geoSaveStatus(nameMissing, isSaving, savedAt);
 
-  const scanSize = calcGeoScanSize({
-    promptCount: promptCount ?? 0,
-    engineCount: engines.length,
-    languageCount: languages.length,
+  const { scanSize, warningSeverity } = useGeoScanEstimate({
+    organizationId,
+    promptCount,
+    engines,
+    languages,
   });
-  const scanSizeSeverity = geoScanSizeSeverity(scanSize);
-  const { balance: answersBalance, isLoading: answersLoading } =
-    useAnswersBalance();
-  // Only warn when the scan costs more answers than remain. An unknown
-  // balance (loading or missing) keeps the warning visible.
-  const showSizeWarning =
-    scanSizeSeverity !== "ok" &&
-    (answersLoading || answersBalance === null || scanSize > answersBalance);
   const scanSizeNote =
-    promptCount === undefined
+    scanSize === null
       ? null
       : {
-          className: showSizeWarning
-            ? scanSizeNoteClassName(scanSizeSeverity)
-            : "text-muted-foreground text-xs tabular-nums",
-          text: `About ${scanSize.toLocaleString()} checks per scan (${promptCount.toLocaleString()} prompts × ${engines.length.toLocaleString()} engines × ${Math.max(1, languages.length).toLocaleString()} languages).${showSizeWarning ? scanSizeWarningSuffix(scanSizeSeverity) : ""}`,
+          className: cn("text-xs tabular-nums", {
+            "text-muted-foreground": warningSeverity === null,
+            "text-warning": warningSeverity === "warn",
+            "text-destructive": warningSeverity === "danger",
+          }),
+          text: `About ${scanSize.toLocaleString()} checks per scan, including web-search checks and conversation turns.${warningSeverity ? ` ${GEO_SCAN_SIZE_MESSAGES[warningSeverity]}` : ""}`,
         };
 
   const showBrand = section === undefined || section === "brand";
